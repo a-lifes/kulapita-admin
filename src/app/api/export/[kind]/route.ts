@@ -3,6 +3,7 @@ import { writeAudit } from '@/lib/audit';
 import { requireAdmin } from '@/lib/auth/guard';
 import { csvResponse, toCsv } from '@/lib/csv';
 import { query } from '@/lib/db';
+import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import {
   CONTACT_ROUTE_LABEL,
   CONTACT_STATUS_LABEL,
@@ -94,20 +95,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const filter = normalizePresentFilter(sp);
     const where = presentWhere(filter);
     const { rows } = await query<Row>(
-      `SELECT p.campaign_key, p.item_index, p.item_name, u.external_id AS member_id, p.email, p.status, p.created_at
+      `SELECT p.campaign_key, p.item_index, p.item_name, p.email, p.status, p.created_at, ${MEMBER_COLUMNS}
        FROM present_applications p LEFT JOIN users u ON u.id = p.user_id
        WHERE ${where.sql} ORDER BY p.campaign_key DESC, p.item_index, p.created_at LIMIT ${MAX_ROWS}`,
       where.params,
     );
     await writeAudit({ admin, action: 'export.presents', diff: { filter, rows: rows.length } });
+    // ファイル名: プレゼント_{キャンペーンの年月 yyyymm}_{出力日時 yyyymmddhhmm}.csv
+    const month = filter.campaign ? filter.campaign.replace(/[^0-9A-Za-z]/g, '') : '全キャンペーン';
     return csvResponse(
-      `presents_${filter.campaign ?? 'all'}_${stamp()}.csv`,
+      `プレゼント_${month}_${stamp()}.csv`,
       toCsv(
-        ['キャンペーン', '景品番号', '景品名', '会員番号', 'メールアドレス', '結果', '応募日時'],
-        rows.map((r) => [
-          r.campaign_key, Number(r.item_index) + 1, r.item_name, r.member_id, r.email,
-          label(PRESENT_STATUS_LABEL, r.status), formatJst(r.created_at),
-        ]),
+        ['キャンペーン', '景品番号', '景品名', '結果', '応募日時', '応募時のメールアドレス',
+          '会員番号', 'お名前', '会員のメールアドレス', '電話番号', '郵便番号', '都道府県', '市区町村・番地',
+          '建物名・部屋番号', '会員情報の更新日時'],
+        rows.map((r) => {
+          const m = memberFromRow(r);
+          return [
+            r.campaign_key, Number(r.item_index) + 1, r.item_name, label(PRESENT_STATUS_LABEL, r.status),
+            formatJst(r.created_at), r.email,
+            m?.external_id, m?.display_name, m?.email, m?.phone, m?.zipcode, m?.prefecture, m?.city, m?.building,
+            formatJst(m?.profile_updated_at),
+          ];
+        }),
       ),
     );
   }

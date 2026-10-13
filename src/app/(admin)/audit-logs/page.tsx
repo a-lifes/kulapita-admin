@@ -14,6 +14,7 @@ const ACTION_LABEL: Record<string, string> = {
   'export.contacts': 'CSV 出力 (お問い合わせ)',
   'export.newsletter': 'CSV 出力 (メルマガ)',
   'export.presents': 'CSV 出力 (プレゼント)',
+  'present.update_status': 'プレゼント結果の設定',
   'admin_user.create': '管理者の追加',
   'admin_user.update': '管理者の変更',
   'admin_user.reset_password': '仮パスワード再発行',

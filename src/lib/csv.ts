@@ -17,7 +17,8 @@ export function csvResponse(filename: string, body: string): Response {
   return new Response(body, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      // 日本語のファイル名は filename* (RFC 5987) で渡す。古いブラウザ向けに ASCII 名も付ける
+      'Content-Disposition': `attachment; filename="${filename.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       'Cache-Control': 'no-store',
     },
   });

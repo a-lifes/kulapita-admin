@@ -1,0 +1,51 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { PRESENT_STATUS_LABEL } from '@/lib/format';
+import { setPresentStatusAction } from './actions';
+
+const STYLES: Record<string, string> = {
+  applied: 'border-sky-300 bg-sky-50 text-sky-800',
+  won: 'border-emerald-400 bg-emerald-50 text-emerald-800',
+  lost: 'border-slate-300 bg-slate-100 text-slate-700',
+};
+
+/** 一覧の行で 応募 / 当選 / 落選 を切り替える (選んだ時点で保存) */
+export function PresentStatusSelect({ id, status, readOnly }: { id: string; status: string; readOnly: boolean }) {
+  const [value, setValue] = useState(status);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  return (
+    <div className="min-w-28">
+      <select
+        className={`rounded-md border px-2 py-1 text-sm font-semibold ${STYLES[value] ?? ''}`}
+        value={value}
+        disabled={readOnly || pending}
+        aria-label="抽選結果"
+        onChange={(e) => {
+          const next = e.target.value;
+          const prev = value;
+          setValue(next);
+          setError(null);
+          startTransition(async () => {
+            const res = await setPresentStatusAction(id, next);
+            if (!res.ok) {
+              setValue(prev);
+              setError(res.error);
+              return;
+            }
+            router.refresh();
+          });
+        }}
+      >
+        {Object.entries(PRESENT_STATUS_LABEL).map(([k, v]) => (
+          <option key={k} value={k}>{v}</option>
+        ))}
+      </select>
+      {error && <p className="mt-1 max-w-56 text-xs text-red-700">{error}</p>}
+    </div>
+  );
+}

@@ -26,11 +26,14 @@ export function newsletterWhere(f: NewsletterFilter): { sql: string; params: Par
 }
 
 export const PRESENT_STATUSES = ['applied', 'won', 'lost'] as const;
-export type PresentFilter = { campaign?: string; status?: string };
+export type PresentFilter = { campaign?: string; item?: string; status?: string };
 
 export function normalizePresentFilter(sp: Record<string, string | undefined>): PresentFilter {
+  const campaign = sp.campaign && /^[\w-]{1,32}$/.test(sp.campaign) ? sp.campaign : undefined;
   return {
-    campaign: sp.campaign && /^[\w-]{1,32}$/.test(sp.campaign) ? sp.campaign : undefined,
+    campaign,
+    // 景品はキャンペーンごとの番号なので、キャンペーンを選んだときだけ使う
+    item: campaign && sp.item && /^\d{1,2}$/.test(sp.item) ? sp.item : undefined,
     status: PRESENT_STATUSES.includes(sp.status as never) ? sp.status : undefined,
   };
 }
@@ -41,6 +44,10 @@ export function presentWhere(f: PresentFilter): { sql: string; params: Params } 
   if (f.campaign) {
     conds.push('p.campaign_key = :campaign');
     params.campaign = f.campaign;
+  }
+  if (f.item) {
+    conds.push('p.item_index = :item');
+    params.item = Number(f.item);
   }
   if (f.status) {
     conds.push('p.status = :status');
