@@ -62,22 +62,6 @@ export async function resetPasswordAction(id: string): Promise<UserActionState> 
   return { message: `${target.email} の仮パスワードを発行しました。`, tempPassword };
 }
 
-export async function resetMfaAction(id: string): Promise<UserActionState> {
-  const admin = await requireAdmin('super_admin');
-  if (!UUID_RE.test(id)) return { error: '対象が見つかりません' };
-  const target = await findAdminById(id);
-  if (!target) return { error: '対象が見つかりません' };
-  await query(
-    `UPDATE admin_users SET mfa_secret = NULL, mfa_enabled_at = NULL, mfa_last_step = NULL,
-       session_version = session_version + 1
-     WHERE id = :id`,
-    { id },
-  );
-  await writeAudit({ admin, action: 'admin_user.reset_mfa', targetType: 'admin_user', targetId: id });
-  revalidatePath('/users');
-  return { message: `${target.email} の 2 段階認証をリセットしました。次回ログイン時に再登録します。` };
-}
-
 export async function updateAdminAction(id: string, _prev: UserActionState, formData: FormData): Promise<UserActionState> {
   const admin = await requireAdmin('super_admin');
   if (!UUID_RE.test(id)) return { error: '対象が見つかりません' };

@@ -17,8 +17,7 @@ export const getCurrentAdmin = cache(async (): Promise<AdminUser | null> => {
     !user.is_active ||
     user.locked ||
     user.session_version !== claims.ver ||
-    user.must_change_password ||
-    !user.mfa_enabled
+    user.must_change_password
   ) {
     return null;
   }

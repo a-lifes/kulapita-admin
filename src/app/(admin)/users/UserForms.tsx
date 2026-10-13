@@ -4,7 +4,6 @@ import { useActionState, useState } from 'react';
 import { ROLE_LABEL } from '@/lib/format';
 import {
   createAdminAction,
-  resetMfaAction,
   resetPasswordAction,
   updateAdminAction,
   UserActionState,
@@ -23,7 +22,7 @@ function Result({ state }: { state: UserActionState }) {
           <p className="font-semibold">仮パスワード (この画面を閉じると二度と表示されません)</p>
           <p className="my-2 select-all font-mono text-lg">{state.tempPassword}</p>
           <p className="text-xs text-slate-600">
-            本人に口頭や社内チャットの個別メッセージなど、メール以外の方法で伝えてください。初回ログイン時にパスワードの変更と 2 段階認証の登録を求められます。
+            本人に口頭や社内チャットの個別メッセージなど、メール以外の方法で伝えてください。初回ログイン時にパスワードの変更を求められます。
           </p>
         </div>
       )}
@@ -73,15 +72,11 @@ export function EditAdminForm({
   const [resetState, setResetState] = useState<UserActionState>(undefined);
   const [busy, setBusy] = useState(false);
 
-  async function run(kind: 'password' | 'mfa') {
-    const text =
-      kind === 'password'
-        ? '仮パスワードを発行します。今のパスワードは使えなくなります。よろしいですか？'
-        : '2 段階認証をリセットします。次回ログイン時に認証アプリの再登録が必要です。よろしいですか？';
-    if (!window.confirm(text)) return;
+  async function resetPassword() {
+    if (!window.confirm('仮パスワードを発行します。今のパスワードは使えなくなります。よろしいですか？')) return;
     setBusy(true);
     try {
-      setResetState(await (kind === 'password' ? resetPasswordAction(user.id) : resetMfaAction(user.id)));
+      setResetState(await resetPasswordAction(user.id));
     } finally {
       setBusy(false);
     }
@@ -109,11 +104,8 @@ export function EditAdminForm({
           {isSelf && user.is_active && <input type="hidden" name="is_active" value="on" />}
         </label>
         <button className="btn-sub" disabled={pending}>保存</button>
-        <button type="button" className="btn-danger" disabled={busy} onClick={() => run('password')}>
+        <button type="button" className="btn-danger" disabled={busy} onClick={resetPassword}>
           仮パスワード再発行
-        </button>
-        <button type="button" className="btn-danger" disabled={busy} onClick={() => run('mfa')}>
-          2 段階認証リセット
         </button>
       </form>
       <Result state={state} />

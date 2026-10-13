@@ -1,14 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import {
-  cancelLoginAction,
-  FormState,
-  loginAction,
-  mfaAction,
-  setupMfaAction,
-  setupPasswordAction,
-} from './actions';
+import { cancelLoginAction, FormState, loginAction, setupPasswordAction } from './actions';
 
 function ErrorText({ state }: { state: FormState }) {
   return state?.error ? <p className="error mb-4">{state.error}</p> : null;
@@ -27,46 +20,8 @@ export function LoginForm() {
         <label className="label" htmlFor="password">パスワード</label>
         <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
-      <button className="btn w-full" disabled={pending}>{pending ? '確認中…' : '次へ'}</button>
+      <button className="btn w-full" disabled={pending}>{pending ? '確認中…' : 'ログイン'}</button>
     </form>
-  );
-}
-
-function CodeInput() {
-  return (
-    <input
-      className="input text-center text-2xl tracking-[0.5em]"
-      name="code"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      pattern="\d{6}"
-      maxLength={6}
-      required
-      autoFocus
-    />
-  );
-}
-
-function CancelButton() {
-  return (
-    <form action={cancelLoginAction} className="mt-4 text-center">
-      <button className="text-sm text-slate-500 underline">ログイン画面に戻る</button>
-    </form>
-  );
-}
-
-export function MfaForm() {
-  const [state, action, pending] = useActionState(mfaAction, undefined);
-  return (
-    <>
-      <form action={action} className="space-y-4">
-        <ErrorText state={state} />
-        <p className="text-sm">認証アプリに表示されている 6 桁のコードを入力してください。</p>
-        <CodeInput />
-        <button className="btn w-full" disabled={pending}>{pending ? '確認中…' : 'ログイン'}</button>
-      </form>
-      <CancelButton />
-    </>
   );
 }
 
@@ -89,23 +44,11 @@ export function SetupPasswordForm() {
           <label className="label" htmlFor="confirm">新しいパスワード (確認)</label>
           <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={12} required />
         </div>
-        <button className="btn w-full" disabled={pending}>{pending ? '保存中…' : '設定して次へ'}</button>
+        <button className="btn w-full" disabled={pending}>{pending ? '保存中…' : '設定してログイン'}</button>
       </form>
-      <CancelButton />
-    </>
-  );
-}
-
-export function SetupMfaForm() {
-  const [state, action, pending] = useActionState(setupMfaAction, undefined);
-  return (
-    <>
-      <form action={action} className="space-y-4">
-        <ErrorText state={state} />
-        <CodeInput />
-        <button className="btn w-full" disabled={pending}>{pending ? '確認中…' : '登録してログイン'}</button>
+      <form action={cancelLoginAction} className="mt-4 text-center">
+        <button className="text-sm text-slate-500 underline">ログイン画面に戻る</button>
       </form>
-      <CancelButton />
     </>
   );
 }

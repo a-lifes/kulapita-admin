@@ -35,7 +35,6 @@ export default async function UsersPage() {
               {!u.is_active && <span className="badge bg-slate-300">停止中</span>}
               {u.locked && <span className="badge bg-red-100 text-red-800">ロック中</span>}
               {u.must_change_password && <span className="badge bg-amber-100 text-amber-800">初回ログイン待ち</span>}
-              {!u.mfa_enabled && <span className="badge bg-amber-100 text-amber-800">2 段階認証 未登録</span>}
               <span className="text-slate-500">最終ログイン: {formatJst(u.last_login_at) || 'なし'}</span>
             </div>
             <EditAdminForm user={u} isSelf={u.id === me.id} />

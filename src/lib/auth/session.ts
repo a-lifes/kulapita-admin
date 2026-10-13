@@ -6,7 +6,7 @@ import { deriveKey } from './secrets';
 /**
  * ログイン状態は署名付き Cookie (JWT) で持つ。
  * - kadm_session … ログイン完了後 (8 時間で失効)
- * - kadm_pending … パスワード確認後、2 段階認証・初回設定が終わるまでの途中状態 (15 分で失効)
+ * - kadm_pending … 仮パスワードでログインした後、自分のパスワードを設定するまでの途中状態 (15 分で失効)
  * どちらも ver (admin_users.session_version) を持ち、パスワード変更やアカウント停止で
  * session_version が上がると、それ以前の Cookie は使えなくなる。
  */
@@ -15,7 +15,7 @@ export const PENDING_COOKIE = 'kadm_pending';
 const SESSION_HOURS = 8;
 const PENDING_MINUTES = 15;
 
-export type PendingStage = 'password' | 'mfa_setup' | 'mfa';
+export type PendingStage = 'password';
 export type SessionClaims = { sub: string; ver: number };
 export type PendingClaims = SessionClaims & { stage: PendingStage };
 
