@@ -21,7 +21,8 @@ export type PendingClaims = SessionClaims & { stage: PendingStage };
 
 const cookieBase = {
   httpOnly: true,
-  secure: true,
+  // 本番・dev は HTTPS。ローカル (http://localhost) でもログインできるよう開発時だけ外す
+  secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const,
   path: '/',
 };

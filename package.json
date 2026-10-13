@@ -8,10 +8,11 @@
     "build": "next build",
     "start": "next start --port 3100",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "setup:local": "node scripts/setup-local-env.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=20.9"
   },
   "dependencies": {
     "@aws-sdk/client-rds-data": "^3.1150.0",

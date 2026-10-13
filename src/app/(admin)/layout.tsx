@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 import { hasRole, Role } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { label, ROLE_LABEL } from '@/lib/format';
@@ -18,9 +19,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin();
   return (
     <div className="flex min-h-screen">
-      <aside className="w-56 shrink-0 border-r border-slate-200 bg-white">
-        <div className="px-5 py-4">
-          <Link href="/" className="text-base font-bold text-brand">kulapita 管理画面</Link>
+      <aside className="sticky top-0 h-screen w-56 shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
+        <div className="px-5 pt-5 pb-4">
+          <Link href="/" className="block" aria-label="ダッシュボードへ">
+            <Logo width={168} />
+            <span className="mt-1.5 block text-xs font-bold tracking-wider text-slate-500">管理画面</span>
+          </Link>
         </div>
         <nav className="flex flex-col px-2 text-sm">
           {NAV.filter((n) => hasRole(admin.role, n.min)).map((n) => (

@@ -48,14 +48,20 @@ npm run deploy:dev
 
 ## ローカルで動かす
 
+dev に反映しなくても、手元の Mac ですぐ確認できます。
+
 ```
-cp .env.example .env.local   # 値を埋める
 npm install
-AWS_PROFILE=kulapita npm run dev
+npm run setup:local
+npm run dev
 ```
 
-http://localhost:3100 で開きます。`.env.local` の `ADMIN_SKIP_IP_CHECK=1` で IP チェックを飛ばします
-(本番ビルドでは無視されます)。ローカルでも dev の DB に接続するので、操作には注意してください。
+http://localhost:3100 を開きます。
+
+- `setup:local` は AWS (プロファイル `kulapita`) から dev の DB の場所を取得して `.env.local` を作ります (初回だけ)
+- ログインは dev と同じアカウントです。**ローカルでも dev の DB を読み書きする**ので、操作には注意してください
+- ローカルでは IP チェックをしません。WAF の許可 IP の変更はローカルからは行いません (DB だけ変わります)
+- ソースを保存すると画面に自動で反映されます
 
 ## チェック
 
