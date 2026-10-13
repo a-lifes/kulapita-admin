@@ -1,2 +1,63 @@
 # kulapita-admin
-Admin repository for kulapita
+
+kulapita の管理画面です。社内の許可された IP からだけ使えます。
+
+- dev: https://dev-admin.kulapita.com
+- 本番: https://admin.kulapita.com (未構築)
+
+## できること (v1)
+
+| 画面 | 内容 | 必要な権限 |
+| --- | --- | --- |
+| ダッシュボード | 未対応のお問い合わせ件数など | 閲覧のみ 以上 |
+| お問い合わせ | 一覧・詳細、対応状況 / 担当者 / 対応メモの更新 | 閲覧は全員、更新は 担当者 以上 |
+| メルマガ登録者 | 一覧 | 閲覧のみ 以上 |
+| プレゼント応募 | 一覧、景品ごとの応募数 | 閲覧のみ 以上 |
+| CSV ダウンロード | 上の 3 つ | 管理者 以上 |
+| 操作ログ | 誰がいつ何をしたか | 管理者 以上 |
+| 管理者アカウント | 追加・権限変更・停止・仮パスワード再発行・2 段階認証リセット | スーパー管理者 |
+| 許可 IP | CIDR で追加・削除 (WAF にも自動で反映) | スーパー管理者 |
+
+ログインは「メールアドレス + パスワード + 認証アプリの 6 桁コード (2 段階認証)」です。
+5 回続けて失敗すると 15 分ロックされます。
+
+## 構成
+
+```
+利用者 ─ HTTPS ─▶ WAF (許可 IP 以外は 403) ─▶ ALB ─▶ ECS Fargate (このアプリ) ─ RDS Data API ─▶ Aurora MySQL
+```
+
+- AWS 側の定義は [kulapita-infra](https://github.com/a-lifes/kulapita-infra) の `lib/admin-stack.ts`
+- コンテナイメージは `cdk deploy` のときに AWS CodeBuild がこのフォルダの Dockerfile からビルドします
+  (kulapita-infra と同じ階層にこのリポジトリを置いてください)
+- 許可 IP は DB の `admin_allowed_ips` テーブルで管理し、変更時に WAF の IP セットへ反映します。
+  アプリ側 (src/proxy.ts) でも同じ一覧で二重にチェックします
+- DB には管理画面専用の DB ユーザー (SELECT / INSERT / UPDATE のみ) で接続します
+
+## 反映 (デプロイ)
+
+このリポジトリを更新したら、kulapita-infra で次を実行します (イメージのビルドからコンテナの入れ替えまで自動)。
+
+```
+cd ../kulapita-infra
+npm run deploy:dev
+```
+
+## ローカルで動かす
+
+```
+cp .env.example .env.local   # 値を埋める
+npm install
+AWS_PROFILE=kulapita npm run dev
+```
+
+http://localhost:3100 で開きます。`.env.local` の `ADMIN_SKIP_IP_CHECK=1` で IP チェックを飛ばします
+(本番ビルドでは無視されます)。ローカルでも dev の DB に接続するので、操作には注意してください。
+
+## チェック
+
+```
+npm run lint
+npm run typecheck
+npm run build
+```
