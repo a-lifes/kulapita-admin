@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { cancelLoginAction, FormState, loginAction, setupPasswordAction } from './actions';
 
 function ErrorText({ state }: { state: FormState }) {
@@ -9,16 +9,28 @@ function ErrorText({ state }: { state: FormState }) {
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, undefined);
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <form action={action} className="space-y-4">
       <ErrorText state={state} />
       <div>
         <label className="label" htmlFor="email">メールアドレス</label>
-        <input className="input" id="email" name="email" type="email" autoComplete="username" required />
+        <input className="input" id="email" name="email" type="email" autoComplete="username" placeholder="example@kulapita.com" required />
       </div>
       <div>
         <label className="label" htmlFor="password">パスワード</label>
-        <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
+        <input
+          className="input"
+          id="password"
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
+          required
+        />
+        <label className="mt-2 flex w-fit items-center gap-2 text-sm text-slate-600">
+          <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
+          パスワードを表示
+        </label>
       </div>
       <button className="btn w-full" disabled={pending}>{pending ? '確認中…' : 'ログイン'}</button>
     </form>
