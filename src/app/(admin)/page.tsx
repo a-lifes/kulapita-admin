@@ -5,7 +5,7 @@ import { query } from '@/lib/db';
 import { DailyView } from './DailyCharts';
 import { dailyCounts } from '@/lib/dailyCounts';
 import { DateRangeFilter } from './DateRangeFilter';
-import { resolveSite, SITES, topPageViews } from '@/lib/ga4';
+import { canChooseSite, resolveSite, SITES, topPageViews } from '@/lib/ga4';
 import { jstStartAsUtc, monthStartJst, rangePresets, resolveRange, todayJst } from '@/lib/dateRange';
 
 export const metadata: Metadata = { title: 'ダッシュボード' };
@@ -108,15 +108,18 @@ export default async function DashboardPage({
                 CSV ダウンロード
               </a>
             </div>
-            <DateRangeFilter from={range.from} to={range.to} presets={presets} keep={{ site }}>
-              <div>
-                <label className="label" htmlFor="site">PV のサイト</label>
-                <select className="input" id="site" name="site" defaultValue={site}>
-                  {Object.entries(SITES).map(([k, v]) => (
-                    <option key={k} value={k}>{v.label}</option>
-                  ))}
-                </select>
-              </div>
+            <DateRangeFilter from={range.from} to={range.to} presets={presets} keep={{ site: canChooseSite() ? site : undefined }}>
+              {/* 本番の管理画面では本番のサイトだけを出すので、選択は出さない */}
+              {canChooseSite() && (
+                <div>
+                  <label className="label" htmlFor="site">PV のサイト</label>
+                  <select className="input" id="site" name="site" defaultValue={site}>
+                    {Object.entries(SITES).map(([k, v]) => (
+                      <option key={k} value={k}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </DateRangeFilter>
             {range.error && <p className="error mt-3">{range.error}</p>}
           </>

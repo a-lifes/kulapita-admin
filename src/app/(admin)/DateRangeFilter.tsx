@@ -36,29 +36,32 @@ export function DateRangeFilter({
         <input className="input" type="date" id="to" name="to" defaultValue={to} required />
       </div>
       {children}
-      <SearchButton label="表示" />
-      <div className="flex flex-wrap gap-2 pb-0.5">
-        {presets.map((p) => {
-          const active = p.from === from && p.to === to;
-          const qs = new URLSearchParams({
-            ...(Object.fromEntries(Object.entries(keep).filter(([, v]) => v)) as Record<string, string>),
-            from: p.from,
-            to: p.to,
-          });
-          return (
-            <Link
-              key={p.label}
-              href={`${basePath}?${qs}`}
-              // 期間を切り替えても画面の位置は動かさない
-              scroll={false}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                active ? 'border-brand bg-nav-active text-brand' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {p.label}
-            </Link>
-          );
-        })}
+      {/* 「表示」ボタンと期間のボタンは上下中央でそろえる */}
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchButton label="表示" />
+        <div className="flex flex-wrap gap-2">
+          {presets.map((p) => {
+            const active = p.from === from && p.to === to;
+            const qs = new URLSearchParams({
+              ...(Object.fromEntries(Object.entries(keep).filter(([, v]) => v)) as Record<string, string>),
+              from: p.from,
+              to: p.to,
+            });
+            return (
+              <Link
+                key={p.label}
+                href={`${basePath}?${qs}`}
+                // 期間を切り替えても画面の位置は動かさない
+                scroll={false}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                  active ? 'border-brand bg-nav-active text-brand' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {p.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </SearchForm>
   );

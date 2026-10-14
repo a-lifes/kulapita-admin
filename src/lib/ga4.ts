@@ -15,8 +15,14 @@ export const SITES = {
 } as const;
 export type SiteKey = keyof typeof SITES;
 
-/** 画面で選んだサイト。指定が無ければ、管理画面と同じ環境のサイト */
+/** 画面でサイトを選べるか (本番の管理画面では本番のサイトだけを出す) */
+export function canChooseSite(): boolean {
+  return currentStage() !== 'prod';
+}
+
+/** 画面で選んだサイト。指定が無ければ、管理画面と同じ環境のサイト。本番の管理画面は常に本番 */
 export function resolveSite(value: string | undefined): SiteKey {
+  if (!canChooseSite()) return 'prod';
   return value && value in SITES ? (value as SiteKey) : currentStage();
 }
 
