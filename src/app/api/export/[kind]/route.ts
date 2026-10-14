@@ -57,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `日ごとの件数_${ymd(range.from)}-${ymd(range.to)}_${stamp()}.csv`,
       toCsv(
-        ['日付', '曜日', '祝日', ...series.map((s) => (s.key === 'pv' ? `${s.shortLabel}（${SITES[site].label}）` : s.shortLabel))],
+        ['日付', '曜日', '祝日', ...series.map((s) => (s.key === 'pv' || s.key === 'logins' ? `${s.shortLabel}（${SITES[site].label}）` : s.shortLabel))],
         [
           ...days.map((d, i) => [
             d.date.replaceAll('-', '/'),

@@ -21,7 +21,7 @@ export type DailySeries = {
 /** 日付の表示用情報 (サーバーの lib/calendar.ts で作る) */
 export type Day = { date: string; label: string; kind: 'weekday' | 'sat' | 'holiday'; holidayName?: string };
 
-const unitOf = (s: DailySeries) => (s.key === 'pv' ? '回' : '件');
+const unitOf = (s: DailySeries) => (s.key === 'pv' || s.key === 'logins' ? '回' : '件');
 
 const HEIGHT = 140;
 const PAD = { top: 12, right: 12, bottom: 24, left: 36 };
