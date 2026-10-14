@@ -20,6 +20,7 @@ import {
   normalizeClickFilter,
 } from '@/lib/queries/conversions';
 import { resolveRange } from '@/lib/dateRange';
+import { dailyCounts } from '@/lib/dailyCounts';
 import {
   newsletterWhere,
   normalizeNewsletterFilter,
@@ -40,10 +41,31 @@ function stamp(): string {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ kind: string }> }) {
-  // CSV には個人情報がまとめて入るため「管理者」以上に限る
-  const admin = await requireAdmin('admin');
   const { kind } = await params;
   const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
+
+  // ダッシュボードの日ごとの件数 (個人情報を含まない集計なので、ダッシュボードを見られる人は全員出力できる)
+  if (kind === 'daily') {
+    const viewer = await requireAdmin();
+    const range = resolveRange(sp, 'thisMonth');
+    const { dates, series } = await dailyCounts(range.from, range.to);
+    await writeAudit({ admin: viewer, action: 'export.daily', diff: { from: range.from, to: range.to } });
+    const ymd = (s: string) => s.replaceAll('-', '');
+    const totals = series.map((s) => s.values.reduce((a, b) => a + b, 0));
+    return csvResponse(
+      `日ごとの件数_${ymd(range.from)}-${ymd(range.to)}_${stamp()}.csv`,
+      toCsv(
+        ['日付', ...series.map((s) => s.label)],
+        [
+          ...dates.map((d, i) => [d.replaceAll('-', '/'), ...series.map((s) => s.values[i])]),
+          ['期間合計', ...totals],
+        ],
+      ),
+    );
+  }
+
+  // それ以外の CSV には個人情報がまとめて入るため「管理者」以上に限る
+  const admin = await requireAdmin('admin');
 
   if (kind === 'contacts') {
     const filter = normalizeContactFilter(sp);

@@ -5,10 +5,10 @@
   --color-brand: #563bff;
   --color-brand-dark: #4229d9;
   --color-rail: #21213b;
-  --color-nav: #f6f7fb;
+  --color-nav: #eceef6;
   --color-nav-text: #6e6c99;
   --color-nav-heading: #50507a;
-  --color-nav-active: #e9e7fc;
+  --color-nav-active: #e2defb;
 
   /* 書体: Noto Sans JP (src/app/layout.tsx で読み込み) */
   --font-sans: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;

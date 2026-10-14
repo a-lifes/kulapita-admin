@@ -31,6 +31,7 @@ const ACTION_LABEL: Record<string, string> = {
   'export.contacts': 'CSV 出力（お問い合わせ）',
   'export.applications': 'CSV 出力（申し込み）',
   'export.clicks': 'CSV 出力（誘導）',
+  'export.daily': 'CSV 出力（日ごとの件数）',
   'export.newsletter': 'CSV 出力（メルマガ）',
   'export.presents': 'CSV 出力（プレゼント）',
   'present.update_status': 'プレゼント結果の設定',

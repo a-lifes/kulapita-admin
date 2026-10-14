@@ -26,18 +26,27 @@ const MAX_DAYS = 366;
 
 export type DateRange = { from: string; to: string; error?: string };
 
-/** 期間: 指定が無い・不正なら「直近 1 か月 (今日まで)」 */
-export function resolveRange(sp: { from?: string; to?: string }): DateRange {
+/**
+ * 期間: 指定が無い・不正なら初期値 (今月 = 当月 1 日〜今日 / 直近 1 か月)
+ */
+export function resolveRange(
+  sp: { from?: string; to?: string },
+  defaultRange: 'thisMonth' | 'lastMonth' = 'lastMonth',
+): DateRange {
   const today = todayJst();
-  const fallback = { from: addDays(addMonths(today, -1), 1), to: today };
+  const fallback =
+    defaultRange === 'thisMonth'
+      ? { from: `${today.slice(0, 8)}01`, to: today }
+      : { from: addDays(addMonths(today, -1), 1), to: today };
+  const name = defaultRange === 'thisMonth' ? '今月' : '直近 1 か月';
   if (!sp.from && !sp.to) return fallback;
   if (!sp.from || !sp.to || !DATE_RE.test(sp.from) || !DATE_RE.test(sp.to)) {
-    return { ...fallback, error: '日付の形式が正しくないため、直近 1 か月を表示しています' };
+    return { ...fallback, error: `日付の形式が正しくないため、${name}を表示しています` };
   }
   const days = (parseYmd(sp.to).getTime() - parseYmd(sp.from).getTime()) / DAY + 1;
-  if (Number.isNaN(days)) return { ...fallback, error: '日付の形式が正しくないため、直近 1 か月を表示しています' };
-  if (days < 1) return { ...fallback, error: '開始日が終了日より後になっているため、直近 1 か月を表示しています' };
-  if (days > MAX_DAYS) return { ...fallback, error: `期間は ${MAX_DAYS} 日以内で指定してください（直近 1 か月を表示しています）` };
+  if (Number.isNaN(days)) return { ...fallback, error: `日付の形式が正しくないため、${name}を表示しています` };
+  if (days < 1) return { ...fallback, error: `開始日が終了日より後になっているため、${name}を表示しています` };
+  if (days > MAX_DAYS) return { ...fallback, error: `期間は ${MAX_DAYS} 日以内で指定してください（${name}を表示しています）` };
   return { from: sp.from, to: sp.to };
 }
 
@@ -51,6 +60,7 @@ export function datesBetween(from: string, to: string): string[] {
 export function rangePresets() {
   const today = todayJst();
   return [
+    { label: '今月', from: `${today.slice(0, 8)}01`, to: today },
     { label: '直近 7 日', from: addDays(today, -6), to: today },
     { label: '直近 1 か月', from: addDays(addMonths(today, -1), 1), to: today },
     { label: '直近 3 か月', from: addDays(addMonths(today, -3), 1), to: today },

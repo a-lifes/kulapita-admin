@@ -112,7 +112,40 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
   );
 }
 
-export function DailyCharts({ dates, series }: { dates: string[]; series: DailySeries[] }) {
+/** 日ごとの件数: 「グラフ」「表」をタブで切り替える (初期表示はグラフ) */
+export function DailyView({ dates, series }: { dates: string[]; series: DailySeries[] }) {
+  const [tab, setTab] = useState<'chart' | 'table'>('chart');
+  const tabs = [
+    { key: 'chart', label: 'グラフ' },
+    { key: 'table', label: '表' },
+  ] as const;
+  return (
+    <div className="mt-5">
+      <div role="tablist" aria-label="表示の切り替え" className="mb-5 flex gap-1 border-b border-slate-200">
+        {tabs.map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.key)}
+              className={`-mb-px cursor-pointer border-b-2 px-4 py-2 font-semibold ${
+                active ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+      {tab === 'chart' ? <DailyCharts dates={dates} series={series} /> : <DailyTable dates={dates} series={series} />}
+    </div>
+  );
+}
+
+function DailyCharts({ dates, series }: { dates: string[]; series: DailySeries[] }) {
   const [width, setWidth] = useState(900);
   return (
     <div
@@ -129,32 +162,40 @@ export function DailyCharts({ dates, series }: { dates: string[]; series: DailyS
       {series.map((s) => (
         <Chart key={s.key} series={s} dates={dates} width={width} />
       ))}
-      {/* グラフの色が見分けにくい場合や、正確な数を見たいとき用の表 */}
-      <details className="text-sm">
-        <summary className="font-semibold text-brand">表で見る</summary>
-        <div className="mt-3 max-h-96 overflow-y-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>日付</th>
-                {series.map((s) => (
-                  <th key={s.key} className="text-right">{s.label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {dates.map((d, i) => (
-                <tr key={d}>
-                  <td>{d.replace(/-/g, '/')}</td>
-                  {series.map((s) => (
-                    <td key={s.key} className="text-right tabular-nums">{s.values[i].toLocaleString()}</td>
-                  ))}
-                </tr>
+    </div>
+  );
+}
+
+function DailyTable({ dates, series }: { dates: string[]; series: DailySeries[] }) {
+  const totals = series.map((s) => s.values.reduce((a, b) => a + b, 0));
+  return (
+    <div className="max-h-[32rem] overflow-y-auto rounded border border-slate-200">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>日付</th>
+            {series.map((s) => (
+              <th key={s.key} className="text-right">{s.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dates.map((d, i) => (
+            <tr key={d}>
+              <td>{d.replace(/-/g, '/')}</td>
+              {series.map((s) => (
+                <td key={s.key} className="text-right tabular-nums">{s.values[i].toLocaleString()}</td>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+            </tr>
+          ))}
+          <tr className="bg-slate-50 font-semibold">
+            <td>期間合計</td>
+            {totals.map((t, i) => (
+              <td key={series[i].key} className="text-right tabular-nums">{t.toLocaleString()}</td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
