@@ -19,7 +19,7 @@ export function PerPageSelect({
       <select
         className="rounded-md border border-slate-300 py-1 pr-8 pl-2.5 [background-position:right_0.5rem_center]"
         value={value}
-        onChange={(e) => router.push(hrefs[Number(e.target.value)])}
+        onChange={(e) => router.push(hrefs[Number(e.target.value)], { scroll: false })}
       >
         {options.map((n) => (
           <option key={n} value={n}>{n} 件</option>

@@ -97,26 +97,31 @@ export default async function DashboardPage({
         ))}
       </div>
 
-      <section className="card mt-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-bold">日ごとの件数</h2>
-          <a className="btn-sub" href={`/api/export/daily?from=${range.from}&to=${range.to}&site=${site}`}>
-            CSV ダウンロード
-          </a>
-        </div>
-        <DateRangeFilter from={range.from} to={range.to} presets={presets} keep={{ site }}>
-          <div>
-            <label className="label" htmlFor="site">PV のサイト</label>
-            <select className="input" id="site" name="site" defaultValue={site}>
-              {Object.entries(SITES).map(([k, v]) => (
-                <option key={k} value={k}>{v.label}</option>
-              ))}
-            </select>
-          </div>
-        </DateRangeFilter>
-        {range.error && <p className="error mt-3">{range.error}</p>}
-        <DailyView days={daily.days} series={daily.series} />
-      </section>
+      <DailyView
+        days={daily.days}
+        series={daily.series}
+        header={
+          <>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="font-bold">日ごとの件数</h2>
+              <a className="btn-sub" href={`/api/export/daily?from=${range.from}&to=${range.to}&site=${site}`}>
+                CSV ダウンロード
+              </a>
+            </div>
+            <DateRangeFilter from={range.from} to={range.to} presets={presets} keep={{ site }}>
+              <div>
+                <label className="label" htmlFor="site">PV のサイト</label>
+                <select className="input" id="site" name="site" defaultValue={site}>
+                  {Object.entries(SITES).map(([k, v]) => (
+                    <option key={k} value={k}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+            </DateRangeFilter>
+            {range.error && <p className="error mt-3">{range.error}</p>}
+          </>
+        }
+      />
     </>
   );
 }

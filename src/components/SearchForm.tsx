@@ -24,7 +24,7 @@ export function SearchForm({ className, children }: { className?: string; childr
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
-  const navigate = (url: string) => startTransition(() => router.push(url));
+  const navigate = (url: string) => startTransition(() => router.push(url, { scroll: false }));
 
   return (
     <SearchContext.Provider value={{ pending, navigate }}>

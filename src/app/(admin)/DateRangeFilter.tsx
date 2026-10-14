@@ -49,6 +49,8 @@ export function DateRangeFilter({
             <Link
               key={p.label}
               href={`${basePath}?${qs}`}
+              // 期間を切り替えても画面の位置は動かさない
+              scroll={false}
               className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                 active ? 'border-brand bg-nav-active text-brand' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
