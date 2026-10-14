@@ -80,6 +80,8 @@ export default async function AllowedIpsPage({
           </tbody>
         </table>
       </div>
+      {/* 件数 (ほかの一覧と同じ表示。全件を 1 ページで出している) */}
+      <p className="mt-4 text-sm">全 {rows.length.toLocaleString()} 件（1 / 1 ページ）</p>
       <ResyncButton />
     </>
   );

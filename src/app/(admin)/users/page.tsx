@@ -124,6 +124,8 @@ export default async function UsersPage({
           </tbody>
         </table>
       </div>
+      {/* 件数 (ほかの一覧と同じ表示。全件を 1 ページで出している) */}
+      <p className="mt-4 text-sm">全 {users.length.toLocaleString()} 件（1 / 1 ページ）</p>
     </>
   );
 }

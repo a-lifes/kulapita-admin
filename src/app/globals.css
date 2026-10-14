@@ -12,17 +12,17 @@
 
   /* 書体: Noto Sans JP (src/app/layout.tsx で読み込み) */
   --font-sans: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
-  /* 通常の文字の大きさは 12pt (= 16px)。見出し (text-lg 以上) はそれより大きくする */
-  --text-sm: 12pt;
+  /* 通常の文字の大きさは 12px。見出し (text-lg 以上) はそれより大きくする */
+  --text-sm: 12px;
   --text-sm--line-height: 1.6;
-  --text-base: 12pt;
+  --text-base: 12px;
   --text-base--line-height: 1.6;
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
   font-family: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
-  font-size: 12pt;
+  font-size: 12px;
 }
 
 /*

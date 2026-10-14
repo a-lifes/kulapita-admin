@@ -104,29 +104,7 @@ export default async function AuditLogsPage({
       <form className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="date">日付</label>
-          <div className="flex items-center gap-1">
-            <Link
-              className="btn-sub px-2.5"
-              href={`/audit-logs?${new URLSearchParams({ ...(q ? { q } : {}), ...(action ? { action } : {}), date: shiftDay(date, -1) })}`}
-              aria-label="前の日"
-              title="前の日"
-            >
-              ‹
-            </Link>
-            <input className="input w-44" type="date" id="date" name="date" defaultValue={date} max={today} required />
-            {date < today ? (
-              <Link
-                className="btn-sub px-2.5"
-                href={`/audit-logs?${new URLSearchParams({ ...(q ? { q } : {}), ...(action ? { action } : {}), date: shiftDay(date, 1) })}`}
-                aria-label="次の日"
-                title="次の日"
-              >
-                ›
-              </Link>
-            ) : (
-              <span className="btn-sub px-2.5 opacity-40" aria-hidden="true">›</span>
-            )}
-          </div>
+          <input className="input w-44" type="date" id="date" name="date" defaultValue={date} max={today} required />
         </div>
         <div className="min-w-48 flex-1">
           <label className="label" htmlFor="q">操作アカウント</label>
