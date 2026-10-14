@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
+import { CountUp } from '@/components/CountUp';
 import { DailyView } from './DailyCharts';
 import { dailyCounts } from '@/lib/dailyCounts';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -24,6 +25,10 @@ export default async function DashboardPage({
 
   // 「今月」のカードは表示している期間に関係なく、当月 1 日 (日本時間) からの件数
   const monthStart = jstStartAsUtc(monthStartJst());
+  // 「今日」のカードは日本時間の今日 0:00 から
+  const today = todayJst();
+  const hostParams = Object.fromEntries(SITES[site].hosts.map((h, i) => [`host${i}`, h]));
+  const hostList = SITES[site].hosts.map((_, i) => `:host${i}`).join(', ');
 
   const [
     { rows: c },
@@ -32,7 +37,8 @@ export default async function DashboardPage({
     { rows: n },
     { rows: p },
     daily,
-    monthPv,
+    todayPv,
+    todayLogins,
   ] = await Promise.all([
     query<{ pending: number; in_progress: number }>(
       `SELECT SUM(status = 'pending') AS pending, SUM(status = 'in_progress') AS in_progress
@@ -53,18 +59,25 @@ export default async function DashboardPage({
        GROUP BY campaign_key ORDER BY campaign_key DESC LIMIT 1`,
     ),
     dailyCounts(range.from, range.to, site),
-    // 今月のトップページ PV (GA4。取得できなければ null)
-    topPageViews(site, monthStartJst(), todayJst())
-      .then((m) => [...m.values()].reduce((sum, v) => sum + v, 0))
+    // 今日のトップページ PV (GA4。取得できなければ null)
+    topPageViews(site, today, today)
+      .then((m) => m.get(today) ?? 0)
       .catch(() => null),
+    // 今日サイトにログインした回数 (選んでいるサイトのホスト名で数える。テーブルが無いなどで失敗したら null)
+    query<{ total: number }>(
+      `SELECT COUNT(*) AS total FROM member_logins WHERE created_at >= :start AND site_host IN (${hostList})`,
+      { start: jstStartAsUtc(today), ...hostParams },
+    )
+      .then(({ rows }) => Number(rows[0]?.total ?? 0))
+      .catch((e) => {
+        console.error('[dashboard] ログイン数を取得できませんでした', e instanceof Error ? e.message : e);
+        return null;
+      }),
   ]);
 
-  const cards: { title: string; value: number | null; href: string }[] = [
-    {
-      title: `トップページ PV（今月・${site === 'prod' ? '本番' : site === 'dev' ? '開発' : 'ローカル'}）`,
-      value: monthPv,
-      href: `/?site=${site}`,
-    },
+  const cards: { title: string; value: number | null; href?: string }[] = [
+    { title: 'トップページ（今日）', value: todayPv },
+    { title: 'ログイン数（今日）', value: todayLogins },
     { title: '未対応のお問い合わせ', value: Number(c[0]?.pending ?? 0), href: '/contacts?status=pending' },
     { title: '対応中のお問い合わせ', value: Number(c[0]?.in_progress ?? 0), href: '/contacts?status=in_progress' },
     { title: '未対応の申し込み', value: Number(a[0]?.pending ?? 0), href: '/applications?status=pending' },
@@ -89,12 +102,25 @@ export default async function DashboardPage({
       <h1 className="page-title">ダッシュボード</h1>
       {sp.denied && <p className="error mb-4">この画面を見る権限がありません。</p>}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <Link key={card.title} href={card.href} className="card hover:border-brand">
-            <p className="text-sm text-slate-600">{card.title}</p>
-            <p className="mt-2 text-3xl font-bold">{card.value === null ? '—' : card.value.toLocaleString()}</p>
-          </Link>
-        ))}
+        {cards.map((card) => {
+          const body = (
+            <>
+              <p className="text-sm text-slate-600">{card.title}</p>
+              <p className="mt-2 text-3xl font-bold tabular-nums">
+                {card.value === null ? '—' : <CountUp value={card.value} />}
+              </p>
+            </>
+          );
+          return card.href ? (
+            <Link key={card.title} href={card.href} className="card hover:border-brand">
+              {body}
+            </Link>
+          ) : (
+            <div key={card.title} className="card">
+              {body}
+            </div>
+          );
+        })}
       </div>
 
       <DailyView
