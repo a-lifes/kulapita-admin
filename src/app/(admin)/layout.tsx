@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NAV_COOKIE, NavGroup, NavItem, SideNav } from '@/components/SideNav';
+import { Toaster } from '@/components/Toaster';
 import { hasRole, Role } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { label, ROLE_LABEL } from '@/lib/format';
@@ -47,6 +48,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         user={{ name: admin.display_name, email: admin.email, role: label(ROLE_LABEL, admin.role) }}
       />
       <main className="min-w-0 flex-1 px-8 py-6">{children}</main>
+      <Toaster />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
 import { hasRole } from '@/lib/adminUsers';
@@ -9,6 +10,8 @@ import { getCampaignItems } from '@/lib/microcms';
 import { normalizePresentFilter, presentWhere } from '@/lib/queries/lists';
 import { PresentFilters } from './PresentFilters';
 import { PresentStatusSelect } from './PresentStatusSelect';
+
+export const metadata: Metadata = { title: 'プレゼント' };
 
 type Row = Record<string, unknown> & {
   id: string;

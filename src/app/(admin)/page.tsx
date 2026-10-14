@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { DailyCharts, DailySeries } from './DailyCharts';
 import { DateRangeFilter } from './DateRangeFilter';
+
+export const metadata: Metadata = { title: 'ダッシュボード' };
 
 /* ── 日付 (日本時間の YYYY-MM-DD) ── */
 const DAY = 86_400_000;

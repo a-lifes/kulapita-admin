@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -6,6 +7,8 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { CONTACT_ROUTE_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { CONTACT_ROUTES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
+
+export const metadata: Metadata = { title: 'お問い合わせ' };
 
 type Row = {
   id: string;

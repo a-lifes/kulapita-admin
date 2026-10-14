@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { toast } from '@/components/Toaster';
 import { PRESENT_STATUS_LABEL } from '@/lib/format';
 import { setPresentStatusAction } from './actions';
 
@@ -14,7 +15,6 @@ const STYLES: Record<string, string> = {
 /** 一覧の行で 応募 / 当選 / 落選 を切り替える (選んだ時点で保存) */
 export function PresentStatusSelect({ id, status, readOnly }: { id: string; status: string; readOnly: boolean }) {
   const [value, setValue] = useState(status);
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -29,12 +29,11 @@ export function PresentStatusSelect({ id, status, readOnly }: { id: string; stat
           const next = e.target.value;
           const prev = value;
           setValue(next);
-          setError(null);
           startTransition(async () => {
             const res = await setPresentStatusAction(id, next);
             if (!res.ok) {
               setValue(prev);
-              setError(res.error);
+              toast.error(res.error);
               return;
             }
             router.refresh();
@@ -45,7 +44,6 @@ export function PresentStatusSelect({ id, status, readOnly }: { id: string; stat
           <option key={k} value={k}>{v}</option>
         ))}
       </select>
-      {error && <p className="mt-1 max-w-56 text-xs text-red-700">{error}</p>}
     </div>
   );
 }

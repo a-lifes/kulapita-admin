@@ -4,10 +4,9 @@ import './globals.css';
 // 環境名 (STAGE) を実行時に読むため、ビルド時に固定しない
 export const dynamic = 'force-dynamic';
 
-const stage = process.env.STAGE ?? 'local';
-
 export const metadata: Metadata = {
-  title: stage === 'prod' ? 'kulapita 管理画面' : `[${stage}] kulapita 管理画面`,
+  // 各画面で title を指定すると「kulapita - 画面名」になる
+  title: { template: 'kulapita - %s', default: 'kulapita' },
   robots: { index: false, follow: false },
 };
 

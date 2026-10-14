@@ -54,6 +54,10 @@ export function parseCidr(input: string): { ok: true; value: ParsedCidr } | { ok
   return { ok: true, value: { network, prefix, cidr: `${intToIpv4(network)}/${prefix}` } };
 }
 
+export function isIpv4(ip: string): boolean {
+  return ipv4ToInt(ip) !== null;
+}
+
 export function cidrContains(cidr: string, ip: string): boolean {
   const parsed = parseCidr(cidr);
   const target = ipv4ToInt(ip);

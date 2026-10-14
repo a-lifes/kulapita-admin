@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -7,6 +8,8 @@ import { query, queryOne } from '@/lib/db';
 import { CONTACT_ROUTE_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { UUID_RE } from '@/lib/uuid';
 import { ContactForm } from './ContactForm';
+
+export const metadata: Metadata = { title: 'お問い合わせ詳細' };
 
 type Contact = Record<string, string | null>;
 

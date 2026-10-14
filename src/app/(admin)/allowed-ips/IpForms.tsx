@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { icons } from '@/components/icons';
-import { addIpAction, deleteIpAction, IpActionState, resyncWafAction } from './actions';
+import { toast } from '@/components/Toaster';
+import { addIpAction, deleteIpAction, IpActionState, resyncWafAction, updateIpAction } from './actions';
 
 function Result({ state }: { state: IpActionState }) {
   if (!state) return null;
@@ -16,7 +17,7 @@ function Result({ state }: { state: IpActionState }) {
   );
 }
 
-export function AddIpForm({ currentIp }: { currentIp: string | null }) {
+export function AddIpForm() {
   const [state, action, pending] = useActionState(addIpAction, undefined);
   return (
     <form action={action} className="space-y-3">
@@ -32,19 +33,92 @@ export function AddIpForm({ currentIp }: { currentIp: string | null }) {
         </div>
         <button className="btn" disabled={pending}>{pending ? '追加中…' : '追加'}</button>
       </div>
-      <p className="text-xs text-slate-500">
-        1 台だけなら末尾を /32 にします（「/」を省くと /32 として登録します）。今お使いの IP: {currentIp ?? '不明'}
-      </p>
     </form>
   );
 }
 
+/** 編集 (鉛筆アイコン → 画面中央のダイアログで IP アドレスとメモを変更) */
+export function EditIpButton({ id, cidr, label }: { id: string; cidr: string; label: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="rounded-md p-2 text-slate-500 hover:bg-nav-active hover:text-brand"
+        aria-label={`${cidr} を編集`}
+        title="編集"
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
+      >
+        <icons.pencil className="h-5 w-5" />
+      </button>
+      <dialog
+        ref={ref}
+        onClose={() => setOpen(false)}
+        onClick={(e) => {
+          if (e.target === ref.current) setOpen(false);
+        }}
+        className="m-auto w-[min(520px,92vw)] rounded-xl p-0 text-left font-normal shadow-2xl backdrop:bg-slate-900/50"
+      >
+        {open && (
+          <form
+            className="p-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              startTransition(async () => {
+                const res = await updateIpAction(id, String(fd.get('cidr') ?? ''), String(fd.get('label') ?? ''));
+                if (res?.error) {
+                  setError(res.error);
+                  return;
+                }
+                setOpen(false);
+                if (res?.message) toast.success(res.message);
+                if (res?.warning) toast.warning(res.warning);
+              });
+            }}
+          >
+            <h2 className="mb-4 text-base font-bold text-slate-900">許可 IP の編集</h2>
+            {error && <p className="error mb-4">{error}</p>}
+            <div className="space-y-4">
+              <div>
+                <label className="label" htmlFor={`cidr-${id}`}>IP アドレス（CIDR）</label>
+                <input className="input font-mono" id={`cidr-${id}`} name="cidr" defaultValue={cidr} required autoFocus />
+              </div>
+              <div>
+                <label className="label" htmlFor={`label-${id}`}>メモ（IPアドレスの説明、補足情報など）</label>
+                <input className="input" id={`label-${id}`} name="label" defaultValue={label ?? ''} maxLength={100} />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className="btn-sub" onClick={() => setOpen(false)}>キャンセル</button>
+              <button className="btn" disabled={pending}>{pending ? '保存中…' : '保存'}</button>
+            </div>
+          </form>
+        )}
+      </dialog>
+    </>
+  );
+}
+
 export function DeleteIpButton({ id, cidr, label }: { id: string; cidr: string; label: string | null }) {
-  const [state, setState] = useState<IpActionState>(undefined);
   const [busy, setBusy] = useState(false);
   const [confirm, dialog] = useConfirm();
   return (
-    <div className="space-y-2">
+    <>
       {dialog}
       <button
         type="button"
@@ -70,7 +144,11 @@ export function DeleteIpButton({ id, cidr, label }: { id: string; cidr: string; 
           if (!ok) return;
           setBusy(true);
           try {
-            setState(await deleteIpAction(id));
+            // 一覧の行には結果を出さず、画面下のスナックバーで知らせる
+            const res = await deleteIpAction(id);
+            if (res?.error) toast.error(res.error);
+            if (res?.message) toast.success(res.message);
+            if (res?.warning) toast.warning(res.warning);
           } finally {
             setBusy(false);
           }
@@ -78,8 +156,7 @@ export function DeleteIpButton({ id, cidr, label }: { id: string; cidr: string; 
       >
         <icons.trash className="h-5 w-5" />
       </button>
-      <Result state={state} />
-    </div>
+    </>
   );
 }
 

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -6,6 +7,8 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { formatJst, label, NEWSLETTER_STATUS_LABEL } from '@/lib/format';
 import { NEWSLETTER_STATUSES, newsletterWhere, normalizeNewsletterFilter } from '@/lib/queries/lists';
+
+export const metadata: Metadata = { title: 'メルマガ' };
 
 type Row = {
   id: string;

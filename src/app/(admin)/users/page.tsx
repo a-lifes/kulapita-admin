@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { listAdmins } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { formatJst, label, ROLE_LABEL } from '@/lib/format';
 import { CreateAdminForm, EditAdminForm } from './UserForms';
+
+export const metadata: Metadata = { title: '管理者アカウント' };
 
 export default async function UsersPage() {
   const me = await requireAdmin('super_admin');

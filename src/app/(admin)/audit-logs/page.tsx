@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { formatJst } from '@/lib/format';
+
+export const metadata: Metadata = { title: '操作ログ' };
 
 const ACTION_LABEL: Record<string, string> = {
   'auth.login': 'ログイン',
@@ -20,6 +23,7 @@ const ACTION_LABEL: Record<string, string> = {
   'admin_user.reset_password': '仮パスワード再発行',
   'admin_user.reset_mfa': '2 段階認証リセット',
   'allowed_ip.create': '許可 IP の追加',
+  'allowed_ip.update': '許可 IP の変更',
   'allowed_ip.delete': '許可 IP の削除',
   'allowed_ip.sync': '許可 IP の WAF 再反映',
 };

@@ -30,6 +30,17 @@ if (!db.ClusterArn || !db.AdminAppSecretArn) {
   process.exit(1);
 }
 
+// 許可 IP の WAF (ローカルで許可 IP を変更したときも dev の WAF に反映し、DB と食い違わないようにする)
+const ipSetName = 'kulapita-dev-admin-allowed-ips';
+const ipSets = JSON.parse(
+  execFileSync(
+    'aws',
+    ['wafv2', 'list-ip-sets', '--scope', 'REGIONAL', '--profile', PROFILE, '--region', REGION, '--output', 'json'],
+    { encoding: 'utf8' },
+  ),
+).IPSets ?? [];
+const ipSetId = ipSets.find((s) => s.Name === ipSetName)?.Id ?? '';
+
 // 既に .env.local があれば AUTH_SECRET は引き継ぐ (変えるとローカルのログインが切れるだけなので、無ければ作る)
 const previous = existsSync('.env.local') ? readFileSync('.env.local', 'utf8') : '';
 const authSecret = previous.match(/^AUTH_SECRET=(.+)$/m)?.[1] ?? randomBytes(32).toString('hex');
@@ -47,9 +58,9 @@ writeFileSync(
     `AUTH_SECRET=${authSecret}`,
     '# ローカルでは IP チェックをしない (本番ビルドでは無視される)',
     'ADMIN_SKIP_IP_CHECK=1',
-    '# WAF の IP セットは空 (ローカルから WAF は変更しない)',
-    'WAF_IPSET_NAME=',
-    'WAF_IPSET_ID=',
+    '# 許可 IP を変更したときに反映する dev の WAF',
+    `WAF_IPSET_NAME=${ipSetId ? ipSetName : ''}`,
+    `WAF_IPSET_ID=${ipSetId}`,
     '',
   ].join('\n'),
 );
