@@ -144,7 +144,7 @@ export default async function PresentsPage({
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={7} className="py-8 text-center text-slate-500">該当する応募はありません</td></tr>
+              <tr><td colSpan={7} className="py-8 text-center text-slate-500">{filter.campaign || filter.item || filter.status ? '検索内容に一致するデータはありません。' : 'プレゼントの応募はまだありません。'}</td></tr>
             )}
           </tbody>
         </table>

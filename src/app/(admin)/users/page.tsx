@@ -123,7 +123,7 @@ export default async function UsersPage({
               </tr>
             ))}
             {users.length === 0 && (
-              <tr><td colSpan={7} className="py-8 text-center text-slate-500">該当するアカウントはありません</td></tr>
+              <tr><td colSpan={7} className="py-8 text-center text-slate-500">{q || role || status ? '検索内容に一致するデータはありません。' : 'アカウントは登録されていません。'}</td></tr>
             )}
           </tbody>
         </table>

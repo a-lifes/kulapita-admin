@@ -82,7 +82,7 @@ export default async function AllowedIpsPage({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={5} className="py-8 text-center text-slate-500">該当する許可 IP はありません</td></tr>
+              <tr><td colSpan={5} className="py-8 text-center text-slate-500">{q ? '検索内容に一致するデータはありません。' : '許可 IP は登録されていません。'}</td></tr>
             )}
           </tbody>
         </table>

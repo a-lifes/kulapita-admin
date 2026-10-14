@@ -176,7 +176,7 @@ export default async function AuditLogsPage({
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={6} className="py-8 text-center text-slate-500">この日の操作ログはありません</td></tr>
+              <tr><td colSpan={6} className="py-8 text-center text-slate-500">{q || action ? '検索内容に一致するデータはありません。' : 'この日の操作ログはありません。'}</td></tr>
             )}
           </tbody>
         </table>

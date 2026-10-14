@@ -96,7 +96,7 @@ export default async function NewsletterPage({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={6} className="py-8 text-center text-slate-500">該当する登録者はいません</td></tr>
+              <tr><td colSpan={6} className="py-8 text-center text-slate-500">{filter.status || filter.q ? '検索内容に一致するデータはありません。' : 'メルマガの登録者はまだいません。'}</td></tr>
             )}
           </tbody>
         </table>

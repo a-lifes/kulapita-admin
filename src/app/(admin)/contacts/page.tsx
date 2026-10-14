@@ -123,7 +123,7 @@ export default async function ContactsPage({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-slate-500">該当するお問い合わせはありません</td>
+                <td colSpan={8} className="py-8 text-center text-slate-500">{filter.status || filter.route || filter.q ? '検索内容に一致するデータはありません。' : 'お問い合わせはまだありません。'}</td>
               </tr>
             )}
           </tbody>
