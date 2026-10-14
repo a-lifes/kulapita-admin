@@ -84,14 +84,15 @@ function Spinner({ className }: { className?: string }) {
   );
 }
 
-/** 検索中は画面を薄く覆い、中央にくるくる回るマークを出す (二重に押せないようにもなる) */
+/**
+ * 検索中は画面の中央に、くるくる回るマークだけを大きめに出す。
+ * 背景は付けないが、透明な層で画面を覆い、検索中に二重に押せないようにする。
+ */
 function LoadingOverlay() {
   return (
-    <div className="fixed inset-0 z-40 flex cursor-wait items-center justify-center bg-white/50" role="status" aria-live="polite">
-      <div className="flex items-center gap-3 rounded-lg bg-white px-5 py-3 text-brand shadow-lg ring-1 ring-slate-200">
-        <Spinner className="h-6 w-6" />
-        <span className="font-semibold text-slate-700">検索しています…</span>
-      </div>
+    <div className="fixed inset-0 z-40 flex cursor-wait items-center justify-center" role="status" aria-live="polite">
+      <Spinner className="h-14 w-14 text-brand drop-shadow" />
+      <span className="sr-only">検索しています</span>
     </div>
   );
 }
