@@ -8,7 +8,20 @@ import { icons } from '@/components/icons';
  * 件数の規模が違うので 1 つの軸にまとめず、同じ日付の横軸でそろえた別々のグラフにする。
  * 棒にマウスを乗せると、その日の件数を出す。
  */
-export type DailySeries = { key: string; label: string; shortLabel: string; color: string; values: number[] };
+export type DailySeries = {
+  key: string;
+  label: string;
+  shortLabel: string;
+  color: string;
+  values: number[];
+  /** 取得できなかったときの理由 (GA4 の PV など) */
+  error?: string;
+};
+
+/** 日付の表示用情報 (サーバーの lib/calendar.ts で作る) */
+export type Day = { date: string; label: string; kind: 'weekday' | 'sat' | 'holiday'; holidayName?: string };
+
+const unitOf = (s: DailySeries) => (s.key === 'pv' ? '回' : '件');
 
 const HEIGHT = 140;
 const PAD = { top: 12, right: 12, bottom: 24, left: 36 };
@@ -28,7 +41,8 @@ function barPath(x: number, y: number, w: number, h: number, r: number): string 
   return `M${x},${y + h} V${y + rr} Q${x},${y} ${x + rr},${y} H${x + w - rr} Q${x + w},${y} ${x + w},${y + rr} V${y + h} Z`;
 }
 
-function Chart({ series, dates, width }: { series: DailySeries; dates: string[]; width: number }) {
+function Chart({ series, days, width }: { series: DailySeries; days: Day[]; width: number }) {
+  const dates = days.map((d) => d.date);
   const [hover, setHover] = useState<number | null>(null);
   const n = dates.length;
   const innerW = width - PAD.left - PAD.right;
@@ -41,6 +55,21 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
   const labelEvery = Math.max(1, Math.ceil(n / 10));
   const total = series.values.reduce((a, b) => a + b, 0);
   const y = (v: number) => PAD.top + innerH - (v / max) * innerH;
+  const unit = unitOf(series);
+
+  if (series.error) {
+    return (
+      <div>
+        <div className="mb-1 flex items-baseline gap-3">
+          <span className="h-2.5 w-2.5 self-center rounded-sm" style={{ background: series.color }} aria-hidden="true" />
+          <h3 className="text-sm font-bold text-slate-800">{series.label}</h3>
+        </div>
+        <p className="rounded border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-slate-500">
+          取得できませんでした：{series.error}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -48,14 +77,14 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
         <span className="h-2.5 w-2.5 self-center rounded-sm" style={{ background: series.color }} aria-hidden="true" />
         <h3 className="text-sm font-bold text-slate-800">{series.label}</h3>
         <span className="text-sm text-slate-600">
-          期間合計 <strong className="text-slate-900">{total.toLocaleString()}</strong> 件
+          期間合計 <strong className="text-slate-900">{total.toLocaleString()}</strong> {unit}
         </span>
       </div>
       <svg
         width={width}
         height={HEIGHT}
         role="img"
-        aria-label={`${series.label}の日ごとの件数（期間合計 ${total} 件）`}
+        aria-label={`${series.label}の日ごとの件数（期間合計 ${total} ${unit}）`}
         onMouseLeave={() => setHover(null)}
       >
         {ticks.map((t) => (
@@ -103,9 +132,12 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
             top: 4,
           }}
         >
-          <p className="font-semibold text-slate-600">{dates[hover].replace(/-/g, '/')}</p>
+          <p className="font-semibold text-slate-600">
+            {days[hover].label}
+            {days[hover].holidayName && ` ${days[hover].holidayName}`}
+          </p>
           <p className="mt-0.5 text-slate-900">
-            {series.label}：<strong>{series.values[hover].toLocaleString()}</strong> 件
+            {series.label}：<strong>{series.values[hover].toLocaleString()}</strong> {unit}
           </p>
         </div>
       )}
@@ -114,7 +146,7 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
 }
 
 /** 日ごとの件数: 「グラフ」「表」をタブで切り替える (初期表示はグラフ) */
-export function DailyView({ dates, series }: { dates: string[]; series: DailySeries[] }) {
+export function DailyView({ days, series }: { days: Day[]; series: DailySeries[] }) {
   const [tab, setTab] = useState<'chart' | 'table'>('chart');
   const tabs = [
     { key: 'chart', label: 'グラフで見る', Icon: icons.barChart },
@@ -146,12 +178,12 @@ export function DailyView({ dates, series }: { dates: string[]; series: DailySer
           })}
         </div>
       </div>
-      {tab === 'chart' ? <DailyCharts dates={dates} series={series} /> : <DailyTable dates={dates} series={series} />}
+      {tab === 'chart' ? <DailyCharts days={days} series={series} /> : <DailyTable days={days} series={series} />}
     </div>
   );
 }
 
-function DailyCharts({ dates, series }: { dates: string[]; series: DailySeries[] }) {
+function DailyCharts({ days, series }: { days: Day[]; series: DailySeries[] }) {
   const [width, setWidth] = useState(900);
   return (
     <div
@@ -166,29 +198,39 @@ function DailyCharts({ dates, series }: { dates: string[]; series: DailySeries[]
       className="space-y-6"
     >
       {series.map((s) => (
-        <Chart key={s.key} series={s} dates={dates} width={width} />
+        <Chart key={s.key} series={s} days={days} width={width} />
       ))}
     </div>
   );
 }
 
-function DailyTable({ dates, series }: { dates: string[]; series: DailySeries[] }) {
+/** 土曜日は薄い青、日曜日・祝日は薄い赤 */
+const ROW_BG: Record<Day['kind'], string> = { weekday: '', sat: 'bg-sky-50', holiday: 'bg-rose-50' };
+
+function DailyTable({ days, series }: { days: Day[]; series: DailySeries[] }) {
   const totals = series.map((s) => s.values.reduce((a, b) => a + b, 0));
+  const errors = series.filter((s) => s.error);
   return (
+    <>
+    {errors.map((s) => (
+      <p key={s.key} className="mb-2 text-slate-500">
+        {s.label}は取得できませんでした：{s.error}
+      </p>
+    ))}
     <div className="max-h-[32rem] overflow-y-auto rounded border border-slate-200">
       {/* 日付の列だけ固定幅にし、件数の列はすべて同じ幅にする。列の区切りに縦線を入れる */}
       <table className="table daily-table table-fixed">
         <colgroup>
-          <col className="w-32" />
+          <col className="w-44" />
           {series.map((s) => (
             <col key={s.key} />
           ))}
         </colgroup>
         <thead>
           <tr>
-            <th>日付</th>
+            <th className="text-center">日付</th>
             {series.map((s) => (
-              <th key={s.key} className="text-right" title={s.label}>
+              <th key={s.key} className="text-center" title={s.label}>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} aria-hidden="true" />
                   {s.shortLabel}
@@ -198,22 +240,27 @@ function DailyTable({ dates, series }: { dates: string[]; series: DailySeries[] 
           </tr>
         </thead>
         <tbody>
-          {dates.map((d, i) => (
-            <tr key={d}>
-              <td>{d.replace(/-/g, '/')}</td>
+          {days.map((d, i) => (
+            <tr key={d.date} className={ROW_BG[d.kind]} title={d.holidayName}>
+              <td className="text-center tabular-nums">{d.label}</td>
               {series.map((s) => (
-                <td key={s.key} className="text-right tabular-nums">{s.values[i].toLocaleString()}</td>
+                <td key={s.key} className="text-right tabular-nums">
+                  {s.error ? '—' : s.values[i].toLocaleString()}
+                </td>
               ))}
             </tr>
           ))}
           <tr className="bg-slate-50 font-semibold">
-            <td>期間合計</td>
+            <td className="text-center">期間合計</td>
             {totals.map((t, i) => (
-              <td key={series[i].key} className="text-right tabular-nums">{t.toLocaleString()}</td>
+              <td key={series[i].key} className="text-right tabular-nums">
+                {series[i].error ? '—' : t.toLocaleString()}
+              </td>
             ))}
           </tr>
         </tbody>
       </table>
     </div>
+    </>
   );
 }

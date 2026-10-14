@@ -1,6 +1,8 @@
 import 'server-only';
+import { dayInfo } from './calendar';
 import { addDays, datesBetween, jstStartAsUtc } from './dateRange';
 import { query } from './db';
+import { Ga4NotConfiguredError, SiteKey, topPageViews } from './ga4';
 
 /** 日ごとの件数 (ダッシュボードのグラフ・表・CSV で共通) */
 export type DailySeriesDef = {
@@ -36,17 +38,38 @@ async function countByDay(def: DailySeriesDef, from: string, to: string, dates: 
   return dates.map((d) => map.get(d) ?? 0);
 }
 
-export async function dailyCounts(from: string, to: string) {
+/** トップページの PV (GA4) の系列 */
+export const PV_SERIES = { key: 'pv', label: 'トップページ PV', shortLabel: 'トップページ PV', color: '#7c5cd6' };
+
+async function pageViews(site: SiteKey, from: string, to: string, dates: string[]) {
+  try {
+    const map = await topPageViews(site, from, to);
+    return { values: dates.map((d) => map.get(d) ?? 0) };
+  } catch (e) {
+    if (!(e instanceof Ga4NotConfiguredError)) console.error('[ga4]', e instanceof Error ? e.message : e);
+    return { values: dates.map(() => 0), error: e instanceof Error ? e.message : 'GA4 から取得できませんでした' };
+  }
+}
+
+export async function dailyCounts(from: string, to: string, site: SiteKey) {
   const dates = datesBetween(from, to);
-  const values = await Promise.all(DAILY_SERIES.map((def) => countByDay(def, from, to, dates)));
+  const [pv, ...values] = await Promise.all([
+    pageViews(site, from, to, dates),
+    ...DAILY_SERIES.map((def) => countByDay(def, from, to, dates)),
+  ]);
   return {
     dates,
-    series: DAILY_SERIES.map((def, i) => ({
-      key: def.key,
-      label: def.label,
-      shortLabel: def.shortLabel,
-      color: def.color,
-      values: values[i],
-    })),
+    days: dates.map(dayInfo),
+    series: [
+      { ...PV_SERIES, values: pv.values, error: pv.error as string | undefined },
+      ...DAILY_SERIES.map((def, i) => ({
+        key: def.key,
+        label: def.label,
+        shortLabel: def.shortLabel,
+        color: def.color,
+        values: values[i],
+        error: undefined as string | undefined,
+      })),
+    ],
   };
 }

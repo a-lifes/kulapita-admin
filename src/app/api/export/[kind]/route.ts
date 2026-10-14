@@ -21,6 +21,7 @@ import {
 } from '@/lib/queries/conversions';
 import { resolveRange } from '@/lib/dateRange';
 import { dailyCounts } from '@/lib/dailyCounts';
+import { resolveSite, SITES } from '@/lib/ga4';
 import {
   newsletterWhere,
   normalizeNewsletterFilter,
@@ -48,17 +49,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
   if (kind === 'daily') {
     const viewer = await requireAdmin();
     const range = resolveRange(sp, 'thisMonth');
-    const { dates, series } = await dailyCounts(range.from, range.to);
-    await writeAudit({ admin: viewer, action: 'export.daily', diff: { from: range.from, to: range.to } });
+    const site = resolveSite(sp.site);
+    const { days, series } = await dailyCounts(range.from, range.to, site);
+    await writeAudit({ admin: viewer, action: 'export.daily', diff: { from: range.from, to: range.to, site } });
     const ymd = (s: string) => s.replaceAll('-', '');
     const totals = series.map((s) => s.values.reduce((a, b) => a + b, 0));
     return csvResponse(
       `日ごとの件数_${ymd(range.from)}-${ymd(range.to)}_${stamp()}.csv`,
       toCsv(
-        ['日付', ...series.map((s) => s.shortLabel)],
+        ['日付', '曜日', '祝日', ...series.map((s) => (s.key === 'pv' ? `${s.shortLabel}（${SITES[site].label}）` : s.shortLabel))],
         [
-          ...dates.map((d, i) => [d.replaceAll('-', '/'), ...series.map((s) => s.values[i])]),
-          ['期間合計', ...totals],
+          ...days.map((d, i) => [
+            d.date.replaceAll('-', '/'),
+            d.label.slice(-2, -1),
+            d.holidayName ?? '',
+            ...series.map((s) => (s.error ? '' : s.values[i])),
+          ]),
+          ['期間合計', '', '', ...totals.map((t, i) => (series[i].error ? '' : t))],
         ],
       ),
     );
