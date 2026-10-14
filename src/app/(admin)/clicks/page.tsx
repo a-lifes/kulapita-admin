@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { SortableTh } from '@/components/SortableTh';
@@ -75,8 +74,8 @@ export default async function ClicksPage({
     ),
     getExternalServices(),
   ]);
-  // サービスごとの誘導数: microCMS で「CTA の種類」が externalSite のサービスをすべて出す (0 件も)。
-  // microCMS に無くなったサービスのクリックが残っていれば、それも出す。
+  // サービスの選択肢: microCMS で「CTA の種類」が externalSite のサービスすべてと、
+  // microCMS に無くなったサービスでクリックが残っているもの。
   const summary: SummaryRow[] = [
     ...(cms.services ?? []).map((svc) => {
       const c = counted.find((r) => r.service_slug === svc.slug);
@@ -90,12 +89,6 @@ export default async function ClicksPage({
   const exportQuery = new URLSearchParams(
     Object.entries({ from: range.from, to: range.to, ...filter }).filter(([, v]) => v) as [string, string][],
   ).toString();
-  const serviceHref = (slug?: string) =>
-    `/clicks?${new URLSearchParams(
-      Object.entries({ from: range.from, to: range.to, placement: filter.placement, service: slug }).filter(
-        ([, v]) => v,
-      ) as [string, string][],
-    )}`;
 
   return (
     <div className="list-page">
@@ -139,33 +132,6 @@ export default async function ClicksPage({
         {range.error && <p className="error mt-3">{range.error}</p>}
       </div>
 
-      {summary.length > 0 && (
-        <div className="card mb-4">
-          <h2 className="mb-3 text-sm font-bold">サービスごとの誘導数</h2>
-          {cms.error && <p className="mb-2 text-xs text-red-700">{cms.error}</p>}
-          <ul className="flex flex-wrap gap-2">
-            {summary.map((s) => {
-              const active = s.service_slug === filter.service;
-              return (
-                <li key={s.service_slug}>
-                  <Link
-                    href={active ? serviceHref() : serviceHref(s.service_slug)}
-                    scroll={false}
-                    aria-pressed={active}
-                    title={active ? '絞り込みを解除する' : 'このサービスで絞り込む'}
-                    className={`block rounded border px-3 py-1.5 ${
-                      active ? 'border-brand bg-nav-active text-brand' : 'border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    {s.service_name}
-                    <span className="ml-2 font-bold">{Number(s.total).toLocaleString()}</span> 件
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
 
       <div className="card table-scroll">
         <table className="table">

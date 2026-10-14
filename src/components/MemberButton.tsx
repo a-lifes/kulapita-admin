@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { memberAddress, type Member } from '@/lib/members';
+import { type Member } from '@/lib/members';
 
 /**
  * 会員番号 (または label に渡した名前など) を押すと、会員情報をモーダルで表示する。
@@ -57,7 +57,7 @@ export function MemberButton({
           // 枠の外 (背景) を押したら閉じる
           if (e.target === ref.current) setOpen(false);
         }}
-        className="m-auto w-[min(560px,92vw)] rounded-lg p-0 backdrop:bg-black/40"
+        className="m-auto w-[min(560px,92vw)] rounded-lg p-0 text-left font-normal whitespace-normal break-words backdrop:bg-black/40"
       >
         <div className="p-6">
           <h2 className="mb-4 text-lg font-bold">会員情報</h2>
@@ -65,22 +65,13 @@ export function MemberButton({
             {rows.map(([k, v]) => (
               <div key={k} className="contents">
                 <dt className="font-semibold text-slate-600">{k}</dt>
-                <dd className="break-all select-all">{v || '—'}</dd>
+                <dd className="min-w-0 break-all whitespace-normal select-all">{v || '—'}</dd>
               </div>
             ))}
           </dl>
-          {memberAddress(member) && (
-            <p className="mt-4 rounded bg-slate-50 p-3 text-sm">
-              <span className="mb-1 block text-xs font-semibold text-slate-500">発送先（コピー用）</span>
-              <span className="select-all">
-                {memberAddress(member)}
-                {member.display_name ? ` ${member.display_name} 様` : ''}
-              </span>
-            </p>
-          )}
           {!member.profile_updated_at && (
             <p className="mt-4 text-xs text-slate-500">
-              ※ 住所・電話番号は、この機能を追加した後にプレゼントへ応募した会員から保存されます。
+              ※ 住所・電話番号は、組合HP から届いたとき (ログイン・プレゼント応募) に保存されます。まだ届いていません。
             </p>
           )}
           <div className="mt-6 text-right">

@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { CASE_COLUMN_WIDTH } from '@/lib/caseStatus';
 import { query } from '@/lib/db';
+import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { CONTACT_CATEGORIES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
@@ -20,12 +22,12 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   number: { sql: 'c.reception_number' },
   content: { sql: 'c.category' },
   name: { sql: 'c.name' },
-  email: { sql: 'c.email' },
+  member: { sql: 'COALESCE(u.display_name, u.external_id)' },
   status: { sql: "FIELD(c.status, 'pending', 'in_progress', 'completed', 'archived')" },
   assignee: { sql: 'a.display_name' },
 };
 
-type Row = {
+type Row = Record<string, unknown> & {
   id: string;
   reception_number: string;
   category: string | null;
@@ -54,8 +56,10 @@ export default async function ContactsPage({
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
       `SELECT c.id, c.reception_number, c.category, c.service_name, c.name, c.email,
-              c.status, c.created_at, a.display_name AS assignee
-       FROM contacts c LEFT JOIN admin_users a ON a.id = c.assigned_to
+              c.status, c.created_at, a.display_name AS assignee, ${MEMBER_COLUMNS}
+       FROM contacts c
+       LEFT JOIN admin_users a ON a.id = c.assigned_to
+       LEFT JOIN users u ON u.id = c.user_id
        WHERE ${where.sql}
        ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'c.id DESC')} LIMIT :limit OFFSET :offset`,
       { ...where.params, limit: perPage, offset: (page - 1) * perPage },
@@ -114,12 +118,14 @@ export default async function ContactsPage({
               <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.status} />
               <SortableTh label="お問い合わせの種類" sortKey="content" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
-              <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="担当" sortKey="assignee" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {rows.map((r) => {
+              const member = memberFromRow(r);
+              return (
               <tr key={r.id}>
                 <td>{formatJst(r.created_at)}</td>
                 <td>
@@ -130,10 +136,25 @@ export default async function ContactsPage({
                 <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
                 <td>{r.category}</td>
                 <td>{r.name}</td>
-                <td>{r.email}</td>
+                <td>
+                  {member ? (
+                    <MemberButton
+                      member={member}
+                      label={member.display_name ?? member.external_id}
+                      formatted={{
+                        first_authenticated_at: formatJst(member.first_authenticated_at),
+                        last_login_at: formatJst(member.last_login_at),
+                        profile_updated_at: formatJst(member.profile_updated_at),
+                      }}
+                    />
+                  ) : (
+                    <span className="text-slate-400">ログインなし</span>
+                  )}
+                </td>
                 <td>{r.assignee ?? '—'}</td>
               </tr>
-            ))}
+              );
+            })}
             {rows.length === 0 && (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-slate-500">{filter.status || filter.category || filter.q ? '検索内容に一致するデータはありません。' : 'お問い合わせはまだありません。'}</td>
