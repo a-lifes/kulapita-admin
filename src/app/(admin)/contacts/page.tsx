@@ -8,8 +8,22 @@ import { query } from '@/lib/db';
 import { CONTACT_ROUTE_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { CONTACT_ROUTES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
+import { SortableTh } from '@/components/SortableTh';
+import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'お問い合わせ' };
+
+/** 並べ替えできる列 */
+const SORT_COLUMNS: Record<string, SortColumn> = {
+  created: { sql: 'c.created_at', firstDir: 'desc' },
+  number: { sql: 'c.reception_number' },
+  route: { sql: 'c.route' },
+  content: { sql: 'COALESCE(c.service_name, c.category)' },
+  name: { sql: 'c.name' },
+  email: { sql: 'c.email' },
+  status: { sql: "FIELD(c.status, 'pending', 'in_progress', 'completed', 'archived')" },
+  assignee: { sql: 'a.display_name' },
+};
 
 type Row = {
   id: string;
@@ -35,6 +49,8 @@ export default async function ContactsPage({
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const where = contactWhere(filter);
+  const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'desc' });
+  const listParams = { ...filter, per: sp.per };
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
@@ -42,7 +58,7 @@ export default async function ContactsPage({
               c.status, c.created_at, a.display_name AS assignee
        FROM contacts c LEFT JOIN admin_users a ON a.id = c.assigned_to
        WHERE ${where.sql}
-       ORDER BY c.created_at DESC LIMIT :limit OFFSET :offset`,
+       ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'c.id DESC')} LIMIT :limit OFFSET :offset`,
       { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM contacts c WHERE ${where.sql}`, where.params),
@@ -94,14 +110,14 @@ export default async function ContactsPage({
         <table className="table">
           <thead>
             <tr>
-              <th>受付日時</th>
-              <th>受付番号</th>
-              <th>種別</th>
-              <th>内容</th>
-              <th>お名前</th>
-              <th>メール</th>
-              <th>対応状況</th>
-              <th>担当</th>
+              <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="種別" sortKey="route" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="内容" sortKey="content" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="担当" sortKey="assignee" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
             </tr>
           </thead>
           <tbody>
@@ -129,7 +145,7 @@ export default async function ContactsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/contacts" params={{ ...filter }} page={page} perPage={perPage} total={total} />
+      <Pagination basePath="/contacts" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
     </div>
   );
 }

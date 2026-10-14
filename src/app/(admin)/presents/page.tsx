@@ -10,8 +10,21 @@ import { getCampaignItems } from '@/lib/microcms';
 import { normalizePresentFilter, presentWhere } from '@/lib/queries/lists';
 import { PresentFilters } from './PresentFilters';
 import { PresentStatusSelect } from './PresentStatusSelect';
+import { SortableTh } from '@/components/SortableTh';
+import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'プレゼント' };
+
+/** 並べ替えできる列 */
+const SORT_COLUMNS: Record<string, SortColumn> = {
+  created: { sql: 'p.created_at', firstDir: 'desc' },
+  campaign: { sql: 'p.campaign_key', firstDir: 'desc' },
+  item: { sql: 'p.item_index' },
+  member: { sql: 'u.external_id' },
+  name: { sql: 'u.display_name' },
+  email: { sql: 'p.email' },
+  status: { sql: "FIELD(p.status, 'applied', 'won', 'lost')" },
+};
 
 type Row = Record<string, unknown> & {
   id: string;
@@ -36,13 +49,15 @@ export default async function PresentsPage({
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const where = presentWhere(filter);
+  const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'desc' });
+  const listParams = { ...filter, per: sp.per };
 
   const [{ rows }, { rows: count }, { rows: summary }] = await Promise.all([
     query<Row>(
       `SELECT p.id, p.campaign_key, p.item_index, p.item_name, p.email, p.status, p.created_at, ${MEMBER_COLUMNS}
        FROM present_applications p LEFT JOIN users u ON u.id = p.user_id
        WHERE ${where.sql}
-       ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset`,
+       ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'p.id DESC')} LIMIT :limit OFFSET :offset`,
       { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM present_applications p WHERE ${where.sql}`, where.params),
@@ -106,13 +121,13 @@ export default async function PresentsPage({
         <table className="table">
           <thead>
             <tr>
-              <th>応募日時</th>
-              <th>キャンペーン</th>
-              <th>景品</th>
-              <th>会員番号</th>
-              <th>お名前</th>
-              <th>メール</th>
-              <th>結果</th>
+              <SortableTh label="応募日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+              <SortableTh label="キャンペーン" sortKey="campaign" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+              <SortableTh label="景品" sortKey="item" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+              <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+              <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+              <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+              <SortableTh label="結果" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
             </tr>
           </thead>
           <tbody>
@@ -149,7 +164,7 @@ export default async function PresentsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/presents" params={{ ...filter }} page={page} perPage={perPage} total={total} />
+      <Pagination basePath="/presents" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
     </div>
   );
 }

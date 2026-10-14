@@ -6,8 +6,18 @@ import { cidrContains, isIpv4 } from '@/lib/cidr';
 import { formatJst } from '@/lib/format';
 import { AddIpButton, DeleteIpButton, EditIpButton, ResyncButton } from './IpForms';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
+import { SortableTh } from '@/components/SortableTh';
+import { resolveSort, sortRows, SortColumn } from '@/lib/sort';
 
 export const metadata: Metadata = { title: '許可 IP' };
+
+/** 並べ替えできる列 */
+const SORT_COLUMNS: Record<string, SortColumn> = {
+  cidr: {},
+  label: {},
+  created: { firstDir: 'desc' },
+  creator: {},
+};
 
 type Row = { id: string; cidr: string; label: string | null; created_at: string; created_by_name: string | null };
 
@@ -29,6 +39,8 @@ export default async function AllowedIpsPage({
   const keyword = q.toLowerCase();
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
+  const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'asc' });
+  const listParams = { q, per: sp.per };
   const filtered = all.filter(
     (r) =>
       !keyword ||
@@ -36,7 +48,20 @@ export default async function AllowedIpsPage({
       (r.label ?? '').toLowerCase().includes(keyword) ||
       (isIpv4(q) && cidrContains(r.cidr, q)),
   );
-  const rows = filtered.slice((page - 1) * perPage, page * perPage);
+  // IP アドレスは数値として並べる (10.0.0.2 が 10.0.0.10 より前に来るように)
+  const ipNumber = (cidr: string) => {
+    const [ip, prefix] = cidr.split('/');
+    return ip.split('.').reduce((n, part) => n * 256 + Number(part), 0) * 64 + Number(prefix ?? 32);
+  };
+  const sorted = sortRows(filtered, sort, (r, key) => {
+    switch (key) {
+      case 'cidr': return ipNumber(r.cidr);
+      case 'label': return r.label;
+      case 'creator': return r.created_by_name;
+      default: return r.created_at;
+    }
+  });
+  const rows = sorted.slice((page - 1) * perPage, page * perPage);
 
   return (
     <div className="list-page">
@@ -61,10 +86,10 @@ export default async function AllowedIpsPage({
         <table className="table">
           <thead>
             <tr>
-              <th>IP アドレス（CIDR）</th>
-              <th>メモ</th>
-              <th>登録日時</th>
-              <th>登録者</th>
+              <SortableTh label="IP アドレス（CIDR）" sortKey="cidr" sort={sort} columns={SORT_COLUMNS} basePath="/allowed-ips" params={listParams} />
+              <SortableTh label="メモ" sortKey="label" sort={sort} columns={SORT_COLUMNS} basePath="/allowed-ips" params={listParams} />
+              <SortableTh label="登録日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/allowed-ips" params={listParams} />
+              <SortableTh label="登録者" sortKey="creator" sort={sort} columns={SORT_COLUMNS} basePath="/allowed-ips" params={listParams} />
               <th></th>
             </tr>
           </thead>
@@ -87,7 +112,7 @@ export default async function AllowedIpsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/allowed-ips" params={{ q }} page={page} perPage={perPage} total={filtered.length} />
+      <Pagination basePath="/allowed-ips" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={filtered.length} />
     </div>
   );
 }

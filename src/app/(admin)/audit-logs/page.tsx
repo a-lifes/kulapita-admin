@@ -6,8 +6,19 @@ import { likeEscape, Params, query } from '@/lib/db';
 import { formatJst } from '@/lib/format';
 import { AuditDetailLink } from './AuditDetail';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
+import { SortableTh } from '@/components/SortableTh';
+import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 
 export const metadata: Metadata = { title: '操作ログ' };
+
+/** 並べ替えできる列 */
+const SORT_COLUMNS: Record<string, SortColumn> = {
+  created: { sql: 'l.created_at', firstDir: 'desc' },
+  account: { sql: 'COALESCE(a.display_name, l.admin_email_snapshot)' },
+  action: { sql: 'l.action' },
+  target: { sql: 'l.target_type' },
+  ip: { sql: 'INET_ATON(l.ip_address)' },
+};
 
 const ACTION_LABEL: Record<string, string> = {
   'auth.login': 'ログイン',
@@ -71,10 +82,13 @@ export default async function AuditLogsPage({
   const action = sp.action && ACTION_LABEL[sp.action] ? sp.action : undefined;
   const q = sp.q?.trim().slice(0, 100) || undefined;
   const page = pageFrom(sp.page);
+
   const perPage = perPageFrom(sp.per);
   // 件数が多くなるため 1 日ずつ表示する (初期値は今日)
   const today = todayJst();
   const date = sp.date && DATE_RE.test(sp.date) && !Number.isNaN(Date.parse(sp.date)) ? sp.date : today;
+  const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'desc' });
+  const listParams = { date, q, action, per: sp.per };
 
   const conds: string[] = ['l.created_at >= :start', 'l.created_at < :end'];
   const params: Params = { start: jstStartAsUtc(date), end: jstStartAsUtc(shiftDay(date, 1)) };
@@ -94,7 +108,7 @@ export default async function AuditLogsPage({
     query<Row>(
       `SELECT l.id, a.display_name AS account_name, a.email AS account_email, l.admin_email_snapshot, l.action,
               l.target_type, l.target_id, l.diff, l.ip_address, l.user_agent, l.created_at
-       ${from} ${where} ORDER BY l.created_at DESC, l.id DESC LIMIT :limit OFFSET :offset`,
+       ${from} ${where} ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'l.id DESC')} LIMIT :limit OFFSET :offset`,
       { ...params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total ${from} ${where}`, params),
@@ -129,12 +143,12 @@ export default async function AuditLogsPage({
         <table className="table">
           <thead>
             <tr>
-              <th>日時</th>
-              <th>操作アカウント</th>
-              <th>操作</th>
-              <th>対象</th>
+              <SortableTh label="日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/audit-logs" params={listParams} />
+              <SortableTh label="操作アカウント" sortKey="account" sort={sort} columns={SORT_COLUMNS} basePath="/audit-logs" params={listParams} />
+              <SortableTh label="操作" sortKey="action" sort={sort} columns={SORT_COLUMNS} basePath="/audit-logs" params={listParams} />
+              <SortableTh label="対象" sortKey="target" sort={sort} columns={SORT_COLUMNS} basePath="/audit-logs" params={listParams} />
               <th className="w-full">内容</th>
-              <th>IP</th>
+              <SortableTh label="IP" sortKey="ip" sort={sort} columns={SORT_COLUMNS} basePath="/audit-logs" params={listParams} />
             </tr>
           </thead>
           <tbody>
@@ -181,7 +195,7 @@ export default async function AuditLogsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/audit-logs" params={{ date, q, action }} page={page} perPage={perPage} total={Number(count[0]?.total ?? 0)} />
+      <Pagination basePath="/audit-logs" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={Number(count[0]?.total ?? 0)} />
     </div>
   );
 }

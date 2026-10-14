@@ -6,8 +6,20 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { formatJst, label, ROLE_LABEL } from '@/lib/format';
 import { CreateAdminButton, DeleteAdminButton, EditAdminButton, ResetPasswordButton } from './UserForms';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
+import { SortableTh } from '@/components/SortableTh';
+import { resolveSort, sortRows, SortColumn } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'アカウント' };
+
+/** 並べ替えできる列 */
+const SORT_COLUMNS: Record<string, SortColumn> = {
+  name: {},
+  email: {},
+  role: {},
+  status: {},
+  last_login: { firstDir: 'desc' },
+  created: { firstDir: 'desc' },
+};
 
 const STATUSES = { active: '有効', inactive: '停止中', locked: 'ロック中', pending: '初回ログイン待ち' } as const;
 
@@ -25,6 +37,8 @@ export default async function UsersPage({
   // アカウントは多くても数十件なので、絞り込みは取得後に行う
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
+  const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'asc' });
+  const listParams = { q: sp.q, role, status, per: sp.per };
   const filtered = all.filter(
     (u) =>
       (!q || u.display_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
@@ -35,7 +49,19 @@ export default async function UsersPage({
         (status === 'locked' && u.locked) ||
         (status === 'pending' && u.must_change_password)),
   );
-  const users = filtered.slice((page - 1) * perPage, page * perPage);
+  const ROLE_ORDER: Record<string, number> = { super_admin: 0, admin: 1, support: 2, readonly: 3 };
+  const sorted = sortRows(filtered, sort, (u, key) => {
+    switch (key) {
+      case 'name': return u.display_name;
+      case 'email': return u.email;
+      case 'role': return ROLE_ORDER[u.role] ?? 9;
+      // 状態: 有効 → ロック中 → 初回ログイン待ち → 停止中
+      case 'status': return !u.is_active ? 3 : u.locked ? 1 : u.must_change_password ? 2 : 0;
+      case 'last_login': return u.last_login_at;
+      default: return u.created_at;
+    }
+  });
+  const users = sorted.slice((page - 1) * perPage, page * perPage);
 
   return (
     <div className="list-page">
@@ -84,12 +110,12 @@ export default async function UsersPage({
         <table className="table">
           <thead>
             <tr>
-              <th>表示名</th>
-              <th>メールアドレス</th>
-              <th>権限</th>
-              <th>状態</th>
-              <th>最終ログイン</th>
-              <th>登録日時</th>
+              <SortableTh label="表示名" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/users" params={listParams} />
+              <SortableTh label="メールアドレス" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/users" params={listParams} />
+              <SortableTh label="権限" sortKey="role" sort={sort} columns={SORT_COLUMNS} basePath="/users" params={listParams} />
+              <SortableTh label="状態" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/users" params={listParams} />
+              <SortableTh label="最終ログイン" sortKey="last_login" sort={sort} columns={SORT_COLUMNS} basePath="/users" params={listParams} />
+              <SortableTh label="登録日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/users" params={listParams} />
               <th></th>
             </tr>
           </thead>
@@ -128,7 +154,7 @@ export default async function UsersPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/users" params={{ q: sp.q, role, status }} page={page} perPage={perPage} total={filtered.length} />
+      <Pagination basePath="/users" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={filtered.length} />
     </div>
   );
 }

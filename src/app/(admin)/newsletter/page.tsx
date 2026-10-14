@@ -7,8 +7,20 @@ import { query } from '@/lib/db';
 import { formatJst, label, NEWSLETTER_STATUS_LABEL } from '@/lib/format';
 import { NEWSLETTER_STATUSES, newsletterWhere, normalizeNewsletterFilter } from '@/lib/queries/lists';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
+import { SortableTh } from '@/components/SortableTh';
+import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'メルマガ' };
+
+/** 並べ替えできる列 */
+const SORT_COLUMNS: Record<string, SortColumn> = {
+  subscribed: { sql: 'n.subscribed_at', firstDir: 'desc' },
+  email: { sql: 'n.email' },
+  name: { sql: "CONCAT(IFNULL(n.last_name, ''), IFNULL(n.first_name, ''))" },
+  member: { sql: 'u.external_id' },
+  status: { sql: "FIELD(n.status, 'active', 'pending', 'unsubscribed', 'bounced')" },
+  unsubscribed: { sql: 'n.unsubscribed_at', firstDir: 'desc' },
+};
 
 type Row = {
   id: string;
@@ -32,6 +44,8 @@ export default async function NewsletterPage({
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const where = newsletterWhere(filter);
+  const sort = resolveSort(sp, SORT_COLUMNS, { key: 'subscribed', dir: 'desc' });
+  const listParams = { ...filter, per: sp.per };
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
@@ -39,7 +53,7 @@ export default async function NewsletterPage({
               n.subscribed_at, n.unsubscribed_at
        FROM newsletter_subscribers n LEFT JOIN users u ON u.id = n.user_id
        WHERE ${where.sql}
-       ORDER BY n.subscribed_at DESC LIMIT :limit OFFSET :offset`,
+       ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'n.id DESC')} LIMIT :limit OFFSET :offset`,
       { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM newsletter_subscribers n WHERE ${where.sql}`, where.params),
@@ -76,12 +90,12 @@ export default async function NewsletterPage({
         <table className="table">
           <thead>
             <tr>
-              <th>登録日時</th>
-              <th>メール</th>
-              <th>お名前</th>
-              <th>会員番号</th>
-              <th>状態</th>
-              <th>解除日時</th>
+              <SortableTh label="登録日時" sortKey="subscribed" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+              <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+              <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+              <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+              <SortableTh label="状態" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+              <SortableTh label="解除日時" sortKey="unsubscribed" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
             </tr>
           </thead>
           <tbody>
@@ -101,7 +115,7 @@ export default async function NewsletterPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/newsletter" params={{ ...filter }} page={page} perPage={perPage} total={total} />
+      <Pagination basePath="/newsletter" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
     </div>
   );
 }
