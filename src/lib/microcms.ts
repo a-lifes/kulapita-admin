@@ -95,3 +95,16 @@ export async function getCampaignItems(
     };
   }
 }
+
+/** microCMS にあるキャンペーン (月のキー) と景品の一覧。取得できなければ null と理由を返す */
+export async function getAllCampaigns(): Promise<{ campaigns: Map<string, CampaignItems> | null; error?: string }> {
+  try {
+    return { campaigns: await campaigns() };
+  } catch (e) {
+    console.error('microCMS fetch failed', (e as Error).message);
+    return {
+      campaigns: null,
+      error: e instanceof MicrocmsNotConfiguredError ? e.message : 'キャンペーンを microCMS から取得できませんでした',
+    };
+  }
+}

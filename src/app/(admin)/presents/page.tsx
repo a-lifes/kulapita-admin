@@ -6,7 +6,7 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { formatJst } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
-import { getCampaignItems } from '@/lib/microcms';
+import { getAllCampaigns } from '@/lib/microcms';
 import { normalizePresentFilter, presentWhere } from '@/lib/queries/lists';
 import { PresentFilters } from './PresentFilters';
 import { PresentStatusSelect } from './PresentStatusSelect';
@@ -49,17 +49,28 @@ export default async function PresentsPage({
   const perPage = perPageFrom(sp.per);
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'desc' });
 
-  // 開催月ごとの景品と件数 (開催月の選択肢・景品ごとの状況に使う)
-  const { rows: summary } = await query<SummaryRow>(
-    `SELECT campaign_key, item_index, MAX(item_name) AS item_name, COUNT(*) AS total, SUM(status = 'won') AS won
-     FROM present_applications GROUP BY campaign_key, item_index
-     ORDER BY campaign_key DESC, item_index LIMIT 500`,
-  );
-  const campaigns = [...new Set(summary.map((s) => s.campaign_key))];
+  // 開催月ごとの応募の件数 (DB) と、キャンペーン・景品の一覧 (microCMS)。
+  // 開催月・景品は microCMS を正とし、応募が 0 件の景品も出す。microCMS に無いもの (削除済みなど) は DB から補う。
+  const [{ rows: summary }, cmsAll] = await Promise.all([
+    query<SummaryRow>(
+      `SELECT campaign_key, item_index, MAX(item_name) AS item_name, COUNT(*) AS total, SUM(status = 'won') AS won
+       FROM present_applications GROUP BY campaign_key, item_index
+       ORDER BY campaign_key DESC, item_index LIMIT 500`,
+    ),
+    getAllCampaigns(),
+  ]);
   const itemsByCampaign: Record<string, { index: number; name: string }[]> = {};
-  for (const s of summary) {
-    (itemsByCampaign[s.campaign_key] ??= []).push({ index: Number(s.item_index), name: s.item_name });
+  for (const [key, items] of cmsAll.campaigns ?? []) {
+    itemsByCampaign[key] = items.map((item, index) => ({ index, name: item.name }));
   }
+  for (const s of summary) {
+    const list = (itemsByCampaign[s.campaign_key] ??= []);
+    if (!list.some((i) => i.index === Number(s.item_index))) {
+      list.push({ index: Number(s.item_index), name: s.item_name });
+      list.sort((a, b) => a.index - b.index);
+    }
+  }
+  const campaigns = Object.keys(itemsByCampaign).sort().reverse();
 
   // 開催月は必ず 1 つに絞る (指定が無い・存在しないときは一番新しい月)
   const campaign = sp.campaign && campaigns.includes(sp.campaign) ? sp.campaign : campaigns[0];
@@ -81,9 +92,16 @@ export default async function PresentsPage({
     : [{ rows: [] as Row[] }, { rows: [] as { total: number }[] }];
   const total = Number(count[0]?.total ?? 0);
 
-  // 景品ごとの応募数・当選数・当選者数 (当選者数は microCMS から)
-  const shownSummary = summary.filter((s) => s.campaign_key === campaign);
-  const cms = campaign ? await getCampaignItems(campaign) : { items: null, error: undefined };
+  // 景品ごとの応募数・当選数・当選者数 (景品名・当選者数は microCMS、件数は DB)
+  const cmsItems = campaign ? (cmsAll.campaigns?.get(campaign) ?? null) : null;
+  const cms = {
+    items: cmsItems,
+    error: cmsAll.error ?? (campaign && !cmsItems ? 'microCMS にこのキャンペーンが見つかりません' : undefined),
+  };
+  const shownSummary = (campaign ? (itemsByCampaign[campaign] ?? []) : []).map((item) => {
+    const counted = summary.find((s) => s.campaign_key === campaign && Number(s.item_index) === item.index);
+    return { item_index: item.index, item_name: item.name, total: Number(counted?.total ?? 0), won: Number(counted?.won ?? 0) };
+  });
 
   const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
   const canEdit = hasRole(admin.role, 'support');
