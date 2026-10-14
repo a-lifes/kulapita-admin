@@ -106,17 +106,17 @@ export default async function DashboardPage({
           const body = (
             <>
               <p className="text-sm text-slate-600">{card.title}</p>
-              <p className="mt-2 text-3xl font-bold tabular-nums">
+              <p className="mt-1 text-[26px] leading-tight font-bold tabular-nums">
                 {card.value === null ? '—' : <CountUp value={card.value} />}
               </p>
             </>
           );
           return card.href ? (
-            <Link key={card.title} href={card.href} className="card hover:border-brand">
+            <Link key={card.title} href={card.href} className="card py-4 hover:border-brand">
               {body}
             </Link>
           ) : (
-            <div key={card.title} className="card">
+            <div key={card.title} className="card py-4">
               {body}
             </div>
           );

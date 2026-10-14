@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { createContext, useContext, useTransition } from 'react';
+import { createContext, useContext, useEffect, useRef, useTransition } from 'react';
 
 /**
  * 絞り込みエリアのフォーム。「絞り込む」ボタンや Enter キーで検索している間、
@@ -20,11 +20,21 @@ const SearchContext = createContext<{ pending: boolean; navigate: (url: string) 
   navigate: () => {},
 });
 
+/** 絞り込み・表示が終わったときに window に送るイベント名 */
+export const SEARCH_DONE_EVENT = 'kadm:search-done';
+
 export function SearchForm({ className, children }: { className?: string; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
   const navigate = (url: string) => startTransition(() => router.push(url, { scroll: false }));
+
+  // 検索が終わったら知らせる (同じ条件で検索し直したときに、グラフのアニメーションをやり直すため)
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !pending) window.dispatchEvent(new Event(SEARCH_DONE_EVENT));
+    wasPending.current = pending;
+  }, [pending]);
 
   return (
     <SearchContext.Provider value={{ pending, navigate }}>

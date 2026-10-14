@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { SEARCH_DONE_EVENT } from '@/components/SearchForm';
 import { icons } from '@/components/icons';
 
 /**
@@ -153,6 +154,13 @@ function Chart({ series, days, width }: { series: DailySeries; days: Day[]; widt
  */
 export function DailyView({ days, series, header }: { days: Day[]; series: DailySeries[]; header: React.ReactNode }) {
   const [tab, setTab] = useState<'chart' | 'table'>('chart');
+  // 「表示」を押すたびにグラフを描き直す (同じ条件でも棒が下から伸びるアニメーションをやり直す)
+  const [replay, setReplay] = useState(0);
+  useEffect(() => {
+    const onDone = () => setReplay((n) => n + 1);
+    window.addEventListener(SEARCH_DONE_EVENT, onDone);
+    return () => window.removeEventListener(SEARCH_DONE_EVENT, onDone);
+  }, []);
   const tabs = [
     { key: 'chart', label: 'グラフで見る', Icon: icons.barChart },
     { key: 'table', label: '表で見る', Icon: icons.table },
@@ -184,7 +192,7 @@ export function DailyView({ days, series, header }: { days: Day[]; series: Daily
       <div role="tabpanel" className="card relative z-[1] rounded-tl-none">
         {header}
         <div className="mt-6">
-          {tab === 'chart' ? <DailyCharts days={days} series={series} /> : <DailyTable days={days} series={series} />}
+          {tab === 'chart' ? <DailyCharts key={replay} days={days} series={series} /> : <DailyTable days={days} series={series} />}
         </div>
       </div>
     </section>
