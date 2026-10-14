@@ -59,12 +59,13 @@ export function datesBetween(from: string, to: string): string[] {
 /** よく使う期間のボタン */
 export function rangePresets() {
   const today = todayJst();
+  const monthStart = `${today.slice(0, 8)}01`;
+  const prevMonthStart = addMonths(monthStart, -1);
   return [
-    { label: '今月', from: `${today.slice(0, 8)}01`, to: today },
-    { label: '直近 7 日', from: addDays(today, -6), to: today },
+    { label: '今月', from: monthStart, to: today },
+    { label: '前月', from: prevMonthStart, to: addDays(monthStart, -1) },
     { label: '直近 1 か月', from: addDays(addMonths(today, -1), 1), to: today },
     { label: '直近 3 か月', from: addDays(addMonths(today, -3), 1), to: today },
-    { label: '直近 1 年', from: addDays(addMonths(today, -12), 1), to: today },
   ];
 }
 
