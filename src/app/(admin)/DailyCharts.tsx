@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { icons } from '@/components/icons';
 
 /**
  * 日ごとの件数の棒グラフ (お問い合わせ・コンバージョン・メルマガ・プレゼントを 1 本ずつ縦に並べる)。
@@ -116,29 +117,34 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
 export function DailyView({ dates, series }: { dates: string[]; series: DailySeries[] }) {
   const [tab, setTab] = useState<'chart' | 'table'>('chart');
   const tabs = [
-    { key: 'chart', label: 'グラフ' },
-    { key: 'table', label: '表' },
+    { key: 'chart', label: 'グラフで見る', Icon: icons.barChart },
+    { key: 'table', label: '表で見る', Icon: icons.table },
   ] as const;
   return (
     <div className="mt-5">
-      <div role="tablist" aria-label="表示の切り替え" className="mb-5 flex gap-1 border-b border-slate-200">
-        {tabs.map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTab(t.key)}
-              className={`-mb-px cursor-pointer border-b-2 px-4 py-2 font-semibold ${
-                active ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+      {/* 表示の切り替え: 押せるボタンだと分かるよう、枠付きのボタンを横に並べ、選んでいる方を塗りつぶす */}
+      <div className="mb-5 flex items-center gap-3">
+        <span className="text-slate-600">表示</span>
+        <div role="tablist" aria-label="表示の切り替え" className="inline-flex rounded-md border border-slate-300 bg-white p-0.5">
+          {tabs.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t.key)}
+                className={`flex cursor-pointer items-center gap-1.5 rounded px-4 py-1.5 font-semibold transition-colors ${
+                  active ? 'bg-brand text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <t.Icon className="h-4 w-4" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {tab === 'chart' ? <DailyCharts dates={dates} series={series} /> : <DailyTable dates={dates} series={series} />}
     </div>

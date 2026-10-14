@@ -139,6 +139,20 @@ export const icons = {
       <path d="M4 21a8 8 0 0 1 16 0" />
     </Svg>
   ),
+  barChart: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 20h16" />
+      <rect x="6" y="11" width="3" height="6" rx="0.5" />
+      <rect x="11" y="6" width="3" height="11" rx="0.5" />
+      <rect x="16" y="9" width="3" height="8" rx="0.5" />
+    </Svg>
+  ),
+  table: (p: IconProps) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="1.5" />
+      <path d="M3 9h18M3 14.5h18M9 9v11" />
+    </Svg>
+  ),
   chevronLeft: (p: IconProps) => (
     <Svg {...p}>
       <path d="m15 18-6-6 6-6" />
