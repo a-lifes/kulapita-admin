@@ -135,7 +135,7 @@ export default async function ClicksPage({
         <table className="table">
           <thead>
             <tr>
-              <SortableTh label="日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
+              <SortableTh label="クリック日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="サービス" sortKey="service" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="サービス提供会社" sortKey="company" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />

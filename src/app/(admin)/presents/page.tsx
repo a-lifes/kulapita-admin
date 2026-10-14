@@ -5,14 +5,15 @@ import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
-import { formatJst } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { getAllCampaigns } from '@/lib/microcms';
 import { normalizePresentFilter, presentWhere } from '@/lib/queries/lists';
 import { PresentFilters } from './PresentFilters';
-import { PresentStatusSelect } from './PresentStatusSelect';
+import { StatusSelect } from '@/components/StatusSelect';
 import { ItemImage } from './ItemImage';
-import { PresentBulkBar, PresentBulkProvider, RowCheckbox, SelectAllCheckbox } from './PresentBulk';
+import { BulkProvider, BulkStatusBar, RowCheckbox, SelectAllCheckbox } from '@/components/BulkStatus';
+import { formatJst, PRESENT_STATUS_LABEL, PRESENT_STATUS_STYLE } from '@/lib/format';
+import { setPresentStatusAction, setPresentStatusBulkAction } from './actions';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 
@@ -173,8 +174,16 @@ export default async function PresentsPage({
         </div>
       )}
 
-      <PresentBulkProvider ids={rows.map((r) => r.id)}>
-        {canEdit && <PresentBulkBar />}
+      <BulkProvider ids={rows.map((r) => r.id)}>
+        {canEdit && (
+          <BulkStatusBar
+            labels={PRESENT_STATUS_LABEL}
+            action={setPresentStatusBulkAction}
+            field="結果"
+            noun="応募"
+            defaultStatus="won"
+          />
+        )}
         <div className="card table-scroll">
           <table className="table">
             <thead>
@@ -202,7 +211,18 @@ export default async function PresentsPage({
                         <RowCheckbox id={r.id} />
                       </td>
                     )}
-                    <td><PresentStatusSelect key={r.status} id={r.id} status={r.status} readOnly={!canEdit} /></td>
+                    <td>
+                      <StatusSelect
+                        key={r.status}
+                        id={r.id}
+                        status={r.status}
+                        readOnly={!canEdit}
+                        labels={PRESENT_STATUS_LABEL}
+                        styles={PRESENT_STATUS_STYLE}
+                        action={setPresentStatusAction}
+                        ariaLabel="抽選結果"
+                      />
+                    </td>
                     <td>{formatJst(r.created_at)}</td>
                     <td>{Number(r.item_index) + 1}. {r.item_name}</td>
                     <td>
@@ -230,7 +250,7 @@ export default async function PresentsPage({
             </tbody>
           </table>
         </div>
-      </PresentBulkProvider>
+      </BulkProvider>
       <Pagination basePath="/presents" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
     </div>
   );

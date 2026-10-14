@@ -36,6 +36,8 @@ const ACTION_LABEL: Record<string, string> = {
   'export.presents': 'CSV 出力（プレゼント）',
   'present.update_status': 'プレゼント結果の設定',
   'present.bulk_update_status': 'プレゼント結果の一括設定',
+  'newsletter.update_status': 'メルマガの状態の設定',
+  'newsletter.bulk_update_status': 'メルマガの状態の一括設定',
   'admin_user.create': 'アカウントの追加',
   'admin_user.update': 'アカウントの変更',
   'admin_user.reset_password': '仮パスワード再発行',
@@ -53,6 +55,7 @@ const TARGET_LABEL: Record<string, string> = {
   admin_user: 'アカウント',
   allowed_ip: '許可 IP',
   present_application: 'プレゼント応募',
+  newsletter_subscriber: 'メルマガ',
 };
 
 /* 日付 (日本時間の YYYY-MM-DD) */

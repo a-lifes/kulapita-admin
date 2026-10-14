@@ -164,8 +164,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const filter = normalizeNewsletterFilter(sp);
     const where = newsletterWhere(filter);
     const { rows } = await query<Row>(
-      `SELECT n.email, n.last_name, n.first_name, n.status, u.external_id AS member_id, n.subscribed_at,
-              n.unsubscribed_at, n.source_url
+      `SELECT n.email, n.last_name, n.first_name, n.status, u.external_id AS member_id,
+              u.display_name AS member_name, n.subscribed_at, n.source_url
        FROM newsletter_subscribers n LEFT JOIN users u ON u.id = n.user_id
        WHERE ${where.sql} ORDER BY n.subscribed_at DESC LIMIT ${MAX_ROWS}`,
       where.params,
@@ -174,10 +174,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `newsletter_${stamp()}.csv`,
       toCsv(
-        ['メールアドレス', '姓', '名', '状態', '会員番号', '登録日時', '解除日時', '登録したページ'],
+        ['登録日時', 'メールアドレス', '状態', '姓', '名', '会員番号', '会員の名前', '登録したページ'],
         rows.map((r) => [
-          r.email, r.last_name, r.first_name, label(NEWSLETTER_STATUS_LABEL, r.status), r.member_id,
-          formatJst(r.subscribed_at), formatJst(r.unsubscribed_at), r.source_url,
+          formatJst(r.subscribed_at), r.email, label(NEWSLETTER_STATUS_LABEL, r.status), r.last_name, r.first_name,
+          r.member_id, r.member_name, r.source_url,
         ]),
       ),
     );

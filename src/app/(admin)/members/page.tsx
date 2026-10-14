@@ -104,8 +104,8 @@ export default async function MembersPage({
               <SortableTh label="名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
               <SortableTh label="都道府県" sortKey="prefecture" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
               <SortableTh label="メールアドレス" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
-              <SortableTh label="初回ログイン日" sortKey="first" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
-              <SortableTh label="最終ログイン日" sortKey="last" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
+              <SortableTh label="初回ログイン日時" sortKey="first" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
+              <SortableTh label="最終ログイン日時" sortKey="last" sort={sort} columns={SORT_COLUMNS} basePath="/members" params={listParams} />
             </tr>
           </thead>
           <tbody>

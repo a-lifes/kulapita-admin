@@ -4,15 +4,15 @@ import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { toast } from '@/components/Toaster';
-import { PRESENT_STATUS_LABEL } from '@/lib/format';
-import { setPresentStatusBulkAction } from './actions';
+
+export type BulkResult = { ok: true; updated: number } | { ok: false; error: string };
 
 /**
- * プレゼント一覧の一括操作。行のチェックボックスで選び、上のバーで結果をまとめて設定する。
- *   <PresentBulkProvider ids={…}>
- *     <PresentBulkBar />
+ * 一覧の一括操作 (プレゼントの結果・メルマガの状態など)。行のチェックボックスで選び、上のバーでまとめて設定する。
+ *   <BulkProvider ids={…}>
+ *     <BulkStatusBar />
  *     … <SelectAllCheckbox /> … <RowCheckbox id={…} /> …
- *   </PresentBulkProvider>
+ *   </BulkProvider>
  */
 type Ctx = {
   ids: string[];
@@ -26,11 +26,11 @@ const BulkContext = createContext<Ctx | null>(null);
 
 function useBulk(): Ctx {
   const ctx = useContext(BulkContext);
-  if (!ctx) throw new Error('PresentBulkProvider の中で使ってください');
+  if (!ctx) throw new Error('BulkProvider の中で使ってください');
   return ctx;
 }
 
-export function PresentBulkProvider({ ids, children }: { ids: string[]; children: React.ReactNode }) {
+export function BulkProvider({ ids, children }: { ids: string[]; children: React.ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // 表示中の行に無いものは選択から外す (ページ移動・絞り込みのあと)
   const visible = new Set(ids);
@@ -58,7 +58,7 @@ export function SelectAllCheckbox() {
     <input
       type="checkbox"
       className="h-4 w-4 cursor-pointer accent-brand align-middle"
-      aria-label="表示中の応募をすべて選ぶ"
+      aria-label="表示中の行をすべて選ぶ"
       checked={all}
       ref={(el) => {
         if (el) el.indeterminate = selected.size > 0 && !all;
@@ -75,16 +75,32 @@ export function RowCheckbox({ id }: { id: string }) {
     <input
       type="checkbox"
       className="h-4 w-4 cursor-pointer accent-brand align-middle"
-      aria-label="この応募を選ぶ"
+      aria-label="この行を選ぶ"
       checked={selected.has(id)}
       onChange={(e) => toggle(id, e.target.checked)}
     />
   );
 }
 
-export function PresentBulkBar() {
+export function BulkStatusBar({
+  labels,
+  action,
+  field,
+  noun,
+  defaultStatus,
+}: {
+  /** 状態の値 → 表示名 */
+  labels: Record<string, string>;
+  /** まとめて設定するサーバーアクション */
+  action: (ids: string[], status: string) => Promise<BulkResult>;
+  /** 設定する項目の名前 (結果・状態など) */
+  field: string;
+  /** 行の呼び方 (応募・登録など) */
+  noun: string;
+  defaultStatus: string;
+}) {
   const { selected, clear } = useBulk();
-  const [status, setStatus] = useState('won');
+  const [status, setStatus] = useState(defaultStatus);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const [confirm, confirmDialog] = useConfirm();
@@ -92,21 +108,21 @@ export function PresentBulkBar() {
 
   const apply = async () => {
     const ok = await confirm({
-      title: '結果をまとめて設定',
-      message: `選択中の ${count} 件を「${PRESENT_STATUS_LABEL[status]}」にします。よろしいですか？`,
+      title: `${field}をまとめて設定`,
+      message: `選択中の ${count} 件を「${labels[status]}」にします。よろしいですか？`,
       confirmLabel: '設定する',
     });
     if (!ok) return;
     startTransition(async () => {
-      const res = await setPresentStatusBulkAction([...selected], status);
+      const res = await action([...selected], status);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
       toast.success(
         res.updated > 0
-          ? `${res.updated} 件を「${PRESENT_STATUS_LABEL[status]}」にしました`
-          : 'すでに同じ結果のため、変更はありませんでした',
+          ? `${res.updated} 件を「${labels[status]}」にしました`
+          : `すでに同じ${field}のため、変更はありませんでした`,
       );
       clear();
       router.refresh();
@@ -117,16 +133,16 @@ export function PresentBulkBar() {
     <div className="mb-2 flex min-h-9 flex-wrap items-center gap-3">
       {confirmDialog}
       <span className={count > 0 ? 'font-semibold text-brand' : 'text-slate-500'}>
-        {count > 0 ? `${count} 件を選択中` : 'チェックした応募の結果をまとめて設定できます'}
+        {count > 0 ? `${count} 件を選択中` : `チェックした${noun}の${field}をまとめて設定できます`}
       </span>
       <select
         className="rounded-md border border-slate-300 bg-white py-1 pr-8 pl-2.5 [background-position:right_0.5rem_center]"
         value={status}
-        aria-label="設定する結果"
+        aria-label={`設定する${field}`}
         disabled={count === 0 || pending}
         onChange={(e) => setStatus(e.target.value)}
       >
-        {Object.entries(PRESENT_STATUS_LABEL).map(([k, v]) => (
+        {Object.entries(labels).map(([k, v]) => (
           <option key={k} value={k}>{v}</option>
         ))}
       </select>

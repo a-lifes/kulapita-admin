@@ -1,7 +1,7 @@
 import 'server-only';
 import { likeEscape, Params } from '../db';
 
-export const NEWSLETTER_STATUSES = ['active', 'unsubscribed', 'bounced', 'pending'] as const;
+export const NEWSLETTER_STATUSES = ['pending', 'registered', 'excluded'] as const;
 export type NewsletterFilter = { status?: string; q?: string };
 
 export function normalizeNewsletterFilter(sp: Record<string, string | undefined>): NewsletterFilter {

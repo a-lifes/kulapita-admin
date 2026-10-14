@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
-import { StatusBadge } from '@/components/StatusBadge';
+import { BulkProvider, BulkStatusBar, RowCheckbox, SelectAllCheckbox } from '@/components/BulkStatus';
+import { MemberButton } from '@/components/MemberButton';
+import { StatusSelect } from '@/components/StatusSelect';
+import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
+import { setNewsletterStatusAction, setNewsletterStatusBulkAction } from './actions';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
-import { formatJst, label, NEWSLETTER_STATUS_LABEL } from '@/lib/format';
+import { formatJst, NEWSLETTER_STATUS_LABEL, NEWSLETTER_STATUS_STYLE } from '@/lib/format';
 import { NEWSLETTER_STATUSES, newsletterWhere, normalizeNewsletterFilter } from '@/lib/queries/lists';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
@@ -17,20 +21,17 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   subscribed: { sql: 'n.subscribed_at', firstDir: 'desc' },
   email: { sql: 'n.email' },
   name: { sql: "CONCAT(IFNULL(n.last_name, ''), IFNULL(n.first_name, ''))" },
-  member: { sql: 'u.external_id' },
-  status: { sql: "FIELD(n.status, 'active', 'pending', 'unsubscribed', 'bounced')" },
-  unsubscribed: { sql: 'n.unsubscribed_at', firstDir: 'desc' },
+  member: { sql: 'COALESCE(u.display_name, u.external_id)' },
+  status: { sql: "FIELD(n.status, 'pending', 'registered', 'excluded')" },
 };
 
-type Row = {
+type Row = Record<string, unknown> & {
   id: string;
   email: string;
   last_name: string | null;
   first_name: string | null;
   status: string;
-  member_id: string | null;
   subscribed_at: string;
-  unsubscribed_at: string | null;
 };
 
 export default async function NewsletterPage({
@@ -49,8 +50,7 @@ export default async function NewsletterPage({
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
-      `SELECT n.id, n.email, n.last_name, n.first_name, n.status, u.external_id AS member_id,
-              n.subscribed_at, n.unsubscribed_at
+      `SELECT n.id, n.email, n.last_name, n.first_name, n.status, n.subscribed_at, ${MEMBER_COLUMNS}
        FROM newsletter_subscribers n LEFT JOIN users u ON u.id = n.user_id
        WHERE ${where.sql}
        ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'n.id DESC')} LIMIT :limit OFFSET :offset`,
@@ -59,6 +59,7 @@ export default async function NewsletterPage({
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM newsletter_subscribers n WHERE ${where.sql}`, where.params),
   ]);
   const total = Number(count[0]?.total ?? 0);
+  const canEdit = hasRole(admin.role, 'support');
   const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
 
   return (
@@ -86,35 +87,82 @@ export default async function NewsletterPage({
         <SearchButton />
         <ClearButton href="/newsletter" />
       </SearchForm>
-      <div className="card table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <SortableTh label="登録日時" sortKey="subscribed" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
-              <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
-              <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
-              <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
-              <SortableTh label="状態" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
-              <SortableTh label="解除日時" sortKey="unsubscribed" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{formatJst(r.subscribed_at)}</td>
-                <td>{r.email}</td>
-                <td>{[r.last_name, r.first_name].filter(Boolean).join(' ') || '—'}</td>
-                <td>{r.member_id ?? '—'}</td>
-                <td><StatusBadge value={r.status} text={label(NEWSLETTER_STATUS_LABEL, r.status)} /></td>
-                <td>{formatJst(r.unsubscribed_at) || '—'}</td>
+      <BulkProvider ids={rows.map((r) => r.id)}>
+        {canEdit && (
+          <BulkStatusBar
+            labels={NEWSLETTER_STATUS_LABEL}
+            action={setNewsletterStatusBulkAction}
+            field="状態"
+            noun="登録"
+            defaultStatus="registered"
+          />
+        )}
+        <div className="card table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                {canEdit && (
+                  <th className="w-10">
+                    <SelectAllCheckbox />
+                  </th>
+                )}
+                <SortableTh label="登録日時" sortKey="subscribed" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+                <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+                <SortableTh label="状態" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+                <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
+                <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/newsletter" params={listParams} />
               </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr><td colSpan={6} className="py-8 text-center text-slate-500">{filter.status || filter.q ? '検索内容に一致するデータはありません。' : 'メルマガの登録者はまだいません。'}</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const member = memberFromRow(r);
+                return (
+                  <tr key={r.id}>
+                    {canEdit && (
+                      <td className="w-10">
+                        <RowCheckbox id={r.id} />
+                      </td>
+                    )}
+                    <td>{formatJst(r.subscribed_at)}</td>
+                    <td>{r.email}</td>
+                    <td>
+                      <StatusSelect
+                        key={r.status}
+                        id={r.id}
+                        status={r.status}
+                        readOnly={!canEdit}
+                        labels={NEWSLETTER_STATUS_LABEL}
+                        styles={NEWSLETTER_STATUS_STYLE}
+                        action={setNewsletterStatusAction}
+                        ariaLabel="メルマガの状態"
+                      />
+                    </td>
+                    <td>{[r.last_name, r.first_name].filter(Boolean).join(' ') || '—'}</td>
+                    <td>
+                      {member ? (
+                        <MemberButton
+                          member={member}
+                          label={member.display_name ?? member.external_id}
+                          formatted={{
+                            first_authenticated_at: formatJst(member.first_authenticated_at),
+                            last_login_at: formatJst(member.last_login_at),
+                            profile_updated_at: formatJst(member.profile_updated_at),
+                          }}
+                        />
+                      ) : (
+                        <span className="text-slate-400">ログインなし</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
+                <tr><td colSpan={canEdit ? 6 : 5} className="py-8 text-center text-slate-500">{filter.status || filter.q ? '検索内容に一致するデータはありません。' : 'メルマガの登録者はまだいません。'}</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </BulkProvider>
       <Pagination basePath="/newsletter" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
     </div>
   );

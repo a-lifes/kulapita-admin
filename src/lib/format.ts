@@ -41,11 +41,23 @@ export const PLACEMENT_LABEL: Record<string, string> = {
   fixed: '画面下の固定バー',
 };
 
+/** メルマガの状態 (配信は別システム。サイトで登録されたら未対応、担当者が配信システムに登録したら登録済) */
 export const NEWSLETTER_STATUS_LABEL: Record<string, string> = {
-  active: '登録中',
-  unsubscribed: '解除',
-  bounced: '不達',
-  pending: '確認待ち',
+  pending: '未対応',
+  registered: '登録済',
+  excluded: '登録対象外',
+};
+
+/** 一覧の行で状態を切り替えるプルダウンの色 */
+export const NEWSLETTER_STATUS_STYLE: Record<string, string> = {
+  pending: 'border-red-300 bg-red-50 text-red-800',
+  registered: 'border-emerald-400 bg-emerald-50 text-emerald-800',
+  excluded: 'border-slate-300 bg-slate-100 text-slate-700',
+};
+export const PRESENT_STATUS_STYLE: Record<string, string> = {
+  applied: 'border-sky-300 bg-sky-50 text-sky-800',
+  won: 'border-emerald-400 bg-emerald-50 text-emerald-800',
+  lost: 'border-slate-300 bg-slate-100 text-slate-700',
 };
 
 export const PRESENT_STATUS_LABEL: Record<string, string> = {
