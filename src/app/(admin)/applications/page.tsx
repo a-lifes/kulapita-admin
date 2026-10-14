@@ -122,11 +122,11 @@ export default async function ApplicationsPage({
             <tr>
               <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
+              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="サービス" sortKey="service" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="サービス提供会社" sortKey="company" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
-              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="担当" sortKey="assignee" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
             </tr>
           </thead>
@@ -141,6 +141,7 @@ export default async function ApplicationsPage({
                       {r.reception_number}
                     </Link>
                   </td>
+                  <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
                   <td className="max-w-64 truncate" title={r.service_name ?? undefined}>{r.service_name ?? '—'}</td>
                   <td className="max-w-56 truncate" title={r.service_company ?? undefined}>{r.service_company ?? '—'}</td>
                   <td>{r.name}</td>
@@ -158,7 +159,6 @@ export default async function ApplicationsPage({
                       '—'
                     )}
                   </td>
-                  <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
                   <td>{r.assignee ?? '—'}</td>
                 </tr>
               );
