@@ -124,16 +124,35 @@ export default async function PresentsPage({
           <ul className="flex flex-wrap gap-3 text-sm">
             {shownSummary.map((s) => {
               const winners = cms.items?.[Number(s.item_index)]?.winners ?? null;
+              const imageUrl = cms.items?.[Number(s.item_index)]?.imageUrl ?? null;
               const won = Number(s.won ?? 0);
               const full = winners !== null && won >= winners;
               return (
-                <li key={s.item_index} className={`rounded border px-3 py-2 ${full ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200'}`}>
-                  <p className="font-semibold">{Number(s.item_index) + 1}. {s.item_name}</p>
-                  <p className="mt-1">
-                    応募 <strong>{Number(s.total).toLocaleString()}</strong> 件 ／ 当選{' '}
-                    <strong>{won}</strong>
-                    {winners !== null ? ` / ${winners} 名` : ' 名（当選者数 不明）'}
-                  </p>
+                <li
+                  key={s.item_index}
+                  className={`flex items-center gap-3 rounded border px-3 py-2 ${full ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200'}`}
+                >
+                  {/* microCMS の景品の画像 (サムネイルに縮めて読む) */}
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`${imageUrl}?w=96&h=96&fit=crop`}
+                      alt=""
+                      width={48}
+                      height={48}
+                      loading="lazy"
+                      className="h-12 w-12 shrink-0 rounded object-cover"
+                    />
+                  ) : (
+                    <span className="h-12 w-12 shrink-0 rounded bg-slate-100" aria-hidden="true" />
+                  )}
+                  <div>
+                    <p>{s.item_name}</p>
+                    <p className="mt-0.5 text-slate-600">
+                      応募 {Number(s.total).toLocaleString()} 件（当選 {won}
+                      {winners !== null ? ` / ${winners} 名` : ' 名・当選者数 不明'}）
+                    </p>
+                  </div>
                 </li>
               );
             })}

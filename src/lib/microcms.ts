@@ -11,10 +11,10 @@ type RawCampaign = {
   id: string;
   slug?: string;
   month?: string;
-  items?: { name?: string; winners?: number | null }[];
+  items?: { name?: string; winners?: number | null; image?: { url?: string } | null }[];
 };
 
-export type CampaignItems = { name: string; winners: number | null }[];
+export type CampaignItems = { name: string; winners: number | null; imageUrl: string | null }[];
 
 const sm = new SecretsManagerClient({ region: process.env.AWS_REGION ?? 'ap-northeast-1' });
 let credCache: { at: number; value: Credentials | null } | null = null;
@@ -71,6 +71,7 @@ async function campaigns(): Promise<Map<string, CampaignItems>> {
         (c.items ?? []).map((i) => ({
           name: (i.name ?? '').replace(/\s+/g, ' ').trim(),
           winners: typeof i.winners === 'number' && i.winners >= 0 ? i.winners : null,
+          imageUrl: typeof i.image?.url === 'string' && i.image.url.startsWith('https://') ? i.image.url : null,
         })),
       );
     }
