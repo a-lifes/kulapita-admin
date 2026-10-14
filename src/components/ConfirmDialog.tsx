@@ -62,7 +62,7 @@ function ConfirmDialog({ options, onClose }: { options: ConfirmOptions; onClose:
       onClick={(e) => {
         if (e.target === ref.current) onClose(false);
       }}
-      className="m-auto w-[min(440px,92vw)] rounded-xl p-0 text-left font-normal shadow-2xl backdrop:bg-slate-900/50"
+      className="m-auto w-[min(440px,92vw)] rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
     >
       <div className="p-6">
         <div className="flex gap-4">

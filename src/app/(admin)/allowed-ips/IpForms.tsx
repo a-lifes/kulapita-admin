@@ -71,7 +71,7 @@ export function EditIpButton({ id, cidr, label }: { id: string; cidr: string; la
         onClick={(e) => {
           if (e.target === ref.current) setOpen(false);
         }}
-        className="m-auto w-[min(520px,92vw)] rounded-xl p-0 text-left font-normal shadow-2xl backdrop:bg-slate-900/50"
+        className="m-auto w-[min(520px,92vw)] rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
       >
         {open && (
           <form
