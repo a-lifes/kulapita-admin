@@ -18,7 +18,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   created: { sql: 'c.created_at', firstDir: 'desc' },
   number: { sql: 'c.reception_number' },
   route: { sql: 'c.route' },
-  content: { sql: 'COALESCE(c.service_name, c.category)' },
+  content: { sql: 'c.category' },
   name: { sql: 'c.name' },
   email: { sql: 'c.email' },
   status: { sql: "FIELD(c.status, 'pending', 'in_progress', 'completed', 'archived')" },
@@ -113,7 +113,7 @@ export default async function ContactsPage({
               <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="種別" sortKey="route" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
-              <SortableTh label="内容" sortKey="content" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="お問い合わせの種類" sortKey="content" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
@@ -130,7 +130,7 @@ export default async function ContactsPage({
                   </Link>
                 </td>
                 <td>{label(CONTACT_ROUTE_LABEL, r.route)}</td>
-                <td>{r.route === 'service' ? r.service_name : r.category}</td>
+                <td>{r.category}</td>
                 <td>{r.name}</td>
                 <td>{r.email}</td>
                 <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>

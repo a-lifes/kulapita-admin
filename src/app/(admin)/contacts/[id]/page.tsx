@@ -33,20 +33,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
     ['受付番号', <span key="r" className="font-mono font-semibold">{c.reception_number}</span>],
     ['受付日時', formatJst(c.created_at)],
     ['種別', label(CONTACT_ROUTE_LABEL, c.route)],
-    ...(c.route === 'service'
-      ? ([
-          ['サービス提供会社', c.service_company],
-          ['サービス名', c.service_name],
-          [
-            'サービス URL',
-            c.service_url ? (
-              <a key="u" className="break-all text-brand underline" href={c.service_url} target="_blank" rel="noreferrer noopener">
-                {c.service_url}
-              </a>
-            ) : null,
-          ],
-        ] as [string, React.ReactNode][])
-      : ([['お問い合わせの種類', c.category]] as [string, React.ReactNode][])),
+    ['お問い合わせの種類', c.category],
     ['会員番号', c.member_id ?? '（ログインなし）'],
     ['お名前', c.name],
     ['住所', `〒${c.zipcode ?? ''} ${c.prefecture ?? ''}${c.city ?? ''}${c.building ? ` ${c.building}` : ''}`],

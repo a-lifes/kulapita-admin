@@ -13,6 +13,7 @@ export function ContactForm({
   notes,
   admins,
   readOnly,
+  action: save = updateContactAction,
 }: {
   id: string;
   status: string;
@@ -20,9 +21,11 @@ export function ContactForm({
   notes: string | null;
   admins: { id: string; display_name: string }[];
   readOnly: boolean;
+  /** 保存処理 (お問い合わせ・サービスの申し込みで切り替える) */
+  action?: (id: string, prev: ContactFormState, formData: FormData) => Promise<ContactFormState>;
 }) {
   const [state, action, pending] = useActionState<ContactFormState, FormData>(
-    updateContactAction.bind(null, id),
+    save.bind(null, id),
     undefined,
   );
   return (

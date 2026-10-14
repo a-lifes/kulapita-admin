@@ -27,7 +27,10 @@ const ACTION_LABEL: Record<string, string> = {
   'auth.password_change': 'パスワード変更',
   'auth.mfa_setup': '2 段階認証の登録',
   'contact.update': 'お問い合わせ更新',
+  'application.update': '申し込みの更新',
   'export.contacts': 'CSV 出力（お問い合わせ）',
+  'export.applications': 'CSV 出力（申し込み）',
+  'export.clicks': 'CSV 出力（誘導）',
   'export.newsletter': 'CSV 出力（メルマガ）',
   'export.presents': 'CSV 出力（プレゼント）',
   'present.update_status': 'プレゼント結果の設定',
@@ -44,6 +47,7 @@ const ACTION_LABEL: Record<string, string> = {
 
 const TARGET_LABEL: Record<string, string> = {
   contact: 'お問い合わせ',
+  service_application: '申し込み',
   admin_user: 'アカウント',
   allowed_ip: '許可 IP',
   present_application: 'プレゼント応募',
@@ -154,7 +158,13 @@ export default async function AuditLogsPage({
           <tbody>
             {rows.map((r) => {
               const target = r.target_type ? (TARGET_LABEL[r.target_type] ?? r.target_type) : '—';
-              const targetHref = r.target_type === 'contact' && r.target_id ? `/contacts/${r.target_id}` : null;
+              const targetHref = !r.target_id
+                ? null
+                : r.target_type === 'contact'
+                  ? `/contacts/${r.target_id}`
+                  : r.target_type === 'service_application'
+                    ? `/applications/${r.target_id}`
+                    : null;
               return (
                 <tr key={r.id}>
                   <td>

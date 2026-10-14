@@ -35,6 +35,12 @@ export const CONTACT_ROUTE_LABEL: Record<string, string> = {
   service: 'サービスの申し込み',
 };
 
+/** 誘導ボタンの場所 */
+export const PLACEMENT_LABEL: Record<string, string> = {
+  hero: 'ページ上部',
+  fixed: '画面下の固定バー',
+};
+
 export const NEWSLETTER_STATUS_LABEL: Record<string, string> = {
   active: '登録中',
   unsubscribed: '解除',

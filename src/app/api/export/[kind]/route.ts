@@ -10,9 +10,17 @@ import {
   formatJst,
   label,
   NEWSLETTER_STATUS_LABEL,
+  PLACEMENT_LABEL,
   PRESENT_STATUS_LABEL,
 } from '@/lib/format';
 import { contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
+import {
+  applicationWhere,
+  clickWhere,
+  normalizeApplicationFilter,
+  normalizeClickFilter,
+} from '@/lib/queries/conversions';
+import { resolveRange } from '@/lib/dateRange';
 import {
   newsletterWhere,
   normalizeNewsletterFilter,
@@ -44,7 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const { rows } = await query<Row>(
       `SELECT c.reception_number, c.created_at, c.route, c.category, c.status, a.display_name AS assignee,
               u.external_id AS member_id, c.name, c.zipcode, c.prefecture, c.city, c.building, c.phone, c.email,
-              c.service_company, c.service_name, c.service_url, c.message, c.admin_notes, c.responded_at
+              c.message, c.admin_notes, c.responded_at
        FROM contacts c
        LEFT JOIN admin_users a ON a.id = c.assigned_to
        LEFT JOIN users u ON u.id = c.user_id
@@ -56,13 +64,70 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       `contacts_${stamp()}.csv`,
       toCsv(
         ['受付番号', '受付日時', '種別', 'お問い合わせの種類', '対応状況', '担当者', '会員番号', 'お名前', '郵便番号',
-          '都道府県', '市区町村・番地', '建物名', '電話番号', 'メールアドレス', 'サービス提供会社', 'サービス名',
-          'サービスURL', 'お問い合わせ内容', '対応メモ', '対応完了日時'],
+          '都道府県', '市区町村・番地', '建物名', '電話番号', 'メールアドレス', 'お問い合わせ内容', '対応メモ',
+          '対応完了日時'],
         rows.map((r) => [
           r.reception_number, formatJst(r.created_at), label(CONTACT_ROUTE_LABEL, r.route), r.category,
           label(CONTACT_STATUS_LABEL, r.status), r.assignee, r.member_id, r.name, r.zipcode, r.prefecture, r.city,
-          r.building, r.phone, r.email, r.service_company, r.service_name, r.service_url, r.message, r.admin_notes,
-          formatJst(r.responded_at),
+          r.building, r.phone, r.email, r.message, r.admin_notes, formatJst(r.responded_at),
+        ]),
+      ),
+    );
+  }
+
+  if (kind === 'applications') {
+    const filter = normalizeApplicationFilter(sp);
+    const where = applicationWhere(filter);
+    const { rows } = await query<Row>(
+      `SELECT s.reception_number, s.created_at, s.service_name, s.service_company, s.service_url, s.status,
+              a.display_name AS assignee, u.external_id AS member_id, s.name, s.zipcode, s.prefecture, s.city,
+              s.building, s.phone, s.email, s.message, s.admin_notes, s.responded_at
+       FROM service_applications s
+       LEFT JOIN admin_users a ON a.id = s.assigned_to
+       LEFT JOIN users u ON u.id = s.user_id
+       WHERE ${where.sql} ORDER BY s.created_at DESC LIMIT ${MAX_ROWS}`,
+      where.params,
+    );
+    await writeAudit({ admin, action: 'export.applications', diff: { filter, rows: rows.length } });
+    return csvResponse(
+      `申し込み_${stamp()}.csv`,
+      toCsv(
+        ['受付番号', '受付日時', 'サービス名', 'サービス提供会社', 'サービスのページ', '対応状況', '担当者', '会員番号',
+          'お名前', '郵便番号', '都道府県', '市区町村・番地', '建物名', '電話番号', 'メールアドレス', 'ご要望・ご質問',
+          '対応メモ', '対応完了日時'],
+        rows.map((r) => [
+          r.reception_number, formatJst(r.created_at), r.service_name, r.service_company, r.service_url,
+          label(CONTACT_STATUS_LABEL, r.status), r.assignee, r.member_id, r.name, r.zipcode, r.prefecture, r.city,
+          r.building, r.phone, r.email, r.message, r.admin_notes, formatJst(r.responded_at),
+        ]),
+      ),
+    );
+  }
+
+  if (kind === 'clicks') {
+    const range = resolveRange(sp);
+    const filter = normalizeClickFilter(sp);
+    const where = clickWhere(filter, range);
+    const { rows } = await query<Row>(
+      `SELECT k.created_at, k.service_slug, k.service_name, k.service_company, k.placement, k.destination_url,
+              k.page_url, u.external_id AS member_id
+       FROM outbound_clicks k LEFT JOIN users u ON u.id = k.user_id
+       WHERE ${where.sql} ORDER BY k.created_at DESC LIMIT ${MAX_ROWS}`,
+      where.params,
+    );
+    await writeAudit({
+      admin,
+      action: 'export.clicks',
+      diff: { filter: { from: range.from, to: range.to, ...filter }, rows: rows.length },
+    });
+    const ymd = (s: string) => s.replaceAll('-', '');
+    return csvResponse(
+      `誘導_${ymd(range.from)}-${ymd(range.to)}_${stamp()}.csv`,
+      toCsv(
+        ['日時', 'サービス ID', 'サービス名', 'サービス提供会社', 'ボタンの場所', '誘導先', 'クリックしたページ', '会員番号'],
+        rows.map((r) => [
+          formatJst(r.created_at), r.service_slug, r.service_name, r.service_company,
+          label(PLACEMENT_LABEL, r.placement), r.destination_url, r.page_url, r.member_id,
         ]),
       ),
     );

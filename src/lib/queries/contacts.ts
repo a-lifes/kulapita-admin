@@ -2,7 +2,8 @@ import 'server-only';
 import { likeEscape, Params } from '../db';
 
 export const CONTACT_STATUSES = ['pending', 'in_progress', 'completed', 'archived'] as const;
-export const CONTACT_ROUTES = ['inquiry', 'publish', 'service'] as const;
+// サービスの申し込み (service) は service_applications で別に管理する
+export const CONTACT_ROUTES = ['inquiry', 'publish'] as const;
 
 export type ContactFilter = { status?: string; route?: string; q?: string };
 
@@ -16,7 +17,7 @@ export function normalizeContactFilter(sp: Record<string, string | undefined>): 
 
 /** 一覧・CSV 共通の絞り込み条件 (値はすべてパラメーターで渡す) */
 export function contactWhere(f: ContactFilter): { sql: string; params: Params } {
-  const conds = ['c.deleted_at IS NULL'];
+  const conds = ['c.deleted_at IS NULL', "c.route <> 'service'"];
   const params: Params = {};
   if (f.status) {
     conds.push('c.status = :status');
