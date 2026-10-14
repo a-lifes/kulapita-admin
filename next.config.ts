@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   // Docker イメージを小さくするため、動かすのに必要なファイルだけを .next/standalone にまとめる
   output: 'standalone',
   poweredByHeader: false,
+  // 開発中に出る Next.js のマーク (左下) がユーザーメニューと重なるため右下へ
+  devIndicators: { position: 'bottom-right' },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

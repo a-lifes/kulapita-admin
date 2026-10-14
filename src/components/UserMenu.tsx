@@ -6,8 +6,8 @@ import { logoutAction } from '@/app/(admin)/actions';
 import { icons } from './icons';
 
 /**
- * ヘッダー右のログイン中ユーザー。
- * マウスを乗せる (またはクリックする) と、メールアドレス・権限・パスワード変更・ログアウトを出す。
+ * 左下のログイン中ユーザー (microCMS と同じ位置)。
+ * マウスを乗せる (またはクリックする) と、名前・メールアドレス・権限・パスワード変更・ログアウトを出す。
  */
 export function UserMenu({ name, email, role }: { name: string; email: string; role: string }) {
   const [open, setOpen] = useState(false);
@@ -35,29 +35,27 @@ export function UserMenu({ name, email, role }: { name: string; email: string; r
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full bg-white/80 py-1.5 pr-3 pl-1.5 text-sm font-bold text-slate-800 shadow-sm ring-1 ring-black/5 hover:bg-white"
+        aria-label={`${name} のメニュー`}
+        title={name}
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-400 text-white hover:bg-slate-300"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white">
-          <icons.user className="h-4 w-4" />
-        </span>
-        {name}
-        <icons.chevronDown className="h-4 w-4 text-slate-500" />
+        <icons.user className="h-6 w-6" />
       </button>
 
       {open && (
-        // 上の余白 (pt-2) もメニューの一部にして、ボタンから移る途中で閉じないようにする
-        <div className="absolute right-0 top-full z-30 pt-2" role="menu">
-          <div className="w-72 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+        // 左の余白 (pl-3) もメニューの一部にして、ボタンから移る途中で閉じないようにする
+        <div className="absolute bottom-0 left-full z-30 pl-3" role="menu">
+          <div className="w-72 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-100 px-4 py-3 text-sm">
-              <p className="font-bold">{name}</p>
+              <p className="font-bold text-slate-900">{name}</p>
               <p className="mt-0.5 break-all text-slate-600">{email}</p>
-              <span className="badge mt-2 bg-slate-100 text-slate-700">{role}</span>
+              <span className="badge mt-2 bg-nav-active text-brand">{role}</span>
             </div>
             <Link
               href="/account"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
             >
               <icons.key className="h-4 w-4 text-slate-500" />
               パスワード変更

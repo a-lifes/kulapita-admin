@@ -77,6 +77,13 @@ export const icons = {
       <path d="M9 4v16M13 10l2 2-2 2" />
     </Svg>
   ),
+  more: (p: IconProps) => (
+    <Svg {...p}>
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </Svg>
+  ),
   user: (p: IconProps) => (
     <Svg {...p}>
       <circle cx="12" cy="8" r="4" />

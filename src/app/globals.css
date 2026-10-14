@@ -1,13 +1,22 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-brand: #1f6f5c;
-  --color-brand-dark: #165445;
+  /* microCMS の管理画面に近い配色 */
+  --color-brand: #563bff;
+  --color-brand-dark: #4229d9;
+  --color-rail: #21213b;
+  --color-nav: #f6f7fb;
+  --color-nav-text: #6e6c99;
+  --color-nav-heading: #50507a;
+  --color-nav-active: #e9e7fc;
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
-  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', Meiryo, sans-serif;
+  /* microCMS と同じく OS 標準の書体 (Mac: San Francisco + ヒラギノ角ゴ / Windows: Segoe UI + メイリオ) */
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
+    Meiryo, sans-serif;
 }
 
 /*
