@@ -5,8 +5,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
-import { CONTACT_ROUTE_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
-import { CONTACT_ROUTES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
+import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
+import { CONTACT_CATEGORIES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
@@ -17,7 +17,6 @@ export const metadata: Metadata = { title: 'お問い合わせ' };
 const SORT_COLUMNS: Record<string, SortColumn> = {
   created: { sql: 'c.created_at', firstDir: 'desc' },
   number: { sql: 'c.reception_number' },
-  route: { sql: 'c.route' },
   content: { sql: 'c.category' },
   name: { sql: 'c.name' },
   email: { sql: 'c.email' },
@@ -28,7 +27,6 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
 type Row = {
   id: string;
   reception_number: string;
-  route: string;
   category: string | null;
   service_name: string | null;
   name: string;
@@ -54,7 +52,7 @@ export default async function ContactsPage({
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
-      `SELECT c.id, c.reception_number, c.route, c.category, c.service_name, c.name, c.email,
+      `SELECT c.id, c.reception_number, c.category, c.service_name, c.name, c.email,
               c.status, c.created_at, a.display_name AS assignee
        FROM contacts c LEFT JOIN admin_users a ON a.id = c.assigned_to
        WHERE ${where.sql}
@@ -90,11 +88,11 @@ export default async function ContactsPage({
           </select>
         </div>
         <div>
-          <label className="label" htmlFor="route">種別</label>
-          <select className="input" id="route" name="route" defaultValue={filter.route ?? ''}>
+          <label className="label" htmlFor="category">お問い合わせの種類</label>
+          <select className="input" id="category" name="category" defaultValue={filter.category ?? ''}>
             <option value="">すべて</option>
-            {CONTACT_ROUTES.map((r) => (
-              <option key={r} value={r}>{CONTACT_ROUTE_LABEL[r]}</option>
+            {CONTACT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
             ))}
           </select>
         </div>
@@ -112,7 +110,6 @@ export default async function ContactsPage({
             <tr>
               <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
-              <SortableTh label="種別" sortKey="route" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="お問い合わせの種類" sortKey="content" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
@@ -129,7 +126,6 @@ export default async function ContactsPage({
                     {r.reception_number}
                   </Link>
                 </td>
-                <td>{label(CONTACT_ROUTE_LABEL, r.route)}</td>
                 <td>{r.category}</td>
                 <td>{r.name}</td>
                 <td>{r.email}</td>
@@ -139,7 +135,7 @@ export default async function ContactsPage({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-slate-500">{filter.status || filter.route || filter.q ? '検索内容に一致するデータはありません。' : 'お問い合わせはまだありません。'}</td>
+                <td colSpan={7} className="py-8 text-center text-slate-500">{filter.status || filter.category || filter.q ? '検索内容に一致するデータはありません。' : 'お問い合わせはまだありません。'}</td>
               </tr>
             )}
           </tbody>

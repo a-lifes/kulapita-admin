@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { BackLink } from '@/components/BackLink';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query, queryOne } from '@/lib/db';
-import { CONTACT_ROUTE_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
+import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { UUID_RE } from '@/lib/uuid';
 import { ContactForm } from './ContactForm';
 
@@ -32,7 +32,6 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   const fields: [string, React.ReactNode][] = [
     ['受付番号', <span key="r" className="font-mono font-semibold">{c.reception_number}</span>],
     ['受付日時', formatJst(c.created_at)],
-    ['種別', label(CONTACT_ROUTE_LABEL, c.route)],
     ['お問い合わせの種類', c.category],
     ['会員番号', c.member_id ?? '（ログインなし）'],
     ['お名前', c.name],
@@ -47,11 +46,9 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
   return (
     <>
-      <p className="mb-2 text-sm">
-        <Link className="text-brand underline" href="/contacts">← お問い合わせ一覧</Link>
-      </p>
-      <h1 className="page-title flex items-center gap-3">
-        お問い合わせ詳細
+      <h1 className="page-title gap-2">
+        <BackLink href="/contacts" label="お問い合わせ一覧に戻る" />
+        <span className="mr-1">お問い合わせ詳細</span>
         <StatusBadge value={c.status ?? ''} text={label(CONTACT_STATUS_LABEL, c.status)} />
       </h1>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">

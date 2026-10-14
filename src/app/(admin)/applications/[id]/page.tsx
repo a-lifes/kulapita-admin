@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { BackLink } from '@/components/BackLink';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
@@ -56,11 +56,9 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
   return (
     <>
-      <p className="mb-2 text-sm">
-        <Link className="text-brand underline" href="/applications">← コンバージョン（申し込み）一覧</Link>
-      </p>
-      <h1 className="page-title flex items-center gap-3">
-        申し込みの詳細
+      <h1 className="page-title gap-2">
+        <BackLink href="/applications" label="コンバージョン（申し込み）一覧に戻る" />
+        <span className="mr-1">申し込みの詳細</span>
         <StatusBadge value={s.status ?? ''} text={label(CONTACT_STATUS_LABEL, s.status)} />
       </h1>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">

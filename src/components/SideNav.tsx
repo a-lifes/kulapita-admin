@@ -106,7 +106,7 @@ export function SideNav({
             {collapsed ? (
               <hr className="mx-3 mb-2 border-slate-200" />
             ) : (
-              <p className="mb-1.5 px-5 text-[13px] font-bold text-nav-heading">{group.title}</p>
+              <p className="mb-1.5 px-5 text-[12px] font-bold text-nav-heading">{group.title}</p>
             )}
             <div className="flex flex-col gap-0.5 px-2.5">
               {group.items.map((item) => {
@@ -118,7 +118,7 @@ export function SideNav({
                     href={item.href}
                     title={collapsed ? item.text : undefined}
                     aria-label={item.text}
-                    className={`flex items-center gap-3 rounded-md py-2.5 text-[15px] whitespace-nowrap ${
+                    className={`flex items-center gap-3 rounded-md py-2.5 text-[14px] whitespace-nowrap ${
                       collapsed ? 'justify-center px-0' : 'px-3'
                     } ${
                       active

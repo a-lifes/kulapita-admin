@@ -5,7 +5,6 @@ import { csvResponse, toCsv } from '@/lib/csv';
 import { query } from '@/lib/db';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import {
-  CONTACT_ROUTE_LABEL,
   CONTACT_STATUS_LABEL,
   formatJst,
   label,
@@ -50,7 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const filter = normalizeContactFilter(sp);
     const where = contactWhere(filter);
     const { rows } = await query<Row>(
-      `SELECT c.reception_number, c.created_at, c.route, c.category, c.status, a.display_name AS assignee,
+      `SELECT c.reception_number, c.created_at, c.category, c.status, a.display_name AS assignee,
               u.external_id AS member_id, c.name, c.zipcode, c.prefecture, c.city, c.building, c.phone, c.email,
               c.message, c.admin_notes, c.responded_at
        FROM contacts c
@@ -63,11 +62,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `contacts_${stamp()}.csv`,
       toCsv(
-        ['受付番号', '受付日時', '種別', 'お問い合わせの種類', '対応状況', '担当者', '会員番号', 'お名前', '郵便番号',
+        ['受付番号', '受付日時', 'お問い合わせの種類', '対応状況', '担当者', '会員番号', 'お名前', '郵便番号',
           '都道府県', '市区町村・番地', '建物名', '電話番号', 'メールアドレス', 'お問い合わせ内容', '対応メモ',
           '対応完了日時'],
         rows.map((r) => [
-          r.reception_number, formatJst(r.created_at), label(CONTACT_ROUTE_LABEL, r.route), r.category,
+          r.reception_number, formatJst(r.created_at), r.category,
           label(CONTACT_STATUS_LABEL, r.status), r.assignee, r.member_id, r.name, r.zipcode, r.prefecture, r.city,
           r.building, r.phone, r.email, r.message, r.admin_notes, formatJst(r.responded_at),
         ]),
