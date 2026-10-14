@@ -12,6 +12,7 @@ import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { clickWhere, normalizeClickFilter, PLACEMENTS } from '@/lib/queries/conversions';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 import { DateRangeFilter } from '../DateRangeFilter';
+import { getExternalServices } from '@/lib/microcms';
 
 export const metadata: Metadata = { title: 'コンバージョン（誘導）' };
 
@@ -25,8 +26,6 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   destination: { sql: 'k.destination_url' },
 };
 
-/** サービスごとの件数で表示する数 */
-const SUMMARY_LIMIT = 12;
 
 type Row = Record<string, unknown> & {
   id: string;
@@ -56,7 +55,7 @@ export default async function ClicksPage({
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'desc' });
   const listParams = { from: range.from, to: range.to, ...filter, per: sp.per };
 
-  const [{ rows }, { rows: count }, { rows: summary }] = await Promise.all([
+  const [{ rows }, { rows: count }, { rows: counted }, cms] = await Promise.all([
     query<Row>(
       `SELECT k.id, k.service_name, k.service_company, k.destination_url, k.placement, k.created_at, ${MEMBER_COLUMNS}
        FROM outbound_clicks k LEFT JOIN users u ON u.id = k.user_id
@@ -74,9 +73,20 @@ export default async function ClicksPage({
        GROUP BY k.service_slug ORDER BY total DESC, service_name LIMIT 500`,
       summaryWhere.params,
     ),
+    getExternalServices(),
   ]);
+  // サービスごとの誘導数: microCMS で「CTA の種類」が externalSite のサービスをすべて出す (0 件も)。
+  // microCMS に無くなったサービスのクリックが残っていれば、それも出す。
+  const summary: SummaryRow[] = [
+    ...(cms.services ?? []).map((svc) => {
+      const c = counted.find((r) => r.service_slug === svc.slug);
+      return { service_slug: svc.slug, service_name: svc.name, total: Number(c?.total ?? 0), members: Number(c?.members ?? 0) };
+    }),
+    ...counted
+      .filter((r) => !(cms.services ?? []).some((svc) => svc.slug === r.service_slug))
+      .map((r) => ({ ...r, total: Number(r.total), members: Number(r.members) })),
+  ].sort((a, b) => b.total - a.total || a.service_name.localeCompare(b.service_name, 'ja'));
   const total = Number(count[0]?.total ?? 0);
-  const memberClicks = Number(count[0]?.members ?? 0);
   const exportQuery = new URLSearchParams(
     Object.entries({ from: range.from, to: range.to, ...filter }).filter(([, v]) => v) as [string, string][],
   ).toString();
@@ -131,21 +141,17 @@ export default async function ClicksPage({
 
       {summary.length > 0 && (
         <div className="card mb-4">
-          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-bold">
-              サービスごとの誘導数（{range.from.replaceAll('-', '/')} 〜 {range.to.replaceAll('-', '/')}）
-            </h2>
-            <p className="text-slate-600">
-              表示中の条件で {total.toLocaleString()} 件（うちログイン中の会員 {memberClicks.toLocaleString()} 件）
-            </p>
-          </div>
+          <h2 className="mb-3 text-sm font-bold">サービスごとの誘導数</h2>
+          {cms.error && <p className="mb-2 text-xs text-red-700">{cms.error}</p>}
           <ul className="flex flex-wrap gap-2">
-            {summary.slice(0, SUMMARY_LIMIT).map((s) => {
+            {summary.map((s) => {
               const active = s.service_slug === filter.service;
               return (
                 <li key={s.service_slug}>
                   <Link
                     href={active ? serviceHref() : serviceHref(s.service_slug)}
+                    scroll={false}
+                    aria-pressed={active}
                     title={active ? '絞り込みを解除する' : 'このサービスで絞り込む'}
                     className={`block rounded border px-3 py-1.5 ${
                       active ? 'border-brand bg-nav-active text-brand' : 'border-slate-200 hover:bg-slate-50'
@@ -157,9 +163,6 @@ export default async function ClicksPage({
                 </li>
               );
             })}
-            {summary.length > SUMMARY_LIMIT && (
-              <li className="self-center text-slate-500">ほか {summary.length - SUMMARY_LIMIT} サービス</li>
-            )}
           </ul>
         </div>
       )}

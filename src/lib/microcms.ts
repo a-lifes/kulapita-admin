@@ -109,3 +109,44 @@ export async function getAllCampaigns(): Promise<{ campaigns: Map<string, Campai
     };
   }
 }
+
+/* ── サービス (外部サイトへ誘導するもの) ── */
+
+export type ExternalService = { slug: string; name: string; company: string | null };
+type RawService = { id: string; slug?: string; name?: string; company?: string; ctaType?: string[] };
+let serviceCache: { at: number; value: ExternalService[] } | null = null;
+
+/**
+ * microCMS の services のうち「CTA の種類」が externalSite のもの。
+ * slug はサイトの誘導クリックの記録 (outbound_clicks.service_slug) と同じ規則 (slug が無ければ ID)。
+ */
+export async function getExternalServices(): Promise<{ services: ExternalService[] | null; error?: string }> {
+  try {
+    if (serviceCache && Date.now() - serviceCache.at < 60_000) return { services: serviceCache.value };
+    const cred = await credentials();
+    if (!cred) throw new MicrocmsNotConfiguredError('microCMS の API キーが設定されていません');
+    const list: ExternalService[] = [];
+    for (let offset = 0; ; offset += 100) {
+      const url = new URL(`https://${cred.serviceDomain}.microcms.io/api/v1/services`);
+      url.searchParams.set('limit', '100');
+      url.searchParams.set('offset', String(offset));
+      url.searchParams.set('fields', 'id,slug,name,company,ctaType');
+      const res = await fetch(url, { headers: { 'X-MICROCMS-API-KEY': cred.apiKey }, cache: 'no-store' });
+      if (!res.ok) throw new Error(`microCMS から取得できませんでした（status ${res.status}）`);
+      const data = (await res.json()) as { contents: RawService[]; totalCount: number };
+      for (const c of data.contents) {
+        if (c.ctaType?.[0] !== 'externalSite') continue;
+        list.push({ slug: c.slug?.trim() || c.id, name: (c.name ?? '').trim() || c.id, company: c.company ?? null });
+      }
+      if (offset + data.contents.length >= data.totalCount || data.contents.length === 0) break;
+    }
+    serviceCache = { at: Date.now(), value: list };
+    return { services: list };
+  } catch (e) {
+    console.error('microCMS fetch failed', (e as Error).message);
+    return {
+      services: null,
+      error: e instanceof MicrocmsNotConfiguredError ? e.message : 'サービスを microCMS から取得できませんでした',
+    };
+  }
+}
