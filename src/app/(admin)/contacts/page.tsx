@@ -106,7 +106,7 @@ export default async function ContactsPage({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="hover:bg-slate-50">
+              <tr key={r.id}>
                 <td>{formatJst(r.created_at)}</td>
                 <td>
                   <Link className="text-brand underline" href={`/contacts/${r.id}`}>
