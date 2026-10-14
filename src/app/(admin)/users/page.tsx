@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { PageHelp } from '@/components/PageHelp';
 import { listAdmins } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { formatJst, label, ROLE_LABEL } from '@/lib/format';
 import { CreateAdminForm, EditAdminForm } from './UserForms';
 
-export const metadata: Metadata = { title: '管理者アカウント' };
+export const metadata: Metadata = { title: 'アカウント' };
 
 export default async function UsersPage() {
   const me = await requireAdmin('super_admin');
@@ -12,21 +13,20 @@ export default async function UsersPage() {
 
   return (
     <>
-      <h1 className="page-title">管理者アカウント</h1>
+      <h1 className="page-title">アカウント</h1>
       <section className="card mb-6">
         <h2 className="mb-3 font-bold">アカウントを追加</h2>
         <CreateAdminForm />
       </section>
 
-      <section className="card mb-6 text-sm">
-        <h2 className="mb-2 font-bold">権限の違い</h2>
-        <ul className="list-disc space-y-1 pl-5">
-          <li><strong>スーパー管理者</strong>：すべての操作 + 管理者アカウント・許可 IP の管理</li>
+      <PageHelp title="権限の違い">
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li><strong>スーパー管理者</strong>：すべての操作 + アカウント・許可 IP の管理</li>
           <li><strong>管理者</strong>：一覧の閲覧・お問い合わせの対応・CSV ダウンロード・操作ログの閲覧</li>
           <li><strong>担当者</strong>：一覧の閲覧・お問い合わせの対応（CSV ダウンロードは不可）</li>
           <li><strong>閲覧のみ</strong>：一覧の閲覧だけ</li>
         </ul>
-      </section>
+      </PageHelp>
 
       <div className="space-y-4">
         {users.map((u) => (

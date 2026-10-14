@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NAV_COOKIE, NavGroup, NavItem, SideNav } from '@/components/SideNav';
+import { HelpProvider } from '@/components/PageHelp';
 import { Toaster } from '@/components/Toaster';
 import { hasRole, Role } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
@@ -20,7 +21,7 @@ const NAV: { title: string; items: (NavItem & { min: Role })[] }[] = [
     title: '管理',
     items: [
       { href: '/audit-logs', text: '操作ログ', icon: 'auditLogs', min: 'admin' },
-      { href: '/users', text: '管理者アカウント', icon: 'users', min: 'super_admin' },
+      { href: '/users', text: 'アカウント', icon: 'users', min: 'super_admin' },
       { href: '/allowed-ips', text: '許可 IP', icon: 'allowedIps', min: 'super_admin' },
     ],
   },
@@ -39,6 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   })).filter((g) => g.items.length > 0);
 
   return (
+    <HelpProvider>
     <div className="flex min-h-screen">
       <SideNav
         groups={groups}
@@ -50,5 +52,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="min-w-0 flex-1 px-8 py-6">{children}</main>
       <Toaster />
     </div>
+    </HelpProvider>
   );
 }

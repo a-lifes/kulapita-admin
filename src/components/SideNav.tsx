@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { IconName, icons } from './icons';
+import { HelpButton } from './PageHelp';
 import { UserMenu } from './UserMenu';
 
 export type NavItem = { href: string; text: string; icon: IconName };
@@ -17,7 +18,7 @@ export const NAV_COOKIE = 'kadm_nav';
  * 左側のメニュー (microCMS の管理画面に近い構成)
  *
  *   ┌───────────────────┐
- *   │● ローカル環境   [⇤]│ ← 環境名と開閉ボタン
+ *   │● ローカル環境 [?][⇤]│ ← 環境名・この画面の説明 (ある画面だけ)・開閉ボタン
  *   │ kulapita (ロゴ)     │ ← 閉じると正方形のロゴ
  *   │ グループ見出し       │
  *   │  ≡ 項目            │ ← 今いる画面は紫で強調
@@ -58,8 +59,8 @@ export function SideNav({
     >
       {/* 一番上: 環境名と開閉ボタン */}
       <div
-        className={`flex h-11 shrink-0 items-center border-b border-slate-200 bg-slate-100/80 ${
-          collapsed ? 'flex-col justify-center gap-0' : 'justify-between pr-2 pl-4'
+        className={`flex min-h-11 shrink-0 items-center border-b border-slate-200 bg-slate-100/80 ${
+          collapsed ? 'flex-col justify-center py-1.5' : 'justify-between pr-2 pl-4'
         }`}
       >
         {!collapsed && (
@@ -68,6 +69,8 @@ export function SideNav({
             {stageLabel}
           </span>
         )}
+        <div className={`flex items-center ${collapsed ? 'flex-col gap-1' : 'gap-1'}`}>
+        <HelpButton />
         <button
           type="button"
           onClick={toggle}
@@ -79,6 +82,7 @@ export function SideNav({
           {/* 閉じているときも環境が分かるよう、ボタンの右上に色の丸を出す */}
           {collapsed && <span className={`absolute top-0.5 right-0.5 h-2 w-2 rounded-full ${stageColor}`} />}
         </button>
+        </div>
       </div>
 
       {/* ロゴ (閉じると正方形のロゴ) */}
