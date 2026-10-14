@@ -50,9 +50,9 @@ export const NEWSLETTER_STATUS_LABEL: Record<string, string> = {
 
 /** 一覧の行で状態を切り替えるプルダウンの色 */
 export const NEWSLETTER_STATUS_STYLE: Record<string, string> = {
-  pending: 'border-red-300 bg-red-50 text-red-800',
+  pending: 'border-slate-300 bg-slate-100 text-slate-700',
   registered: 'border-emerald-400 bg-emerald-50 text-emerald-800',
-  excluded: 'border-slate-300 bg-slate-100 text-slate-700',
+  excluded: 'border-amber-300 bg-amber-50 text-amber-800',
 };
 export const PRESENT_STATUS_STYLE: Record<string, string> = {
   applied: 'border-sky-300 bg-sky-50 text-sky-800',
