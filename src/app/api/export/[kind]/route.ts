@@ -9,7 +9,6 @@ import {
   formatJst,
   label,
   NEWSLETTER_STATUS_LABEL,
-  PLACEMENT_LABEL,
   PRESENT_STATUS_LABEL,
 } from '@/lib/format';
 import { contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
@@ -137,7 +136,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const filter = normalizeClickFilter(sp);
     const where = clickWhere(filter, range);
     const { rows } = await query<Row>(
-      `SELECT k.created_at, k.service_slug, k.service_name, k.service_company, k.placement, k.destination_url,
+      `SELECT k.created_at, k.service_slug, k.service_name, k.service_company, k.destination_url,
               k.page_url, u.external_id AS member_id
        FROM outbound_clicks k LEFT JOIN users u ON u.id = k.user_id
        WHERE ${where.sql} ORDER BY k.created_at DESC LIMIT ${MAX_ROWS}`,
@@ -152,10 +151,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `誘導_${ymd(range.from)}-${ymd(range.to)}_${stamp()}.csv`,
       toCsv(
-        ['日時', 'サービス ID', 'サービス名', 'サービス提供会社', 'ボタンの場所', '誘導先', 'クリックしたページ', '会員番号'],
+        ['日時', 'サービス ID', 'サービス名', 'サービス提供会社', '誘導先', 'クリックしたページ', '会員番号'],
         rows.map((r) => [
           formatJst(r.created_at), r.service_slug, r.service_name, r.service_company,
-          label(PLACEMENT_LABEL, r.placement), r.destination_url, r.page_url, r.member_id,
+          r.destination_url, r.page_url, r.member_id,
         ]),
       ),
     );

@@ -11,6 +11,7 @@ import { getAllCampaigns } from '@/lib/microcms';
 import { normalizePresentFilter, presentWhere } from '@/lib/queries/lists';
 import { PresentFilters } from './PresentFilters';
 import { PresentStatusSelect } from './PresentStatusSelect';
+import { ItemImage } from './ItemImage';
 import { PresentBulkBar, PresentBulkProvider, RowCheckbox, SelectAllCheckbox } from './PresentBulk';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
@@ -130,8 +131,23 @@ export default async function PresentsPage({
               const won = Number(s.won ?? 0);
               const full = winners !== null && won >= winners;
               return (
-                <li key={s.item_index}>
-                  {/* 押すとこの景品の当選者だけに絞り込む (もう一度押すと解除) */}
+                <li
+                  key={s.item_index}
+                  className={`flex items-center gap-3 rounded border px-3 py-2 hover:border-brand ${
+                    selected
+                      ? 'border-brand bg-nav-active ring-1 ring-brand'
+                      : full
+                        ? 'border-emerald-400 bg-emerald-50'
+                        : 'border-slate-200'
+                  }`}
+                >
+                  {/* microCMS の景品の画像。押すと拡大 */}
+                  {imageUrl ? (
+                    <ItemImage url={imageUrl} name={s.item_name} />
+                  ) : (
+                    <span className="h-12 w-12 shrink-0 rounded bg-slate-100" aria-hidden="true" />
+                  )}
+                  {/* 文字の部分を押すと、この景品の当選者だけに絞り込む (もう一度押すと解除) */}
                   <Link
                     href={
                       selected
@@ -141,35 +157,13 @@ export default async function PresentsPage({
                     scroll={false}
                     aria-pressed={selected}
                     title={selected ? '絞り込みを解除する' : 'この景品の当選者を表示する'}
-                    className={`flex items-center gap-3 rounded border px-3 py-2 hover:border-brand ${
-                      selected
-                        ? 'border-brand bg-nav-active ring-1 ring-brand'
-                        : full
-                          ? 'border-emerald-400 bg-emerald-50'
-                          : 'border-slate-200'
-                    }`}
+                    className="block self-stretch py-0.5"
                   >
-                  {/* microCMS の景品の画像 (サムネイルに縮めて読む) */}
-                  {imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`${imageUrl}?w=96&h=96&fit=crop`}
-                      alt=""
-                      width={48}
-                      height={48}
-                      loading="lazy"
-                      className="h-12 w-12 shrink-0 rounded object-cover"
-                    />
-                  ) : (
-                    <span className="h-12 w-12 shrink-0 rounded bg-slate-100" aria-hidden="true" />
-                  )}
-                  <div>
                     <p>{s.item_name}</p>
                     <p className="mt-0.5 text-slate-600">
                       応募 {Number(s.total).toLocaleString()} 件（当選 {won}
                       {winners !== null ? ` / ${winners} 名` : ' 名・当選者数 不明'}）
                     </p>
-                  </div>
                   </Link>
                 </li>
               );
