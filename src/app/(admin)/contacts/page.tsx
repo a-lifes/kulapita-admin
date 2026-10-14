@@ -105,16 +105,16 @@ export default async function ContactsPage({
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50">
-                <td className="whitespace-nowrap">{formatJst(r.created_at)}</td>
+                <td>{formatJst(r.created_at)}</td>
                 <td>
-                  <Link className="font-mono font-semibold text-brand underline" href={`/contacts/${r.id}`}>
+                  <Link className="text-brand underline" href={`/contacts/${r.id}`}>
                     {r.reception_number}
                   </Link>
                 </td>
-                <td className="whitespace-nowrap">{label(CONTACT_ROUTE_LABEL, r.route)}</td>
+                <td>{label(CONTACT_ROUTE_LABEL, r.route)}</td>
                 <td>{r.route === 'service' ? r.service_name : r.category}</td>
                 <td>{r.name}</td>
-                <td className="break-all">{r.email}</td>
+                <td>{r.email}</td>
                 <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
                 <td>{r.assignee ?? '—'}</td>
               </tr>

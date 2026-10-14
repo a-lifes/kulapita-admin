@@ -33,7 +33,7 @@ export function MemberButton({ member, formatted }: { member: Member; formatted:
     <>
       <button
         type="button"
-        className="break-all text-left font-mono text-xs text-brand underline"
+        className="text-left text-brand underline"
         onClick={() => setOpen(true)}
       >
         {member.external_id}

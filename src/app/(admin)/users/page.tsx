@@ -43,7 +43,7 @@ export default async function UsersPage({
       <form className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">表示名・メールアドレス</label>
-          <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} />
+          <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} placeholder="表示名またはメールアドレスの一部を入力" />
         </div>
         <div>
           <label className="label" htmlFor="role">権限</label>
@@ -92,14 +92,14 @@ export default async function UsersPage({
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className={u.is_active ? '' : 'text-slate-400'}>
-                <td className="font-semibold">
+                <td>
                   {u.display_name}
                   {u.id === me.id && <span className="ml-2 text-xs font-normal text-slate-500">（自分）</span>}
                 </td>
-                <td className="break-all">{u.email}</td>
-                <td className="whitespace-nowrap">{label(ROLE_LABEL, u.role)}</td>
+                <td>{u.email}</td>
+                <td>{label(ROLE_LABEL, u.role)}</td>
                 <td>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex gap-1">
                     {u.is_active ? (
                       <span className="badge bg-emerald-100 text-emerald-800">有効</span>
                     ) : (
@@ -109,8 +109,8 @@ export default async function UsersPage({
                     {u.must_change_password && <span className="badge bg-amber-100 text-amber-800">初回ログイン待ち</span>}
                   </div>
                 </td>
-                <td className="whitespace-nowrap">{formatJst(u.last_login_at) || '—'}</td>
-                <td className="whitespace-nowrap">{formatJst(u.created_at)}</td>
+                <td>{formatJst(u.last_login_at) || '—'}</td>
+                <td>{formatJst(u.created_at)}</td>
                 <td className="w-36 text-right whitespace-nowrap">
                   <EditAdminButton user={u} isSelf={u.id === me.id} />
                   <ResetPasswordButton user={u} />

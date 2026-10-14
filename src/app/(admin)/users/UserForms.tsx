@@ -231,11 +231,11 @@ export function CreateAdminButton() {
             <div className="space-y-4">
               <div>
                 <label className="label" htmlFor="new-email">メールアドレス</label>
-                <input className="input" id="new-email" name="email" type="email" required autoFocus />
+                <input className="input" id="new-email" name="email" type="email" placeholder="例）taro.yamada@example.com" required autoFocus />
               </div>
               <div>
                 <label className="label" htmlFor="new-name">表示名</label>
-                <input className="input" id="new-name" name="display_name" required maxLength={100} />
+                <input className="input" id="new-name" name="display_name" placeholder="例）山田 太郎" required maxLength={100} />
               </div>
               <div>
                 <label className="label" htmlFor="new-role">権限</label>

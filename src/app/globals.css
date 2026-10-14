@@ -80,11 +80,15 @@ body {
   .table {
     @apply w-full border-collapse text-sm;
   }
+  /*
+   * 一覧の表: 全画面で行の高さを同じにし、文字は必ず 1 行で表示する
+   * (列が収まらないときは表の中で横スクロール)
+   */
   .table th {
-    @apply border-b border-slate-200 bg-slate-100 px-3 py-2 text-left font-semibold whitespace-nowrap;
+    @apply h-11 border-b border-slate-200 bg-slate-100 px-3 py-0 text-left font-semibold whitespace-nowrap;
   }
   .table td {
-    @apply border-b border-slate-100 px-3 py-2 align-middle;
+    @apply h-13 border-b border-slate-100 px-3 py-0 align-middle font-normal whitespace-nowrap;
   }
   .page-title {
     @apply mb-5 text-xl font-bold;

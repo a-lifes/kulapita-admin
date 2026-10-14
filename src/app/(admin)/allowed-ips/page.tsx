@@ -64,9 +64,9 @@ export default async function AllowedIpsPage({
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="font-mono">{r.cidr}</td>
+                <td>{r.cidr}</td>
                 <td>{r.label ?? '—'}</td>
-                <td className="whitespace-nowrap">{formatJst(r.created_at)}</td>
+                <td>{formatJst(r.created_at)}</td>
                 <td>{r.created_by_name ?? '（初期設定）'}</td>
                 <td className="w-28 text-right whitespace-nowrap">
                   <EditIpButton id={r.id} cidr={r.cidr} label={r.label} />

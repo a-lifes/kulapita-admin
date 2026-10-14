@@ -86,12 +86,12 @@ export default async function NewsletterPage({
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="whitespace-nowrap">{formatJst(r.subscribed_at)}</td>
-                <td className="break-all">{r.email}</td>
+                <td>{formatJst(r.subscribed_at)}</td>
+                <td>{r.email}</td>
                 <td>{[r.last_name, r.first_name].filter(Boolean).join(' ') || '—'}</td>
                 <td>{r.member_id ?? '—'}</td>
                 <td><StatusBadge value={r.status} text={label(NEWSLETTER_STATUS_LABEL, r.status)} /></td>
-                <td className="whitespace-nowrap">{formatJst(r.unsubscribed_at) || '—'}</td>
+                <td>{formatJst(r.unsubscribed_at) || '—'}</td>
               </tr>
             ))}
             {rows.length === 0 && (

@@ -119,10 +119,10 @@ export default async function PresentsPage({
               const member = memberFromRow(r);
               return (
                 <tr key={r.id}>
-                  <td className="whitespace-nowrap">{formatJst(r.created_at)}</td>
+                  <td>{formatJst(r.created_at)}</td>
                   <td>{r.campaign_key}</td>
                   <td>{Number(r.item_index) + 1}. {r.item_name}</td>
-                  <td className="max-w-48">
+                  <td>
                     {member ? (
                       <MemberButton
                         member={member}
@@ -137,7 +137,7 @@ export default async function PresentsPage({
                     )}
                   </td>
                   <td>{member?.display_name ?? '—'}</td>
-                  <td className="break-all">{r.email ?? '—'}</td>
+                  <td>{r.email ?? '—'}</td>
                   <td><PresentStatusSelect id={r.id} status={r.status} readOnly={!canEdit} /></td>
                 </tr>
               );
