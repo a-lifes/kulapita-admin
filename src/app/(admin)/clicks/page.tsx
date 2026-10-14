@@ -4,13 +4,13 @@ import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { SortableTh } from '@/components/SortableTh';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
-import { rangePresets, resolveRange } from '@/lib/dateRange';
+import { resolveRange } from '@/lib/dateRange';
 import { query } from '@/lib/db';
 import { formatJst, label, PLACEMENT_LABEL } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { clickWhere, normalizeClickFilter, PLACEMENTS } from '@/lib/queries/conversions';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
-import { DateRangeFilter } from '../DateRangeFilter';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { getExternalServices } from '@/lib/microcms';
 
 export const metadata: Metadata = { title: 'コンバージョン（誘導）' };
@@ -99,38 +99,42 @@ export default async function ClicksPage({
         )}
       </div>
 
-      <div className="card mb-4">
-        <DateRangeFilter
-          from={range.from}
-          to={range.to}
-          presets={rangePresets()}
-          basePath="/clicks"
-          keep={{ service: filter.service, placement: filter.placement }}
-        >
-          <div>
-            <label className="label" htmlFor="service">サービス</label>
-            <select className="input max-w-72" id="service" name="service" defaultValue={filter.service ?? ''}>
-              <option value="">すべて</option>
-              {summary.map((s) => (
-                <option key={s.service_slug} value={s.service_slug}>{s.service_name}</option>
-              ))}
-              {filter.service && !summary.some((s) => s.service_slug === filter.service) && (
-                <option value={filter.service}>{filter.service}</option>
-              )}
-            </select>
-          </div>
-          <div>
-            <label className="label" htmlFor="placement">ボタンの場所</label>
-            <select className="input" id="placement" name="placement" defaultValue={filter.placement ?? ''}>
-              <option value="">すべて</option>
-              {PLACEMENTS.map((p) => (
-                <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>
-              ))}
-            </select>
-          </div>
-        </DateRangeFilter>
-        {range.error && <p className="error mt-3">{range.error}</p>}
-      </div>
+      {/* 絞り込み (他の画面と同じ 1 行の形) */}
+      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="label" htmlFor="from">開始日</label>
+          <input className="input" type="date" id="from" name="from" defaultValue={range.from} required />
+        </div>
+        <span className="pb-2 text-slate-500">〜</span>
+        <div>
+          <label className="label" htmlFor="to">終了日</label>
+          <input className="input" type="date" id="to" name="to" defaultValue={range.to} required />
+        </div>
+        <div>
+          <label className="label" htmlFor="service">サービス</label>
+          <select className="input max-w-72" id="service" name="service" defaultValue={filter.service ?? ''}>
+            <option value="">すべて</option>
+            {summary.map((s) => (
+              <option key={s.service_slug} value={s.service_slug}>{s.service_name}</option>
+            ))}
+            {filter.service && !summary.some((s) => s.service_slug === filter.service) && (
+              <option value={filter.service}>{filter.service}</option>
+            )}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="placement">ボタンの場所</label>
+          <select className="input" id="placement" name="placement" defaultValue={filter.placement ?? ''}>
+            <option value="">すべて</option>
+            {PLACEMENTS.map((p) => (
+              <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>
+            ))}
+          </select>
+        </div>
+        <SearchButton />
+        <ClearButton href="/clicks" />
+      </SearchForm>
+      {range.error && <p className="error -mt-2 mb-4">{range.error}</p>}
 
 
       <div className="card table-scroll">
