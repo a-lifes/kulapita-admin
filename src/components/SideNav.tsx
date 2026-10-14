@@ -53,7 +53,7 @@ export function SideNav({
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-slate-200 bg-nav transition-[width] duration-200 ${
+      className={`sticky top-0 z-40 flex h-screen shrink-0 flex-col border-r border-slate-200 bg-nav transition-[width] duration-200 ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
