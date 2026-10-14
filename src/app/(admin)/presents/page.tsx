@@ -23,8 +23,7 @@ export const metadata: Metadata = { title: 'プレゼント' };
 const SORT_COLUMNS: Record<string, SortColumn> = {
   created: { sql: 'p.created_at', firstDir: 'desc' },
   item: { sql: 'p.item_index' },
-  member: { sql: 'u.external_id' },
-  name: { sql: 'u.display_name' },
+  member: { sql: 'COALESCE(u.display_name, u.external_id)' },
   email: { sql: 'p.email' },
   status: { sql: "FIELD(p.status, 'applied', 'won', 'lost')" },
 };
@@ -108,7 +107,7 @@ export default async function PresentsPage({
 
   const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
   const canEdit = hasRole(admin.role, 'support');
-  const colCount = canEdit ? 7 : 6;
+  const colCount = canEdit ? 6 : 5;
 
   return (
     <div className="list-page">
@@ -196,8 +195,7 @@ export default async function PresentsPage({
                 <SortableTh label="結果" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
                 <SortableTh label="応募日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
                 <SortableTh label="景品" sortKey="item" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
-                <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
-                <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+                <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
                 <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
               </tr>
             </thead>
@@ -229,6 +227,7 @@ export default async function PresentsPage({
                       {member ? (
                         <MemberButton
                           member={member}
+                          label={member.display_name ?? member.external_id}
                           formatted={{
                             first_authenticated_at: formatJst(member.first_authenticated_at),
                             last_login_at: formatJst(member.last_login_at),
@@ -239,7 +238,6 @@ export default async function PresentsPage({
                         '—'
                       )}
                     </td>
-                    <td>{member?.display_name ?? '—'}</td>
                     <td>{r.email ?? '—'}</td>
                   </tr>
                 );
