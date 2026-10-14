@@ -19,16 +19,15 @@ export async function burnPasswordCheck(plain: string): Promise<void> {
 }
 
 /**
- * パスワードの条件: 12 文字以上 72 バイト以内、英字と数字を両方含む。
+ * パスワードの条件: 8 文字以上 72 バイト以内、英字と数字を両方含む。
  * (bcrypt は 72 バイトを超えた部分を無視するため上限を設ける)
+ * email は呼び出し元との互換のため受け取るが、今は使わない。
  */
-export function validateNewPassword(plain: string, email: string): string | null {
-  if (plain.length < 12) return 'パスワードは 12 文字以上にしてください';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function validateNewPassword(plain: string, _email: string): string | null {
+  if (plain.length < 8) return 'パスワードは 8 文字以上にしてください';
   if (Buffer.byteLength(plain, 'utf8') > 72) return 'パスワードが長すぎます（半角 72 文字まで）';
   if (!/[A-Za-z]/.test(plain) || !/\d/.test(plain)) return '英字と数字を両方含めてください';
-  if (plain.toLowerCase().includes(email.split('@')[0].toLowerCase())) {
-    return 'メールアドレスの一部をパスワードに含めないでください';
-  }
   return null;
 }
 

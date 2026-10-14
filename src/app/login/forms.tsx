@@ -46,15 +46,15 @@ export function SetupPasswordForm() {
         <p className="text-sm">
           仮パスワードでログインしました。ご自身のパスワードを設定してください。
           <br />
-          <span className="text-slate-500">12 文字以上で、英字と数字を両方含めてください。</span>
+          <span className="text-slate-500">8 文字以上で、英字と数字を両方含めてください。</span>
         </p>
         <div>
           <label className="label" htmlFor="password">新しいパスワード</label>
-          <input className="input" id="password" name="password" type="password" autoComplete="new-password" minLength={12} required />
+          <input className="input" id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
         </div>
         <div>
           <label className="label" htmlFor="confirm">新しいパスワード（確認）</label>
-          <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={12} required />
+          <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={8} required />
         </div>
         <button className="btn w-full" disabled={pending}>{pending ? '保存中…' : '設定してログイン'}</button>
       </form>
