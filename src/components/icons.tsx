@@ -77,6 +77,17 @@ export const icons = {
       <path d="M9 4v16M13 10l2 2-2 2" />
     </Svg>
   ),
+  plus: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M12 5v14M5 12h14" />
+    </Svg>
+  ),
+  search: (p: IconProps) => (
+    <Svg {...p}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </Svg>
+  ),
   help: (p: IconProps) => (
     <Svg {...p}>
       <circle cx="12" cy="12" r="9" />

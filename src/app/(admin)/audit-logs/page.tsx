@@ -21,6 +21,7 @@ const ACTION_LABEL: Record<string, string> = {
   'admin_user.create': '管理者の追加',
   'admin_user.update': '管理者の変更',
   'admin_user.reset_password': '仮パスワード再発行',
+  'admin_user.delete': '管理者の削除',
   'admin_user.reset_mfa': '2 段階認証リセット',
   'allowed_ip.create': '許可 IP の追加',
   'allowed_ip.update': '許可 IP の変更',

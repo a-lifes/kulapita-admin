@@ -1,29 +1,77 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { PageHelp } from '@/components/PageHelp';
-import { listAdmins } from '@/lib/adminUsers';
+import { listAdmins, Role, ROLES } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { formatJst, label, ROLE_LABEL } from '@/lib/format';
-import { CreateAdminForm, EditAdminButton, ResetPasswordButton } from './UserForms';
+import { CreateAdminButton, DeleteAdminButton, EditAdminButton, ResetPasswordButton } from './UserForms';
 
 export const metadata: Metadata = { title: 'アカウント' };
 
-export default async function UsersPage() {
+const STATUSES = { active: '有効', inactive: '停止中', locked: 'ロック中', pending: '初回ログイン待ち' } as const;
+
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const me = await requireAdmin('super_admin');
-  const users = await listAdmins();
+  const sp = await searchParams;
+  const q = sp.q?.trim().toLowerCase().slice(0, 100) ?? '';
+  const role = ROLES.includes(sp.role as Role) ? (sp.role as Role) : '';
+  const status = sp.status && sp.status in STATUSES ? (sp.status as keyof typeof STATUSES) : '';
+  const all = await listAdmins();
+  // アカウントは多くても数十件なので、絞り込みは取得後に行う
+  const users = all.filter(
+    (u) =>
+      (!q || u.display_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+      (!role || u.role === role) &&
+      (!status ||
+        (status === 'active' && u.is_active) ||
+        (status === 'inactive' && !u.is_active) ||
+        (status === 'locked' && u.locked) ||
+        (status === 'pending' && u.must_change_password)),
+  );
 
   return (
     <>
-      <h1 className="page-title">アカウント</h1>
-      <section className="card mb-6">
-        <h2 className="mb-3 font-bold">アカウントを追加</h2>
-        <CreateAdminForm />
-      </section>
+      <div className="mb-5 flex items-center justify-between">
+        <h1 className="page-title mb-0">アカウント</h1>
+        <CreateAdminButton />
+      </div>
+
+      <form className="card mb-4 flex flex-wrap items-end gap-3">
+        <div className="min-w-64 flex-1">
+          <label className="label" htmlFor="q">表示名・メールアドレス</label>
+          <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} />
+        </div>
+        <div>
+          <label className="label" htmlFor="role">権限</label>
+          <select className="input" id="role" name="role" defaultValue={role}>
+            <option value="">すべて</option>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="status">状態</label>
+          <select className="input" id="status" name="status" defaultValue={status}>
+            <option value="">すべて</option>
+            {Object.entries(STATUSES).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
+        <button className="btn">絞り込む</button>
+        <Link className="btn-sub" href="/users">クリア</Link>
+      </form>
 
       <PageHelp title="権限の違い">
         <ul className="list-disc space-y-1.5 pl-5">
-          <li><strong>スーパー管理者</strong>：すべての操作 + アカウント・許可 IP の管理</li>
+          <li><strong>上級管理者</strong>：すべての操作 + アカウント・許可 IP の管理</li>
           <li><strong>管理者</strong>：一覧の閲覧・お問い合わせの対応・CSV ダウンロード・操作ログの閲覧</li>
-          <li><strong>担当者</strong>：一覧の閲覧・お問い合わせの対応（CSV ダウンロードは不可）</li>
+          <li><strong>一般</strong>：一覧の閲覧・お問い合わせの対応（CSV ダウンロードは不可）</li>
           <li><strong>閲覧のみ</strong>：一覧の閲覧だけ</li>
         </ul>
       </PageHelp>
@@ -63,12 +111,16 @@ export default async function UsersPage() {
                 </td>
                 <td className="whitespace-nowrap">{formatJst(u.last_login_at) || '—'}</td>
                 <td className="whitespace-nowrap">{formatJst(u.created_at)}</td>
-                <td className="w-28 text-right whitespace-nowrap">
+                <td className="w-36 text-right whitespace-nowrap">
                   <EditAdminButton user={u} isSelf={u.id === me.id} />
                   <ResetPasswordButton user={u} />
+                  <DeleteAdminButton user={u} isSelf={u.id === me.id} />
                 </td>
               </tr>
             ))}
+            {users.length === 0 && (
+              <tr><td colSpan={7} className="py-8 text-center text-slate-500">該当するアカウントはありません</td></tr>
+            )}
           </tbody>
         </table>
       </div>

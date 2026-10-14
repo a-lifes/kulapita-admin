@@ -1,12 +1,13 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { icons } from '@/components/icons';
 import { toast } from '@/components/Toaster';
 import { ROLE_LABEL } from '@/lib/format';
 import {
   createAdminAction,
+  deleteAdminAction,
   resetPasswordAction,
   updateAdminAction,
   UserActionState,
@@ -30,34 +31,6 @@ function Result({ state }: { state: UserActionState }) {
         </div>
       )}
     </div>
-  );
-}
-
-export function CreateAdminForm() {
-  const [state, action, pending] = useActionState(createAdminAction, undefined);
-  return (
-    <form action={action} className="space-y-3">
-      <Result state={state} />
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="label" htmlFor="new-email">メールアドレス</label>
-          <input className="input" id="new-email" name="email" type="email" required />
-        </div>
-        <div>
-          <label className="label" htmlFor="new-name">表示名</label>
-          <input className="input" id="new-name" name="display_name" required maxLength={100} />
-        </div>
-        <div>
-          <label className="label" htmlFor="new-role">権限</label>
-          <select className="input" id="new-role" name="role" defaultValue="support">
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{ROLE_LABEL[r]}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <button className="btn" disabled={pending}>{pending ? '追加中…' : '追加して仮パスワードを発行'}</button>
-    </form>
   );
 }
 
@@ -199,6 +172,133 @@ export function ResetPasswordButton({ user }: { user: Row }) {
           </div>
         </div>
       </Modal>
+    </>
+  );
+}
+
+/** 追加 (＋ボタン → 画面中央のダイアログで入力 → 発行した仮パスワードを同じダイアログで表示) */
+export function CreateAdminButton() {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState<UserActionState>(undefined);
+  const [pending, startTransition] = useTransition();
+  const close = () => {
+    setOpen(false);
+    setCreated(undefined);
+  };
+  return (
+    <>
+      <button
+        type="button"
+        className="btn"
+        onClick={() => {
+          setError(null);
+          setCreated(undefined);
+          setOpen(true);
+        }}
+      >
+        <icons.plus className="h-4 w-4" />
+        追加
+      </button>
+      <Modal open={open} onClose={close}>
+        {created?.tempPassword ? (
+          <div className="p-6">
+            <h2 className="mb-4 text-base font-bold text-slate-900">アカウントを追加しました</h2>
+            <Result state={created} />
+            <div className="mt-6 text-right">
+              <button type="button" className="btn-sub" onClick={close}>閉じる</button>
+            </div>
+          </div>
+        ) : (
+          <form
+            className="p-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              startTransition(async () => {
+                const res = await createAdminAction(undefined, fd);
+                if (res?.error) {
+                  setError(res.error);
+                  return;
+                }
+                setError(null);
+                setCreated(res);
+              });
+            }}
+          >
+            <h2 className="mb-4 text-base font-bold text-slate-900">アカウントの追加</h2>
+            {error && <p className="error mb-4">{error}</p>}
+            <div className="space-y-4">
+              <div>
+                <label className="label" htmlFor="new-email">メールアドレス</label>
+                <input className="input" id="new-email" name="email" type="email" required autoFocus />
+              </div>
+              <div>
+                <label className="label" htmlFor="new-name">表示名</label>
+                <input className="input" id="new-name" name="display_name" required maxLength={100} />
+              </div>
+              <div>
+                <label className="label" htmlFor="new-role">権限</label>
+                <select className="input" id="new-role" name="role" defaultValue="support">
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-slate-500">追加すると仮パスワードを発行します。初回ログイン時にパスワードの変更を求められます。</p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className="btn-sub" onClick={close}>キャンセル</button>
+              <button className="btn" disabled={pending}>{pending ? '追加中…' : '追加'}</button>
+            </div>
+          </form>
+        )}
+      </Modal>
+    </>
+  );
+}
+
+/** 削除 (ゴミ箱アイコン → 確認ダイアログ → 結果はスナックバー) */
+export function DeleteAdminButton({ user, isSelf }: { user: Row; isSelf: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const [confirm, dialog] = useConfirm();
+  return (
+    <>
+      {dialog}
+      <button
+        type="button"
+        className="rounded-md p-2 text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+        disabled={busy || isSelf}
+        aria-label={`${user.display_name} を削除`}
+        title={isSelf ? '自分自身は削除できません' : '削除'}
+        onClick={async () => {
+          const ok = await confirm({
+            title: 'アカウントを削除しますか？',
+            message: (
+              <>
+                <p className="font-semibold text-slate-900">
+                  {user.display_name}
+                  <span className="ml-2 font-normal text-slate-600">{user.email}</span>
+                </p>
+                <p className="mt-2">削除すると、このアカウントではログインできなくなります。操作ログや担当者の記録は残ります。</p>
+              </>
+            ),
+            confirmLabel: '削除する',
+            danger: true,
+          });
+          if (!ok) return;
+          setBusy(true);
+          try {
+            const res = await deleteAdminAction(user.id);
+            if (res?.error) toast.error(res.error);
+            if (res?.message) toast.success(res.message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <icons.trash className="h-5 w-5" />
+      </button>
     </>
   );
 }

@@ -49,9 +49,9 @@ export const PRESENT_STATUS_LABEL: Record<string, string> = {
 };
 
 export const ROLE_LABEL: Record<string, string> = {
-  super_admin: 'スーパー管理者',
+  super_admin: '上級管理者',
   admin: '管理者',
-  support: '担当者',
+  support: '一般',
   readonly: '閲覧のみ',
 };
 
