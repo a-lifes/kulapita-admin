@@ -23,7 +23,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   service: { sql: 's.service_name' },
   company: { sql: 's.service_company' },
   name: { sql: 's.name' },
-  member: { sql: 'u.external_id' },
+  member: { sql: 'COALESCE(u.display_name, u.external_id)' },
   status: { sql: "FIELD(s.status, 'pending', 'in_progress', 'completed', 'archived')" },
   assignee: { sql: 'a.display_name' },
 };
@@ -126,7 +126,7 @@ export default async function ApplicationsPage({
               <SortableTh label="サービス" sortKey="service" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="サービス提供会社" sortKey="company" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
-              <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
+              <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="担当" sortKey="assignee" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
             </tr>
           </thead>
@@ -149,6 +149,7 @@ export default async function ApplicationsPage({
                     {member ? (
                       <MemberButton
                         member={member}
+                        label={member.display_name ?? member.external_id}
                         formatted={{
                           first_authenticated_at: formatJst(member.first_authenticated_at),
                           last_login_at: formatJst(member.last_login_at),

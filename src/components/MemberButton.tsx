@@ -3,8 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { memberAddress, type Member } from '@/lib/members';
 
-/** 会員番号を押すと、会員情報をモーダルで表示する */
-export function MemberButton({ member, formatted }: { member: Member; formatted: Record<string, string> }) {
+/**
+ * 会員番号 (または label に渡した名前など) を押すと、会員情報をモーダルで表示する。
+ * 会員一覧・申し込み・誘導・プレゼントで共通。
+ */
+export function MemberButton({
+  member,
+  formatted,
+  label,
+}: {
+  member: Member;
+  formatted: Record<string, string>;
+  /** ボタンに出す文字 (省略時は会員番号) */
+  label?: string;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -25,7 +37,7 @@ export function MemberButton({ member, formatted }: { member: Member; formatted:
     ['市区町村・番地', member.city ?? ''],
     ['建物名・部屋番号', member.building ?? ''],
     ['初回ログイン', formatted.first_authenticated_at ?? ''],
-    ['最終利用', formatted.last_login_at ?? ''],
+    ['最終ログイン', formatted.last_login_at ?? ''],
     ['会員情報の更新日時', formatted.profile_updated_at ?? ''],
   ];
 
@@ -36,7 +48,7 @@ export function MemberButton({ member, formatted }: { member: Member; formatted:
         className="text-left text-brand underline"
         onClick={() => setOpen(true)}
       >
-        {member.external_id}
+        {label || member.external_id}
       </button>
       <dialog
         ref={ref}

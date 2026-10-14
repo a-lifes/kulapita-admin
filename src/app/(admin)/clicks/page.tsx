@@ -21,7 +21,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   service: { sql: 'k.service_name' },
   company: { sql: 'k.service_company' },
   placement: { sql: 'k.placement' },
-  member: { sql: 'u.external_id' },
+  member: { sql: 'COALESCE(u.display_name, u.external_id)' },
   destination: { sql: 'k.destination_url' },
 };
 
@@ -172,7 +172,7 @@ export default async function ClicksPage({
               <SortableTh label="サービス" sortKey="service" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="サービス提供会社" sortKey="company" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="ボタンの場所" sortKey="placement" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
-              <SortableTh label="会員番号" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
+              <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="誘導先" sortKey="destination" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
             </tr>
           </thead>
@@ -189,6 +189,7 @@ export default async function ClicksPage({
                     {member ? (
                       <MemberButton
                         member={member}
+                        label={member.display_name ?? member.external_id}
                         formatted={{
                           first_authenticated_at: formatJst(member.first_authenticated_at),
                           last_login_at: formatJst(member.last_login_at),

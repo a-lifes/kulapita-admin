@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { hasRole } from '@/lib/adminUsers';
@@ -116,7 +117,7 @@ export default async function PresentsPage({
         )}
       </div>
 
-      {campaign && <PresentFilters campaigns={campaigns} itemsByCampaign={itemsByCampaign} initial={{ ...filter, campaign }} />}
+      {campaign && <PresentFilters key={`${campaign}-${filter.item ?? ''}-${filter.status ?? ''}`} campaigns={campaigns} itemsByCampaign={itemsByCampaign} initial={{ ...filter, campaign }} />}
 
       {shownSummary.length > 0 && (
         <div className="card mb-4">
@@ -125,13 +126,29 @@ export default async function PresentsPage({
             {shownSummary.map((s) => {
               const winners = cms.items?.[Number(s.item_index)]?.winners ?? null;
               const imageUrl = cms.items?.[Number(s.item_index)]?.imageUrl ?? null;
+              const selected = filter.item === String(s.item_index) && filter.status === 'won';
               const won = Number(s.won ?? 0);
               const full = winners !== null && won >= winners;
               return (
-                <li
-                  key={s.item_index}
-                  className={`flex items-center gap-3 rounded border px-3 py-2 ${full ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200'}`}
-                >
+                <li key={s.item_index}>
+                  {/* 押すとこの景品の当選者だけに絞り込む (もう一度押すと解除) */}
+                  <Link
+                    href={
+                      selected
+                        ? `/presents?campaign=${encodeURIComponent(campaign!)}`
+                        : `/presents?campaign=${encodeURIComponent(campaign!)}&item=${s.item_index}&status=won`
+                    }
+                    scroll={false}
+                    aria-pressed={selected}
+                    title={selected ? '絞り込みを解除する' : 'この景品の当選者を表示する'}
+                    className={`flex items-center gap-3 rounded border px-3 py-2 hover:border-brand ${
+                      selected
+                        ? 'border-brand bg-nav-active ring-1 ring-brand'
+                        : full
+                          ? 'border-emerald-400 bg-emerald-50'
+                          : 'border-slate-200'
+                    }`}
+                  >
                   {/* microCMS の景品の画像 (サムネイルに縮めて読む) */}
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -153,6 +170,7 @@ export default async function PresentsPage({
                       {winners !== null ? ` / ${winners} 名` : ' 名・当選者数 不明'}）
                     </p>
                   </div>
+                  </Link>
                 </li>
               );
             })}
