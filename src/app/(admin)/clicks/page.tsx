@@ -6,9 +6,9 @@ import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
 import { query } from '@/lib/db';
-import { formatJst, label, PLACEMENT_LABEL } from '@/lib/format';
+import { formatJst } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
-import { clickWhere, normalizeClickFilter, PLACEMENTS } from '@/lib/queries/conversions';
+import { clickWhere, normalizeClickFilter } from '@/lib/queries/conversions';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { getExternalServices } from '@/lib/microcms';
@@ -20,7 +20,6 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   created: { sql: 'k.created_at', firstDir: 'desc' },
   service: { sql: 'k.service_name' },
   company: { sql: 'k.service_company' },
-  placement: { sql: 'k.placement' },
   member: { sql: 'COALESCE(u.display_name, u.external_id)' },
   destination: { sql: 'k.destination_url' },
 };
@@ -63,12 +62,12 @@ export default async function ClicksPage({
       { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number; members: number }>(
-      `SELECT COUNT(*) AS total, COUNT(k.user_id) AS members FROM outbound_clicks k WHERE ${where.sql}`,
+      `SELECT COUNT(*) AS total, COUNT(k.user_id) AS members FROM outbound_clicks k LEFT JOIN users u ON u.id = k.user_id WHERE ${where.sql}`,
       where.params,
     ),
     query<SummaryRow>(
       `SELECT k.service_slug, MAX(k.service_name) AS service_name, COUNT(*) AS total, COUNT(k.user_id) AS members
-       FROM outbound_clicks k WHERE ${summaryWhere.sql}
+       FROM outbound_clicks k LEFT JOIN users u ON u.id = k.user_id WHERE ${summaryWhere.sql}
        GROUP BY k.service_slug ORDER BY total DESC, service_name LIMIT 500`,
       summaryWhere.params,
     ),
@@ -122,14 +121,9 @@ export default async function ClicksPage({
             )}
           </select>
         </div>
-        <div>
-          <label className="label" htmlFor="placement">ボタンの場所</label>
-          <select className="input" id="placement" name="placement" defaultValue={filter.placement ?? ''}>
-            <option value="">すべて</option>
-            {PLACEMENTS.map((p) => (
-              <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>
-            ))}
-          </select>
+        <div className="min-w-64 flex-1">
+          <label className="label" htmlFor="q">サービス・会社・会員・誘導先</label>
+          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} />
         </div>
         <SearchButton />
         <ClearButton href="/clicks" />
@@ -144,7 +138,6 @@ export default async function ClicksPage({
               <SortableTh label="日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="サービス" sortKey="service" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="サービス提供会社" sortKey="company" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
-              <SortableTh label="ボタンの場所" sortKey="placement" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
               <SortableTh label="誘導先" sortKey="destination" sort={sort} columns={SORT_COLUMNS} basePath="/clicks" params={listParams} />
             </tr>
@@ -157,7 +150,6 @@ export default async function ClicksPage({
                   <td>{formatJst(r.created_at)}</td>
                   <td className="max-w-64 truncate" title={r.service_name}>{r.service_name}</td>
                   <td className="max-w-56 truncate" title={r.service_company ?? undefined}>{r.service_company ?? '—'}</td>
-                  <td>{label(PLACEMENT_LABEL, r.placement)}</td>
                   <td>
                     {member ? (
                       <MemberButton
@@ -189,8 +181,8 @@ export default async function ClicksPage({
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-500">
-                  {filter.service || filter.placement ? '検索内容に一致するデータはありません。' : 'この期間の誘導はありません。'}
+                <td colSpan={5} className="py-8 text-center text-slate-500">
+                  {filter.service || filter.q ? '検索内容に一致するデータはありません。' : 'この期間の誘導はありません。'}
                 </td>
               </tr>
             )}

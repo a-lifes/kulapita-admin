@@ -39,12 +39,12 @@ export function applicationWhere(f: ApplicationFilter): { sql: string; params: P
 
 export const PLACEMENTS = ['hero', 'fixed'] as const;
 
-export type ClickFilter = { service?: string; placement?: string };
+export type ClickFilter = { service?: string; q?: string };
 
 export function normalizeClickFilter(sp: Record<string, string | undefined>): ClickFilter {
   return {
     service: sp.service?.trim().slice(0, 200) || undefined,
-    placement: PLACEMENTS.includes(sp.placement as never) ? sp.placement : undefined,
+    q: sp.q?.trim().slice(0, 100) || undefined,
   };
 }
 
@@ -56,9 +56,13 @@ export function clickWhere(f: ClickFilter, range: DateRange): { sql: string; par
     conds.push('k.service_slug = :service');
     params.service = f.service;
   }
-  if (f.placement) {
-    conds.push('k.placement = :placement');
-    params.placement = f.placement;
+  // フリーワード: サービス名・会社名・誘導先・会員 (番号・名前)。users を u として JOIN しておくこと
+  if (f.q) {
+    conds.push(
+      '(k.service_name LIKE :qLike OR k.service_company LIKE :qLike OR k.destination_url LIKE :qLike OR u.external_id = :qExact OR u.display_name LIKE :qLike)',
+    );
+    params.qExact = f.q;
+    params.qLike = `%${likeEscape(f.q)}%`;
   }
   return { sql: conds.join(' AND '), params };
 }

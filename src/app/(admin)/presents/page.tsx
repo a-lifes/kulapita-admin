@@ -88,7 +88,7 @@ export default async function PresentsPage({
            ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'p.id DESC')} LIMIT :limit OFFSET :offset`,
           { ...where.params, limit: perPage, offset: (page - 1) * perPage },
         ),
-        query<{ total: number }>(`SELECT COUNT(*) AS total FROM present_applications p WHERE ${where.sql}`, where.params),
+        query<{ total: number }>(`SELECT COUNT(*) AS total FROM present_applications p LEFT JOIN users u ON u.id = p.user_id WHERE ${where.sql}`, where.params),
       ])
     : [{ rows: [] as Row[] }, { rows: [] as { total: number }[] }];
   const total = Number(count[0]?.total ?? 0);
@@ -231,7 +231,7 @@ export default async function PresentsPage({
                 );
               })}
               {rows.length === 0 && (
-                <tr><td colSpan={colCount} className="py-8 text-center text-slate-500">{filter.item || filter.status ? '検索内容に一致するデータはありません。' : 'プレゼントの応募はまだありません。'}</td></tr>
+                <tr><td colSpan={colCount} className="py-8 text-center text-slate-500">{filter.item || filter.status || filter.q ? '検索内容に一致するデータはありません。' : 'プレゼントの応募はまだありません。'}</td></tr>
               )}
             </tbody>
           </table>

@@ -15,7 +15,7 @@ export function PresentFilters({
 }: {
   campaigns: string[];
   itemsByCampaign: Record<string, { index: number; name: string }[]>;
-  initial: { campaign: string; item?: string; status?: string };
+  initial: { campaign: string; item?: string; status?: string; q?: string };
 }) {
   const [campaign, setCampaign] = useState(initial.campaign);
   const [item, setItem] = useState(initial.item ?? '');
@@ -65,6 +65,10 @@ export function PresentFilters({
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
+      </div>
+      <div className="min-w-64 flex-1">
+        <label className="label" htmlFor="q">会員番号・名前・メール</label>
+        <input className="input" id="q" name="q" defaultValue={initial.q ?? ''} />
       </div>
       <SearchButton />
       <ClearButton href="/presents" />

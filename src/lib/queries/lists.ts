@@ -26,7 +26,7 @@ export function newsletterWhere(f: NewsletterFilter): { sql: string; params: Par
 }
 
 export const PRESENT_STATUSES = ['applied', 'won', 'lost'] as const;
-export type PresentFilter = { campaign?: string; item?: string; status?: string };
+export type PresentFilter = { campaign?: string; item?: string; status?: string; q?: string };
 
 export function normalizePresentFilter(sp: Record<string, string | undefined>): PresentFilter {
   const campaign = sp.campaign && /^[\w-]{1,32}$/.test(sp.campaign) ? sp.campaign : undefined;
@@ -35,6 +35,7 @@ export function normalizePresentFilter(sp: Record<string, string | undefined>): 
     // 景品はキャンペーンごとの番号なので、キャンペーンを選んだときだけ使う
     item: campaign && sp.item && /^\d{1,2}$/.test(sp.item) ? sp.item : undefined,
     status: PRESENT_STATUSES.includes(sp.status as never) ? sp.status : undefined,
+    q: sp.q?.trim().slice(0, 100) || undefined,
   };
 }
 
@@ -52,6 +53,12 @@ export function presentWhere(f: PresentFilter): { sql: string; params: Params } 
   if (f.status) {
     conds.push('p.status = :status');
     params.status = f.status;
+  }
+  // フリーワード: 会員番号・名前・メール (応募時のメール・会員のメール)。users を u として JOIN しておくこと
+  if (f.q) {
+    conds.push('(u.external_id = :qExact OR u.display_name LIKE :qLike OR p.email LIKE :qLike OR u.email LIKE :qLike)');
+    params.qExact = f.q;
+    params.qLike = `%${likeEscape(f.q)}%`;
   }
   return { sql: conds.join(' AND '), params };
 }
