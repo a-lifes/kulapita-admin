@@ -10,6 +10,28 @@ body {
   font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', Meiryo, sans-serif;
 }
 
+/*
+ * Tailwind v4 はボタンなどのカーソルを既定 (矢印) にするため、
+ * 押せるものはすべて指のカーソルにそろえる。押せない状態は禁止マーク。
+ */
+@layer base {
+  a[href],
+  button:not(:disabled),
+  select:not(:disabled),
+  summary,
+  label[for],
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  [role='button'] {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  input:disabled {
+    cursor: not-allowed;
+  }
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50;

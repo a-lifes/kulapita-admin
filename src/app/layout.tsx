@@ -14,14 +14,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body>
-        {stage !== 'prod' && (
-          <div className="bg-amber-400 px-4 py-1 text-center text-xs font-bold text-amber-950">
-            {stage === 'dev' ? '開発環境' : 'ローカル環境'}
-          </div>
-        )}
-        {children}
-      </body>
+      {/* 環境名 (開発環境・ローカル環境) は各画面のヘッダーに出す */}
+      <body>{children}</body>
     </html>
   );
 }

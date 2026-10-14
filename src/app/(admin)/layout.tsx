@@ -1,51 +1,61 @@
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
+import { NAV_COOKIE, NavItem, SideNav } from '@/components/SideNav';
+import { UserMenu } from '@/components/UserMenu';
 import { hasRole, Role } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { label, ROLE_LABEL } from '@/lib/format';
-import { logoutAction } from './actions';
+import { currentStage, STAGE_LABEL } from '@/lib/stage';
 
-const NAV: { href: string; text: string; min: Role }[] = [
-  { href: '/', text: 'ダッシュボード', min: 'readonly' },
-  { href: '/contacts', text: 'お問い合わせ', min: 'readonly' },
-  { href: '/newsletter', text: 'メルマガ登録者', min: 'readonly' },
-  { href: '/presents', text: 'プレゼント応募', min: 'readonly' },
-  { href: '/audit-logs', text: '操作ログ', min: 'admin' },
-  { href: '/users', text: '管理者アカウント', min: 'super_admin' },
-  { href: '/allowed-ips', text: '許可 IP', min: 'super_admin' },
+const NAV: (NavItem & { min: Role })[] = [
+  { href: '/', text: 'ダッシュボード', icon: 'dashboard', min: 'readonly' },
+  { href: '/contacts', text: 'お問い合わせ', icon: 'contacts', min: 'readonly' },
+  { href: '/newsletter', text: 'メルマガ登録者', icon: 'newsletter', min: 'readonly' },
+  { href: '/presents', text: 'プレゼント応募', icon: 'presents', min: 'readonly' },
+  { href: '/audit-logs', text: '操作ログ', icon: 'auditLogs', min: 'admin' },
+  { href: '/users', text: '管理者アカウント', icon: 'users', min: 'super_admin' },
+  { href: '/allowed-ips', text: '許可 IP', icon: 'allowedIps', min: 'super_admin' },
 ];
+
+/** 本番以外はヘッダーの色を変え、どの環境を触っているか一目で分かるようにする */
+const HEADER_STYLE = {
+  prod: 'bg-white border-slate-200',
+  dev: 'bg-sky-100 border-sky-300',
+  local: 'bg-amber-100 border-amber-300',
+} as const;
+const STAGE_BADGE = {
+  prod: '',
+  dev: 'bg-sky-600 text-white',
+  local: 'bg-amber-500 text-white',
+} as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
+  const stage = currentStage();
+  const collapsed = (await cookies()).get(NAV_COOKIE)?.value === 'closed';
+  const items = NAV.filter((n) => hasRole(admin.role, n.min)).map(({ href, text, icon }) => ({ href, text, icon }));
+
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 h-screen w-56 shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
-        <div className="px-5 pt-5 pb-4">
-          <Link href="/" className="block" aria-label="ダッシュボードへ">
-            <Logo width={168} />
-            <span className="mt-1.5 block text-xs font-bold tracking-wider text-slate-500">管理画面</span>
+    <>
+      <header className={`sticky top-0 z-20 flex h-16 items-center justify-between border-b px-5 ${HEADER_STYLE[stage]}`}>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-end gap-2" aria-label="ダッシュボードへ">
+            <Logo width={150} />
+            <span className="pb-0.5 text-xs font-bold tracking-wider text-slate-600">管理画面</span>
           </Link>
+          {stage !== 'prod' && (
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${STAGE_BADGE[stage]}`}>
+              {STAGE_LABEL[stage]}
+            </span>
+          )}
         </div>
-        <nav className="flex flex-col px-2 text-sm">
-          {NAV.filter((n) => hasRole(admin.role, n.min)).map((n) => (
-            <Link key={n.href} href={n.href} className="rounded px-3 py-2 hover:bg-slate-100">
-              {n.text}
-            </Link>
-          ))}
-        </nav>
-        <div className="mt-6 border-t border-slate-200 px-5 py-4 text-xs text-slate-600">
-          <p className="font-semibold">{admin.display_name}</p>
-          <p className="break-all">{admin.email}</p>
-          <p className="mt-1">{label(ROLE_LABEL, admin.role)}</p>
-          <div className="mt-3 flex gap-3">
-            <Link href="/account" className="underline">パスワード変更</Link>
-            <form action={logoutAction}>
-              <button className="underline">ログアウト</button>
-            </form>
-          </div>
-        </div>
-      </aside>
-      <main className="min-w-0 flex-1 px-8 py-6">{children}</main>
-    </div>
+        <UserMenu name={admin.display_name} email={admin.email} role={label(ROLE_LABEL, admin.role)} />
+      </header>
+      <div className="flex">
+        <SideNav items={items} initialCollapsed={collapsed} />
+        <main className="min-w-0 flex-1 px-8 py-6">{children}</main>
+      </div>
+    </>
   );
 }
