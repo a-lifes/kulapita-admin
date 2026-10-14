@@ -9,14 +9,20 @@
   --color-nav-text: #6e6c99;
   --color-nav-heading: #50507a;
   --color-nav-active: #e9e7fc;
+
+  /* 書体: Noto Sans JP (src/app/layout.tsx で読み込み) */
+  --font-sans: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
+  /* 通常の文字の大きさは 12pt (= 16px)。見出し (text-lg 以上) はそれより大きくする */
+  --text-sm: 12pt;
+  --text-sm--line-height: 1.6;
+  --text-base: 12pt;
+  --text-base--line-height: 1.6;
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
-  /* microCMS と同じく OS 標準の書体 (Mac: San Francisco + ヒラギノ角ゴ / Windows: Segoe UI + メイリオ) */
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
-    Meiryo, sans-serif;
+  font-family: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
+  font-size: 12pt;
 }
 
 /*
@@ -90,8 +96,12 @@ body {
   .table td {
     @apply h-13 border-b border-slate-100 px-3 py-0 align-middle font-normal whitespace-nowrap;
   }
+  /*
+   * 画面の見出し。右上に「追加」などのボタンがある画面と無い画面で、
+   * その下 (絞り込みエリアなど) の位置がずれないよう、高さをボタンに合わせて固定する。
+   */
   .page-title {
-    @apply mb-5 text-xl font-bold;
+    @apply mb-5 flex min-h-10 items-center text-xl font-bold;
   }
   .error {
     @apply rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700;

@@ -4,6 +4,7 @@ import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
 import { requireAdmin } from '@/lib/auth/guard';
 import { likeEscape, Params, query } from '@/lib/db';
 import { formatJst } from '@/lib/format';
+import { AuditDetailLink } from './AuditDetail';
 
 export const metadata: Metadata = { title: '操作ログ' };
 
@@ -36,6 +37,15 @@ const TARGET_LABEL: Record<string, string> = {
   present_application: 'プレゼント応募',
 };
 
+/* 日付 (日本時間の YYYY-MM-DD) */
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const toYmd = (d: Date) => d.toISOString().slice(0, 10);
+const todayJst = () => toYmd(new Date(Date.now() + 9 * 3600_000));
+const shiftDay = (ymd: string, days: number) => toYmd(new Date(Date.parse(`${ymd}T00:00:00Z`) + days * 86_400_000));
+/** 日本時間のその日の 0:00 を、DB に入っている UTC の日時文字列にする */
+const jstStartAsUtc = (ymd: string) =>
+  new Date(Date.parse(`${ymd}T00:00:00Z`) - 9 * 3600_000).toISOString().slice(0, 19).replace('T', ' ');
+
 type Row = {
   id: string;
   account_name: string | null;
@@ -45,6 +55,8 @@ type Row = {
   target_id: string | null;
   diff: string | null;
   ip_address: string | null;
+  user_agent: string | null;
+  account_email: string | null;
   created_at: string;
 };
 
@@ -58,9 +70,12 @@ export default async function AuditLogsPage({
   const action = sp.action && ACTION_LABEL[sp.action] ? sp.action : undefined;
   const q = sp.q?.trim().slice(0, 100) || undefined;
   const page = pageFrom(sp.page);
+  // 件数が多くなるため 1 日ずつ表示する (初期値は今日)
+  const today = todayJst();
+  const date = sp.date && DATE_RE.test(sp.date) && !Number.isNaN(Date.parse(sp.date)) ? sp.date : today;
 
-  const conds: string[] = [];
-  const params: Params = {};
+  const conds: string[] = ['l.created_at >= :start', 'l.created_at < :end'];
+  const params: Params = { start: jstStartAsUtc(date), end: jstStartAsUtc(shiftDay(date, 1)) };
   if (action) {
     conds.push('l.action = :action');
     params.action = action;
@@ -75,8 +90,8 @@ export default async function AuditLogsPage({
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
-      `SELECT l.id, a.display_name AS account_name, l.admin_email_snapshot, l.action, l.target_type, l.target_id,
-              l.diff, l.ip_address, l.created_at
+      `SELECT l.id, a.display_name AS account_name, a.email AS account_email, l.admin_email_snapshot, l.action,
+              l.target_type, l.target_id, l.diff, l.ip_address, l.user_agent, l.created_at
        ${from} ${where} ORDER BY l.created_at DESC, l.id DESC LIMIT :limit OFFSET :offset`,
       { ...params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
     ),
@@ -87,7 +102,33 @@ export default async function AuditLogsPage({
     <>
       <h1 className="page-title">操作ログ</h1>
       <form className="card mb-4 flex flex-wrap items-end gap-3">
-        <div className="min-w-64 flex-1">
+        <div>
+          <label className="label" htmlFor="date">日付</label>
+          <div className="flex items-center gap-1">
+            <Link
+              className="btn-sub px-2.5"
+              href={`/audit-logs?${new URLSearchParams({ ...(q ? { q } : {}), ...(action ? { action } : {}), date: shiftDay(date, -1) })}`}
+              aria-label="前の日"
+              title="前の日"
+            >
+              ‹
+            </Link>
+            <input className="input w-44" type="date" id="date" name="date" defaultValue={date} max={today} required />
+            {date < today ? (
+              <Link
+                className="btn-sub px-2.5"
+                href={`/audit-logs?${new URLSearchParams({ ...(q ? { q } : {}), ...(action ? { action } : {}), date: shiftDay(date, 1) })}`}
+                aria-label="次の日"
+                title="次の日"
+              >
+                ›
+              </Link>
+            ) : (
+              <span className="btn-sub px-2.5 opacity-40" aria-hidden="true">›</span>
+            )}
+          </div>
+        </div>
+        <div className="min-w-48 flex-1">
           <label className="label" htmlFor="q">操作アカウント</label>
           <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="アカウント名またはメールアドレスの一部を入力" />
         </div>
@@ -103,7 +144,8 @@ export default async function AuditLogsPage({
         <button className="btn">絞り込む</button>
         <Link className="btn-sub" href="/audit-logs">クリア</Link>
       </form>
-      <div className="card overflow-x-auto p-0">
+      {/* 横スクロールさせない: 内容以外の列は全文を出し、内容の列だけ残りの幅で省略する (全文は日時から開く) */}
+      <div className="card p-0">
         <table className="table">
           <thead>
             <tr>
@@ -111,40 +153,55 @@ export default async function AuditLogsPage({
               <th>操作アカウント</th>
               <th>操作</th>
               <th>対象</th>
-              <th>内容</th>
+              <th className="w-full">内容</th>
               <th>IP</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{formatJst(r.created_at)}</td>
-                {/* アカウントが無い操作 (存在しないアドレスでのログイン失敗など) は、入力されたメールアドレスを出す */}
-                <td title={r.admin_email_snapshot ?? undefined}>{r.account_name ?? r.admin_email_snapshot ?? '—'}</td>
-                <td>{ACTION_LABEL[r.action] ?? r.action}</td>
-                <td>
-                  {r.target_type === 'contact' && r.target_id ? (
-                    <Link className="text-brand underline" href={`/contacts/${r.target_id}`}>お問い合わせ</Link>
-                  ) : r.target_type ? (
-                    (TARGET_LABEL[r.target_type] ?? r.target_type)
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td>
-                  {/* 長い内容は省略し、マウスを乗せると全文を出す */}
-                  <div className="max-w-md truncate" title={r.diff ?? undefined}>{r.diff ?? ''}</div>
-                </td>
-                <td>{r.ip_address ?? ''}</td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const target = r.target_type ? (TARGET_LABEL[r.target_type] ?? r.target_type) : '—';
+              const targetHref = r.target_type === 'contact' && r.target_id ? `/contacts/${r.target_id}` : null;
+              return (
+                <tr key={r.id}>
+                  <td>
+                    <AuditDetailLink
+                      data={{
+                        createdAt: formatJst(r.created_at),
+                        accountName: r.account_name,
+                        email: r.account_email ?? r.admin_email_snapshot,
+                        action: ACTION_LABEL[r.action] ?? r.action,
+                        target,
+                        targetHref,
+                        diff: r.diff,
+                        ip: r.ip_address,
+                        userAgent: r.user_agent,
+                      }}
+                    />
+                  </td>
+                  {/* アカウントが無い操作 (存在しないアドレスでのログイン失敗など) は、入力されたメールアドレスを出す */}
+                  <td>{r.account_name ?? r.admin_email_snapshot ?? '—'}</td>
+                  <td>{ACTION_LABEL[r.action] ?? r.action}</td>
+                  <td>
+                    {targetHref ? (
+                      <Link className="text-brand underline" href={targetHref}>{target}</Link>
+                    ) : (
+                      target
+                    )}
+                  </td>
+                  <td className="max-w-0">
+                    <div className="truncate text-slate-600">{r.diff ?? ''}</div>
+                  </td>
+                  <td>{r.ip_address ?? ''}</td>
+                </tr>
+              );
+            })}
             {rows.length === 0 && (
-              <tr><td colSpan={6} className="py-8 text-center text-slate-500">該当する操作ログはありません</td></tr>
+              <tr><td colSpan={6} className="py-8 text-center text-slate-500">この日の操作ログはありません</td></tr>
             )}
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/audit-logs" params={{ q, action }} page={page} total={Number(count[0]?.total ?? 0)} />
+      <Pagination basePath="/audit-logs" params={{ date, q, action }} page={page} total={Number(count[0]?.total ?? 0)} />
     </>
   );
 }
