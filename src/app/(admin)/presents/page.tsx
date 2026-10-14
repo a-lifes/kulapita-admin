@@ -25,6 +25,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   item: { sql: 'p.item_index' },
   member: { sql: 'COALESCE(u.display_name, u.external_id)' },
   email: { sql: 'p.email' },
+  phone: { sql: 'u.phone' },
   status: { sql: "FIELD(p.status, 'applied', 'won', 'lost')" },
 };
 
@@ -107,7 +108,7 @@ export default async function PresentsPage({
 
   const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
   const canEdit = hasRole(admin.role, 'support');
-  const colCount = canEdit ? 6 : 5;
+  const colCount = canEdit ? 7 : 6;
 
   return (
     <div className="list-page">
@@ -197,6 +198,7 @@ export default async function PresentsPage({
                 <SortableTh label="景品" sortKey="item" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
                 <SortableTh label="会員" sortKey="member" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
                 <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
+                <SortableTh label="電話番号" sortKey="phone" sort={sort} columns={SORT_COLUMNS} basePath="/presents" params={listParams} />
               </tr>
             </thead>
             <tbody>
@@ -239,6 +241,7 @@ export default async function PresentsPage({
                       )}
                     </td>
                     <td>{r.email ?? '—'}</td>
+                    <td>{member?.phone ?? '—'}</td>
                   </tr>
                 );
               })}
