@@ -3,7 +3,7 @@ import { PageHelp } from '@/components/PageHelp';
 import { listAdmins } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { formatJst, label, ROLE_LABEL } from '@/lib/format';
-import { CreateAdminForm, EditAdminForm } from './UserForms';
+import { CreateAdminForm, EditAdminButton, ResetPasswordButton } from './UserForms';
 
 export const metadata: Metadata = { title: 'アカウント' };
 
@@ -28,21 +28,49 @@ export default async function UsersPage() {
         </ul>
       </PageHelp>
 
-      <div className="space-y-4">
-        {users.map((u) => (
-          <section key={u.id} className="card">
-            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <span className="text-base font-bold">{u.display_name}</span>
-              <span className="break-all">{u.email}</span>
-              <span className="badge bg-slate-100">{label(ROLE_LABEL, u.role)}</span>
-              {!u.is_active && <span className="badge bg-slate-300">停止中</span>}
-              {u.locked && <span className="badge bg-red-100 text-red-800">ロック中</span>}
-              {u.must_change_password && <span className="badge bg-amber-100 text-amber-800">初回ログイン待ち</span>}
-              <span className="text-slate-500">最終ログイン: {formatJst(u.last_login_at) || 'なし'}</span>
-            </div>
-            <EditAdminForm user={u} isSelf={u.id === me.id} />
-          </section>
-        ))}
+      <div className="card overflow-x-auto p-0">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>表示名</th>
+              <th>メールアドレス</th>
+              <th>権限</th>
+              <th>状態</th>
+              <th>最終ログイン</th>
+              <th>登録日時</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className={u.is_active ? '' : 'text-slate-400'}>
+                <td className="font-semibold">
+                  {u.display_name}
+                  {u.id === me.id && <span className="ml-2 text-xs font-normal text-slate-500">（自分）</span>}
+                </td>
+                <td className="break-all">{u.email}</td>
+                <td className="whitespace-nowrap">{label(ROLE_LABEL, u.role)}</td>
+                <td>
+                  <div className="flex flex-wrap gap-1">
+                    {u.is_active ? (
+                      <span className="badge bg-emerald-100 text-emerald-800">有効</span>
+                    ) : (
+                      <span className="badge bg-slate-200 text-slate-600">停止中</span>
+                    )}
+                    {u.locked && <span className="badge bg-red-100 text-red-800">ロック中</span>}
+                    {u.must_change_password && <span className="badge bg-amber-100 text-amber-800">初回ログイン待ち</span>}
+                  </div>
+                </td>
+                <td className="whitespace-nowrap">{formatJst(u.last_login_at) || '—'}</td>
+                <td className="whitespace-nowrap">{formatJst(u.created_at)}</td>
+                <td className="w-28 text-right whitespace-nowrap">
+                  <EditAdminButton user={u} isSelf={u.id === me.id} />
+                  <ResetPasswordButton user={u} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );

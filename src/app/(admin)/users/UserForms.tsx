@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { icons } from '@/components/icons';
+import { toast } from '@/components/Toaster';
 import { ROLE_LABEL } from '@/lib/format';
 import {
   createAdminAction,
@@ -59,66 +61,144 @@ export function CreateAdminForm() {
   );
 }
 
-export function EditAdminForm({
-  user,
-  isSelf,
-}: {
-  user: { id: string; display_name: string; role: string; is_active: boolean };
-  isSelf: boolean;
-}) {
-  const [state, action, pending] = useActionState<UserActionState, FormData>(
-    updateAdminAction.bind(null, user.id),
-    undefined,
-  );
-  const [resetState, setResetState] = useState<UserActionState>(undefined);
-  const [busy, setBusy] = useState(false);
-  const [confirm, dialog] = useConfirm();
-
-  async function resetPassword() {
-    const ok = await confirm({
-      title: '仮パスワードを発行しますか？',
-      message: `${user.display_name} さんの今のパスワードは使えなくなります。ロックされている場合は解除されます。`,
-      confirmLabel: '発行する',
-      danger: true,
-    });
-    if (!ok) return;
-    setBusy(true);
-    try {
-      setResetState(await resetPasswordAction(user.id));
-    } finally {
-      setBusy(false);
-    }
-  }
-
+/** 画面中央のダイアログ (編集・仮パスワード表示で共用) */
+function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
   return (
-    <div className="space-y-3">
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => {
+        if (e.target === ref.current) onClose();
+      }}
+      className="m-auto w-[min(520px,92vw)] rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
+    >
+      {open && children}
+    </dialog>
+  );
+}
+
+type Row = { id: string; display_name: string; email: string; role: string; is_active: boolean };
+
+/** 編集 (鉛筆アイコン → 表示名・権限・有効/停止を変更) */
+export function EditAdminButton({ user, isSelf }: { user: Row; isSelf: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  return (
+    <>
+      <button
+        type="button"
+        className="rounded-md p-2 text-slate-500 hover:bg-nav-active hover:text-brand"
+        aria-label={`${user.display_name} を編集`}
+        title="編集"
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
+      >
+        <icons.pencil className="h-5 w-5" />
+      </button>
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <form
+          className="p-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            startTransition(async () => {
+              const res = await updateAdminAction(user.id, undefined, fd);
+              if (res?.error) {
+                setError(res.error);
+                return;
+              }
+              setOpen(false);
+              if (res?.message) toast.success(`${user.display_name}：${res.message}`);
+            });
+          }}
+        >
+          <h2 className="text-base font-bold text-slate-900">アカウントの編集</h2>
+          <p className="mt-1 mb-4 text-sm text-slate-500">{user.email}</p>
+          {error && <p className="error mb-4">{error}</p>}
+          <div className="space-y-4">
+            <div>
+              <label className="label" htmlFor={`name-${user.id}`}>表示名</label>
+              <input className="input" id={`name-${user.id}`} name="display_name" defaultValue={user.display_name} maxLength={100} required autoFocus />
+            </div>
+            <div>
+              <label className="label" htmlFor={`role-${user.id}`}>権限</label>
+              <select className="input" id={`role-${user.id}`} name="role" defaultValue={user.role} disabled={isSelf}>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+                ))}
+              </select>
+              {isSelf && <input type="hidden" name="role" value={user.role} />}
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="is_active" defaultChecked={user.is_active} disabled={isSelf} />
+              有効（外すとログインできなくなります）
+              {isSelf && user.is_active && <input type="hidden" name="is_active" value="on" />}
+            </label>
+            {isSelf && <p className="text-xs text-slate-500">自分自身の権限変更・停止はできません。</p>}
+          </div>
+          <div className="mt-6 flex justify-end gap-3">
+            <button type="button" className="btn-sub" onClick={() => setOpen(false)}>キャンセル</button>
+            <button className="btn" disabled={pending}>{pending ? '保存中…' : '保存'}</button>
+          </div>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+/** 仮パスワード再発行 (鍵アイコン → 確認 → 発行した仮パスワードをダイアログで表示) */
+export function ResetPasswordButton({ user }: { user: Row }) {
+  const [busy, setBusy] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [confirm, dialog] = useConfirm();
+  return (
+    <>
       {dialog}
-      <form action={action} className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="label" htmlFor={`name-${user.id}`}>表示名</label>
-          <input className="input" id={`name-${user.id}`} name="display_name" defaultValue={user.display_name} maxLength={100} />
+      <button
+        type="button"
+        className="rounded-md p-2 text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+        disabled={busy}
+        aria-label={`${user.display_name} の仮パスワードを再発行`}
+        title="仮パスワード再発行"
+        onClick={async () => {
+          const ok = await confirm({
+            title: '仮パスワードを発行しますか？',
+            message: `${user.display_name} さんの今のパスワードは使えなくなります。ロックされている場合は解除されます。`,
+            confirmLabel: '発行する',
+            danger: true,
+          });
+          if (!ok) return;
+          setBusy(true);
+          try {
+            const res = await resetPasswordAction(user.id);
+            if (res?.error) toast.error(res.error);
+            if (res?.tempPassword) setTempPassword(res.tempPassword);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <icons.key className="h-5 w-5" />
+      </button>
+      <Modal open={tempPassword !== null} onClose={() => setTempPassword(null)}>
+        <div className="p-6">
+          <h2 className="mb-4 text-base font-bold text-slate-900">{user.display_name} さんの仮パスワード</h2>
+          <Result state={{ tempPassword: tempPassword ?? undefined }} />
+          <div className="mt-6 text-right">
+            <button type="button" className="btn-sub" onClick={() => setTempPassword(null)}>閉じる</button>
+          </div>
         </div>
-        <div>
-          <label className="label" htmlFor={`role-${user.id}`}>権限</label>
-          <select className="input" id={`role-${user.id}`} name="role" defaultValue={user.role} disabled={isSelf}>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{ROLE_LABEL[r]}</option>
-            ))}
-          </select>
-          {isSelf && <input type="hidden" name="role" value={user.role} />}
-        </div>
-        <label className="flex items-center gap-2 pb-2 text-sm">
-          <input type="checkbox" name="is_active" defaultChecked={user.is_active} disabled={isSelf} />
-          有効
-          {isSelf && user.is_active && <input type="hidden" name="is_active" value="on" />}
-        </label>
-        <button className="btn-sub" disabled={pending}>保存</button>
-        <button type="button" className="btn-danger" disabled={busy} onClick={resetPassword}>
-          仮パスワード再発行
-        </button>
-      </form>
-      <Result state={state} />
-      <Result state={resetState} />
-    </div>
+      </Modal>
+    </>
   );
 }
