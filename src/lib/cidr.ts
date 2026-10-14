@@ -37,18 +37,18 @@ export type ParsedCidr = { network: number; prefix: number; cidr: string };
 export function parseCidr(input: string): { ok: true; value: ParsedCidr } | { ok: false; error: string } {
   const text = input.trim();
   const [ipPart, prefixPart, ...rest] = text.split('/');
-  if (rest.length > 0 || !ipPart) return { ok: false, error: 'CIDR の形式で入力してください (例: 152.165.122.145/32)' };
+  if (rest.length > 0 || !ipPart) return { ok: false, error: 'CIDR の形式で入力してください（例: 152.165.122.145/32）' };
   const ip = ipv4ToInt(ipPart);
   if (ip === null) return { ok: false, error: 'IPv4 アドレスの形式が正しくありません' };
   const prefix = prefixPart === undefined ? 32 : /^\d{1,2}$/.test(prefixPart) ? Number(prefixPart) : NaN;
   if (!Number.isInteger(prefix) || prefix > 32) return { ok: false, error: '「/」の後ろは 0〜32 の数字で入力してください' };
-  if (prefix < MIN_PREFIX) return { ok: false, error: `範囲が広すぎます (/${MIN_PREFIX} 以上にしてください)` };
+  if (prefix < MIN_PREFIX) return { ok: false, error: `範囲が広すぎます（/${MIN_PREFIX} 以上にしてください）` };
   const mask = maskOf(prefix);
   const network = (ip & mask) >>> 0;
   if (network !== ip) {
     return {
       ok: false,
-      error: `ネットワークアドレスで入力してください (この範囲なら ${intToIpv4(network)}/${prefix})`,
+      error: `ネットワークアドレスで入力してください（この範囲なら ${intToIpv4(network)}/${prefix}）`,
     };
   }
   return { ok: true, value: { network, prefix, cidr: `${intToIpv4(network)}/${prefix}` } };

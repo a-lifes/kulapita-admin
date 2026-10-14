@@ -1,6 +1,8 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { useConfirm } from '@/components/ConfirmDialog';
+import { icons } from '@/components/icons';
 import { addIpAction, deleteIpAction, IpActionState, resyncWafAction } from './actions';
 
 function Result({ state }: { state: IpActionState }) {
@@ -21,32 +23,51 @@ export function AddIpForm({ currentIp }: { currentIp: string | null }) {
       <Result state={state} />
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="label" htmlFor="cidr">IP アドレス (CIDR)</label>
+          <label className="label" htmlFor="cidr">IP アドレス（CIDR）</label>
           <input className="input font-mono" id="cidr" name="cidr" placeholder="152.165.122.145/32" required />
         </div>
         <div className="min-w-64 flex-1">
-          <label className="label" htmlFor="label">メモ (どこの IP か)</label>
+          <label className="label" htmlFor="label">メモ（IPアドレスの説明、補足情報など）</label>
           <input className="input" id="label" name="label" maxLength={100} placeholder="本社" />
         </div>
         <button className="btn" disabled={pending}>{pending ? '追加中…' : '追加'}</button>
       </div>
       <p className="text-xs text-slate-500">
-        1 台だけなら末尾を /32 にします (「/」を省くと /32 として登録します)。今お使いの IP: {currentIp ?? '不明'}
+        1 台だけなら末尾を /32 にします（「/」を省くと /32 として登録します）。今お使いの IP: {currentIp ?? '不明'}
       </p>
     </form>
   );
 }
 
-export function DeleteIpButton({ id, cidr }: { id: string; cidr: string }) {
+export function DeleteIpButton({ id, cidr, label }: { id: string; cidr: string; label: string | null }) {
   const [state, setState] = useState<IpActionState>(undefined);
   const [busy, setBusy] = useState(false);
+  const [confirm, dialog] = useConfirm();
   return (
     <div className="space-y-2">
+      {dialog}
       <button
-        className="btn-danger"
+        type="button"
+        className="rounded-md p-2 text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
         disabled={busy}
+        aria-label={`${cidr} を削除`}
+        title="削除"
         onClick={async () => {
-          if (!window.confirm(`${cidr} を削除します。この IP からは管理画面に入れなくなります。よろしいですか？`)) return;
+          const ok = await confirm({
+            title: '許可 IP を削除しますか？',
+            message: (
+              <>
+                <p className="font-mono font-semibold text-slate-900">
+                  {cidr}
+                  {label && <span className="ml-2 font-sans font-normal text-slate-600">{label}</span>}
+                </p>
+                <p className="mt-2">削除すると、この IP アドレスからは管理画面に入れなくなります。</p>
+              </>
+            ),
+            confirmLabel: '削除する',
+            danger: true,
+          });
+          if (!ok) return;
           setBusy(true);
           try {
             setState(await deleteIpAction(id));
@@ -55,7 +76,7 @@ export function DeleteIpButton({ id, cidr }: { id: string; cidr: string }) {
           }
         }}
       >
-        削除
+        <icons.trash className="h-5 w-5" />
       </button>
       <Result state={state} />
     </div>

@@ -19,7 +19,7 @@ export function PasswordForm() {
         <p className="mt-1 text-xs text-slate-500">12 文字以上で、英字と数字を両方含めてください。</p>
       </div>
       <div>
-        <label className="label" htmlFor="confirm">新しいパスワード (確認)</label>
+        <label className="label" htmlFor="confirm">新しいパスワード（確認）</label>
         <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={12} required />
       </div>
       <button className="btn" disabled={pending}>{pending ? '変更中…' : '変更する'}</button>

@@ -39,7 +39,7 @@ function resolveRange(sp: { from?: string; to?: string }) {
   }
   const days = (parseYmd(sp.to).getTime() - parseYmd(sp.from).getTime()) / DAY + 1;
   if (days < 1) return { ...fallback, error: '開始日が終了日より後になっているため、直近 1 か月を表示しています' };
-  if (days > MAX_DAYS) return { ...fallback, error: `期間は ${MAX_DAYS} 日以内で指定してください (直近 1 か月を表示しています)` };
+  if (days > MAX_DAYS) return { ...fallback, error: `期間は ${MAX_DAYS} 日以内で指定してください（直近 1 か月を表示しています）` };
   return { from: sp.from, to: sp.to, error: undefined };
 }
 
@@ -92,7 +92,7 @@ export default async function DashboardPage({
     { title: '対応中のお問い合わせ', value: Number(c[0]?.in_progress ?? 0), href: '/contacts?status=in_progress' },
     { title: 'メルマガ登録中', value: Number(n[0]?.active ?? 0), href: '/newsletter?status=active' },
     {
-      title: p[0] ? `プレゼント応募 (${p[0].campaign_key})` : 'プレゼント応募',
+      title: p[0] ? `プレゼント応募（${p[0].campaign_key}）` : 'プレゼント応募',
       value: Number(p[0]?.total ?? 0),
       href: p[0] ? `/presents?campaign=${encodeURIComponent(p[0].campaign_key)}` : '/presents',
     },

@@ -59,7 +59,7 @@ export function MemberButton({ member, formatted }: { member: Member; formatted:
           </dl>
           {memberAddress(member) && (
             <p className="mt-4 rounded bg-slate-50 p-3 text-sm">
-              <span className="mb-1 block text-xs font-semibold text-slate-500">発送先 (コピー用)</span>
+              <span className="mb-1 block text-xs font-semibold text-slate-500">発送先（コピー用）</span>
               <span className="select-all">
                 {memberAddress(member)}
                 {member.display_name ? ` ${member.display_name} 様` : ''}

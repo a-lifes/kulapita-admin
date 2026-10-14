@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { ROLE_LABEL } from '@/lib/format';
 import {
   createAdminAction,
@@ -19,7 +20,7 @@ function Result({ state }: { state: UserActionState }) {
       {state.message && <p className="notice">{state.message}</p>}
       {state.tempPassword && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
-          <p className="font-semibold">仮パスワード (この画面を閉じると二度と表示されません)</p>
+          <p className="font-semibold">仮パスワード（この画面を閉じると二度と表示されません）</p>
           <p className="my-2 select-all font-mono text-lg">{state.tempPassword}</p>
           <p className="text-xs text-slate-600">
             本人に口頭や社内チャットの個別メッセージなど、メール以外の方法で伝えてください。初回ログイン時にパスワードの変更を求められます。
@@ -71,9 +72,16 @@ export function EditAdminForm({
   );
   const [resetState, setResetState] = useState<UserActionState>(undefined);
   const [busy, setBusy] = useState(false);
+  const [confirm, dialog] = useConfirm();
 
   async function resetPassword() {
-    if (!window.confirm('仮パスワードを発行します。今のパスワードは使えなくなります。よろしいですか？')) return;
+    const ok = await confirm({
+      title: '仮パスワードを発行しますか？',
+      message: `${user.display_name} さんの今のパスワードは使えなくなります。ロックされている場合は解除されます。`,
+      confirmLabel: '発行する',
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       setResetState(await resetPasswordAction(user.id));
@@ -84,6 +92,7 @@ export function EditAdminForm({
 
   return (
     <div className="space-y-3">
+      {dialog}
       <form action={action} className="flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor={`name-${user.id}`}>表示名</label>

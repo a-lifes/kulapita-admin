@@ -74,7 +74,7 @@ export async function updateAdminAction(id: string, _prev: UserActionState, form
   if (!ROLES.includes(role)) return { error: '権限が不正です' };
   if (!displayName) return { error: '表示名を入力してください' };
   if (id === admin.id && (role !== target.role || !isActive)) {
-    return { error: '自分自身の権限変更・停止はできません (別のスーパー管理者が行ってください)' };
+    return { error: '自分自身の権限変更・停止はできません（別のスーパー管理者が行ってください）' };
   }
   const losesSuper = target.role === 'super_admin' && target.is_active && (role !== 'super_admin' || !isActive);
   if (losesSuper && (await activeSuperAdminCount()) <= 1) {

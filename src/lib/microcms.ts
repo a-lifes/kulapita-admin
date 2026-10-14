@@ -63,7 +63,7 @@ async function campaigns(): Promise<Map<string, CampaignItems>> {
     url.searchParams.set('offset', String(offset));
     url.searchParams.set('fields', 'id,slug,month,items');
     const res = await fetch(url, { headers: { 'X-MICROCMS-API-KEY': cred.apiKey }, cache: 'no-store' });
-    if (!res.ok) throw new Error(`microCMS から取得できませんでした (status ${res.status})`);
+    if (!res.ok) throw new Error(`microCMS から取得できませんでした（status ${res.status}）`);
     const data = (await res.json()) as { contents: RawCampaign[]; totalCount: number };
     for (const c of data.contents) {
       map.set(

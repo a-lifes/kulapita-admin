@@ -20,7 +20,7 @@ export default async function UsersPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li><strong>スーパー管理者</strong>：すべての操作 + 管理者アカウント・許可 IP の管理</li>
           <li><strong>管理者</strong>：一覧の閲覧・お問い合わせの対応・CSV ダウンロード・操作ログの閲覧</li>
-          <li><strong>担当者</strong>：一覧の閲覧・お問い合わせの対応 (CSV ダウンロードは不可)</li>
+          <li><strong>担当者</strong>：一覧の閲覧・お問い合わせの対応（CSV ダウンロードは不可）</li>
           <li><strong>閲覧のみ</strong>：一覧の閲覧だけ</li>
         </ul>
       </section>

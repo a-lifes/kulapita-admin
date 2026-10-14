@@ -47,7 +47,7 @@ export function ContactForm({
         </select>
       </div>
       <div>
-        <label className="label" htmlFor="admin_notes">対応メモ (社内用)</label>
+        <label className="label" htmlFor="admin_notes">対応メモ（社内用）</label>
         <textarea
           className="input min-h-40"
           id="admin_notes"

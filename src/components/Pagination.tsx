@@ -30,7 +30,7 @@ export function Pagination({
   return (
     <div className="mt-4 flex items-center gap-3 text-sm">
       <span>
-        全 {total.toLocaleString()} 件 ({page} / {last} ページ)
+        全 {total.toLocaleString()} 件（{page} / {last} ページ）
       </span>
       {page > 1 && <Link className="btn-sub" href={href(page - 1)}>前へ</Link>}
       {page < last && <Link className="btn-sub" href={href(page + 1)}>次へ</Link>}

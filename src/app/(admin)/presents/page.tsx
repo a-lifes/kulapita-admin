@@ -74,7 +74,7 @@ export default async function PresentsPage({
 
       {shownSummary.length > 0 && (
         <div className="card mb-4">
-          <h2 className="mb-3 text-sm font-bold">景品ごとの状況 ({shownCampaign})</h2>
+          <h2 className="mb-3 text-sm font-bold">景品ごとの状況（{shownCampaign}）</h2>
           <ul className="flex flex-wrap gap-3 text-sm">
             {shownSummary.map((s) => {
               const winners = cms.items?.[Number(s.item_index)]?.winners ?? null;
@@ -86,7 +86,7 @@ export default async function PresentsPage({
                   <p className="mt-1">
                     応募 <strong>{Number(s.total).toLocaleString()}</strong> 件 ／ 当選{' '}
                     <strong>{won}</strong>
-                    {winners !== null ? ` / ${winners} 名` : ' 名 (当選者数 不明)'}
+                    {winners !== null ? ` / ${winners} 名` : ' 名（当選者数 不明）'}
                   </p>
                 </li>
               );

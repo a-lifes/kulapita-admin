@@ -44,7 +44,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           ],
         ] as [string, React.ReactNode][])
       : ([['お問い合わせの種類', c.category]] as [string, React.ReactNode][])),
-    ['会員番号', c.member_id ?? '(ログインなし)'],
+    ['会員番号', c.member_id ?? '（ログインなし）'],
     ['お名前', c.name],
     ['住所', `〒${c.zipcode ?? ''} ${c.prefecture ?? ''}${c.city ?? ''}${c.building ? ` ${c.building}` : ''}`],
     ['電話番号', c.phone],

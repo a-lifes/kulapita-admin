@@ -32,7 +32,7 @@ export async function setPresentStatusAction(id: string, status: string): Promis
     const { items, error } = await getCampaignItems(app.campaign_key);
     const winners = items?.[itemIndex]?.winners;
     if (winners === null || winners === undefined) {
-      return { ok: false, error: `当選者数がわからないため当選にできません (${error ?? '景品に当選人数が設定されていません'})` };
+      return { ok: false, error: `当選者数がわからないため当選にできません（${error ?? '景品に当選人数が設定されていません'}）` };
     }
     // 「この応募以外の当選数 < 当選者数」のときだけ更新する (同時に操作されても超えないよう 1 文で判定)
     // ※ MySQL は UPDATE 対象と同じ表をサブクエリで直接参照できないため、派生表で包む
@@ -47,7 +47,7 @@ export async function setPresentStatusAction(id: string, status: string): Promis
       { id, campaign: app.campaign_key, item: itemIndex, winners },
     ));
     if (affected === 0) {
-      return { ok: false, error: `この景品の当選者数 (${winners} 名) に達しているため、これ以上当選にできません` };
+      return { ok: false, error: `この景品の当選者数（${winners} 名）に達しているため、これ以上当選にできません` };
     }
   } else {
     ({ affected } = await query('UPDATE present_applications SET status = :status WHERE id = :id', { id, status }));

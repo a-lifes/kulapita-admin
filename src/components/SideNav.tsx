@@ -73,7 +73,7 @@ export function SideNav({
           onClick={toggle}
           className="relative rounded-md p-1.5 text-nav-text hover:bg-nav-active hover:text-brand"
           aria-label={collapsed ? 'メニューを開く' : 'メニューを閉じる'}
-          title={collapsed ? `メニューを開く (${stageLabel})` : 'メニューを閉じる'}
+          title={collapsed ? `メニューを開く（${stageLabel}）` : 'メニューを閉じる'}
         >
           <Toggle className="h-5 w-5" />
           {/* 閉じているときも環境が分かるよう、ボタンの右上に色の丸を出す */}

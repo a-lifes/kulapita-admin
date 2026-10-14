@@ -37,7 +37,7 @@ export async function syncWafIpSet(cidrs: string[]): Promise<WafSyncResult> {
       const name = (e as { name?: string }).name ?? 'Error';
       if (name === 'WAFOptimisticLockException' && attempt < 3) continue;
       console.error('WAF sync failed', name);
-      return { ok: false, error: `WAF への反映に失敗しました (${name})` };
+      return { ok: false, error: `WAF への反映に失敗しました（${name}）` };
     }
   }
   return { ok: false, error: 'WAF への反映に失敗しました' };

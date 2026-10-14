@@ -54,7 +54,7 @@ function Chart({ series, dates, width }: { series: DailySeries; dates: string[];
         width={width}
         height={HEIGHT}
         role="img"
-        aria-label={`${series.label}の日ごとの件数 (期間合計 ${total} 件)`}
+        aria-label={`${series.label}の日ごとの件数（期間合計 ${total} 件）`}
         onMouseLeave={() => setHover(null)}
       >
         {ticks.map((t) => (

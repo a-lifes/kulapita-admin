@@ -19,7 +19,7 @@ async function syncAndReport(message: string): Promise<IpActionState> {
   const result = await syncWafIpSet(cidrs);
   revalidatePath('/allowed-ips');
   return result.ok
-    ? { message: `${message} WAF にも反映しました (反映まで 1 分ほどかかることがあります)。` }
+    ? { message: `${message} WAF にも反映しました（反映まで 1 分ほどかかることがあります）。` }
     : { message, warning: `${result.error}。「WAF に再反映」を押してください。` };
 }
 
@@ -59,11 +59,11 @@ export async function deleteIpAction(id: string): Promise<IpActionState> {
 
   const cidrs = await getActiveCidrs({ fresh: true });
   const remaining = cidrs.filter((c) => c !== target.cidr);
-  if (remaining.length === 0) return { error: '最後の 1 件は削除できません (誰も管理画面に入れなくなるため)' };
+  if (remaining.length === 0) return { error: '最後の 1 件は削除できません（誰も管理画面に入れなくなるため）' };
   // 自分が締め出されないよう、今つないでいる IP が残りの一覧で許可されることを確かめる
   const { ip } = await requestMeta();
   if (ip && !remaining.some((c) => cidrContains(c, ip))) {
-    return { error: `今お使いの IP (${ip}) が許可されなくなるため削除できません。先に別の範囲を追加してください` };
+    return { error: `今お使いの IP（${ip}）が許可されなくなるため削除できません。先に別の範囲を追加してください` };
   }
 
   await query('UPDATE admin_allowed_ips SET deleted_at = UTC_TIMESTAMP() WHERE id = :id AND deleted_at IS NULL', { id });

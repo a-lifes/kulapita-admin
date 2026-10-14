@@ -77,6 +77,18 @@ export const icons = {
       <path d="M9 4v16M13 10l2 2-2 2" />
     </Svg>
   ),
+  trash: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </Svg>
+  ),
+  warning: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4M12 17h.01" />
+    </Svg>
+  ),
   more: (p: IconProps) => (
     <Svg {...p}>
       <circle cx="12" cy="5" r="1" />

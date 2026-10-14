@@ -18,10 +18,6 @@ export default async function AllowedIpsPage() {
   return (
     <>
       <h1 className="page-title">許可 IP</h1>
-      <p className="mb-4 text-sm text-slate-600">
-        ここに登録した IP からだけ管理画面に入れます。変更すると WAF (入口の防御) にも自動で反映します。
-        最後の 1 件と、今お使いの IP を許可している範囲は削除できません。
-      </p>
       <section className="card mb-6">
         <h2 className="mb-3 font-bold">追加</h2>
         <AddIpForm currentIp={ip} />
@@ -30,7 +26,7 @@ export default async function AllowedIpsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>CIDR</th>
+              <th>IP アドレス（CIDR）</th>
               <th>メモ</th>
               <th>登録日時</th>
               <th>登録者</th>
@@ -43,8 +39,8 @@ export default async function AllowedIpsPage() {
                 <td className="font-mono">{r.cidr}</td>
                 <td>{r.label ?? '—'}</td>
                 <td className="whitespace-nowrap">{formatJst(r.created_at)}</td>
-                <td>{r.created_by_name ?? '(初期設定)'}</td>
-                <td><DeleteIpButton id={r.id} cidr={r.cidr} /></td>
+                <td>{r.created_by_name ?? '（初期設定）'}</td>
+                <td className="w-16 text-right"><DeleteIpButton id={r.id} cidr={r.cidr} label={r.label} /></td>
               </tr>
             ))}
           </tbody>

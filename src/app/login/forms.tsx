@@ -41,7 +41,7 @@ export function SetupPasswordForm() {
           <input className="input" id="password" name="password" type="password" autoComplete="new-password" minLength={12} required />
         </div>
         <div>
-          <label className="label" htmlFor="confirm">新しいパスワード (確認)</label>
+          <label className="label" htmlFor="confirm">新しいパスワード（確認）</label>
           <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={12} required />
         </div>
         <button className="btn w-full" disabled={pending}>{pending ? '保存中…' : '設定してログイン'}</button>
