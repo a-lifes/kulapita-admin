@@ -6,10 +6,20 @@ import { logoutAction } from '@/app/(admin)/actions';
 import { icons } from './icons';
 
 /**
- * 左下のログイン中ユーザー (microCMS と同じ位置)。
+ * メニュー一番下のログイン中ユーザー。メニューを閉じているときはアイコンだけ (compact)。
  * マウスを乗せる (またはクリックする) と、名前・メールアドレス・権限・パスワード変更・ログアウトを出す。
  */
-export function UserMenu({ name, email, role }: { name: string; email: string; role: string }) {
+export function UserMenu({
+  name,
+  email,
+  role,
+  compact = false,
+}: {
+  name: string;
+  email: string;
+  role: string;
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,9 +47,17 @@ export function UserMenu({ name, email, role }: { name: string; email: string; r
         aria-expanded={open}
         aria-label={`${name} のメニュー`}
         title={name}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-400 text-white hover:bg-slate-300"
+        className={`flex items-center gap-2.5 rounded-md text-left hover:bg-nav-active ${compact ? 'p-1' : 'w-full p-1.5'}`}
       >
-        <icons.user className="h-6 w-6" />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-400 text-white">
+          <icons.user className="h-5 w-5" />
+        </span>
+        {!compact && (
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold text-slate-800">{name}</span>
+            <span className="block truncate text-xs text-nav-text">{role}</span>
+          </span>
+        )}
       </button>
 
       {open && (
