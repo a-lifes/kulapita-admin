@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { cidrContains, isIpv4 } from '@/lib/cidr';
 import { formatJst } from '@/lib/format';
 import { AddIpButton, DeleteIpButton, EditIpButton, ResyncButton } from './IpForms';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 export const metadata: Metadata = { title: '許可 IP' };
 
@@ -48,14 +48,14 @@ export default async function AllowedIpsPage({
         </div>
       </div>
 
-      <form className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">IP アドレス・メモ</label>
           <input className="input" id="q" name="q" defaultValue={q} placeholder="IP アドレスを入れると、その IP を含む範囲も表示します" />
         </div>
-        <button className="btn">絞り込む</button>
-        <Link className="btn-sub" href="/allowed-ips">クリア</Link>
-      </form>
+        <SearchButton />
+        <ClearButton href="/allowed-ips" />
+      </SearchForm>
 
       <div className="card table-scroll">
         <table className="table">

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { PageHelp } from '@/components/PageHelp';
 import { listAdmins, Role, ROLES } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { formatJst, label, ROLE_LABEL } from '@/lib/format';
 import { CreateAdminButton, DeleteAdminButton, EditAdminButton, ResetPasswordButton } from './UserForms';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 export const metadata: Metadata = { title: 'アカウント' };
 
@@ -44,7 +44,7 @@ export default async function UsersPage({
         <CreateAdminButton />
       </div>
 
-      <form className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">表示名・メールアドレス</label>
           <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} placeholder="表示名またはメールアドレスの一部を入力" />
@@ -67,9 +67,9 @@ export default async function UsersPage({
             ))}
           </select>
         </div>
-        <button className="btn">絞り込む</button>
-        <Link className="btn-sub" href="/users">クリア</Link>
-      </form>
+        <SearchButton />
+        <ClearButton href="/users" />
+      </SearchForm>
 
       <PageHelp title="権限の違い">
         <ul className="list-disc space-y-1.5 pl-5">

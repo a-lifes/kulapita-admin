@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { PRESENT_STATUS_LABEL } from '@/lib/format';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 /**
  * 絞り込み。景品の選択肢は選んだキャンペーンの景品だけを出す
@@ -22,7 +22,7 @@ export function PresentFilters({
   const items = campaign ? (itemsByCampaign[campaign] ?? []) : [];
 
   return (
-    <form className="card mb-4 flex flex-wrap items-end gap-3">
+    <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
       <div>
         <label className="label" htmlFor="campaign">キャンペーン （月）</label>
         <select
@@ -68,8 +68,8 @@ export function PresentFilters({
           ))}
         </select>
       </div>
-      <button className="btn">絞り込む</button>
-      <Link className="btn-sub" href="/presents">クリア</Link>
-    </form>
+      <SearchButton />
+      <ClearButton href="/presents" />
+    </SearchForm>
   );
 }

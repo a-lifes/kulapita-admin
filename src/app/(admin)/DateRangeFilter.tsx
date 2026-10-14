@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SearchButton, SearchForm } from '@/components/SearchForm';
 
 /** ダッシュボードの期間指定 (開始日・終了日 + よく使う期間のボタン) */
 export function DateRangeFilter({
@@ -13,7 +14,7 @@ export function DateRangeFilter({
   presets: { label: string; from: string; to: string }[];
 }) {
   return (
-    <form className="flex flex-wrap items-end gap-3">
+    <SearchForm className="flex flex-wrap items-end gap-3">
       <div>
         <label className="label" htmlFor="from">開始日</label>
         <input className="input" type="date" id="from" name="from" defaultValue={from} required />
@@ -23,7 +24,7 @@ export function DateRangeFilter({
         <label className="label" htmlFor="to">終了日</label>
         <input className="input" type="date" id="to" name="to" defaultValue={to} required />
       </div>
-      <button className="btn">表示</button>
+      <SearchButton label="表示" />
       <div className="flex flex-wrap gap-2 pb-0.5">
         {presets.map((p) => {
           const active = p.from === from && p.to === to;
@@ -40,6 +41,6 @@ export function DateRangeFilter({
           );
         })}
       </div>
-    </form>
+    </SearchForm>
   );
 }

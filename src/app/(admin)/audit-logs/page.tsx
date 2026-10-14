@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { likeEscape, Params, query } from '@/lib/db';
 import { formatJst } from '@/lib/format';
 import { AuditDetailLink } from './AuditDetail';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 export const metadata: Metadata = { title: '操作ログ' };
 
@@ -102,7 +103,7 @@ export default async function AuditLogsPage({
   return (
     <div className="list-page">
       <h1 className="page-title">操作ログ</h1>
-      <form className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="date">日付</label>
           <input className="input w-44" type="date" id="date" name="date" defaultValue={date} max={today} required />
@@ -120,9 +121,9 @@ export default async function AuditLogsPage({
             ))}
           </select>
         </div>
-        <button className="btn">絞り込む</button>
-        <Link className="btn-sub" href="/audit-logs">クリア</Link>
-      </form>
+        <SearchButton />
+        <ClearButton href="/audit-logs" />
+      </SearchForm>
       {/* 横スクロールさせない: 内容以外の列は全文を出し、内容の列だけ残りの幅で省略する (全文は日時から開く) */}
       <div className="card table-scroll">
         <table className="table">

@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { CONTACT_ROUTE_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { CONTACT_ROUTES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 export const metadata: Metadata = { title: 'お問い合わせ' };
 
@@ -62,7 +63,7 @@ export default async function ContactsPage({
         )}
       </div>
 
-      <form className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="status">対応状況</label>
           <select className="input" id="status" name="status" defaultValue={filter.status ?? ''}>
@@ -85,9 +86,9 @@ export default async function ContactsPage({
           <label className="label" htmlFor="q">受付番号・お名前・メール・電話</label>
           <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} />
         </div>
-        <button className="btn">絞り込む</button>
-        <Link className="btn-sub" href="/contacts">クリア</Link>
-      </form>
+        <SearchButton />
+        <ClearButton href="/contacts" />
+      </SearchForm>
 
       <div className="card table-scroll">
         <table className="table">

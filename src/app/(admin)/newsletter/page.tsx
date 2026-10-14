@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
@@ -7,6 +6,7 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { formatJst, label, NEWSLETTER_STATUS_LABEL } from '@/lib/format';
 import { NEWSLETTER_STATUSES, newsletterWhere, normalizeNewsletterFilter } from '@/lib/queries/lists';
+import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 export const metadata: Metadata = { title: 'メルマガ' };
 
@@ -55,7 +55,7 @@ export default async function NewsletterPage({
           <a className="btn-sub" href={`/api/export/newsletter${exportQuery ? `?${exportQuery}` : ''}`}>CSV ダウンロード</a>
         )}
       </div>
-      <form className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="status">状態</label>
           <select className="input" id="status" name="status" defaultValue={filter.status ?? ''}>
@@ -69,9 +69,9 @@ export default async function NewsletterPage({
           <label className="label" htmlFor="q">メール・お名前</label>
           <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} />
         </div>
-        <button className="btn">絞り込む</button>
-        <Link className="btn-sub" href="/newsletter">クリア</Link>
-      </form>
+        <SearchButton />
+        <ClearButton href="/newsletter" />
+      </SearchForm>
       <div className="card table-scroll">
         <table className="table">
           <thead>
