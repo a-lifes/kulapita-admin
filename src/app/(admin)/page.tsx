@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { DailyCharts, DailySeries } from './DailyCharts';
 import { DateRangeFilter } from './DateRangeFilter';
-import { addDays, datesBetween, jstStartAsUtc, rangePresets, resolveRange } from '@/lib/dateRange';
+import { addDays, datesBetween, jstStartAsUtc, monthStartJst, rangePresets, todayJst, resolveRange } from '@/lib/dateRange';
 
 export const metadata: Metadata = { title: 'ダッシュボード' };
 
@@ -40,8 +40,21 @@ export default async function DashboardPage({
   const range = resolveRange(sp);
   const dates = datesBetween(range.from, range.to);
 
-  const [{ rows: c }, { rows: a }, { rows: n }, { rows: p }, contacts, applications, clicks, newsletter, presents] =
-    await Promise.all([
+  // 「今月」のカードは表示している期間に関係なく、当月 1 日 (日本時間) からの件数
+  const monthStart = jstStartAsUtc(monthStartJst());
+
+  const [
+    { rows: c },
+    { rows: a },
+    { rows: k },
+    { rows: n },
+    { rows: p },
+    contacts,
+    applications,
+    clicks,
+    newsletter,
+    presents,
+  ] = await Promise.all([
     query<{ pending: number; in_progress: number }>(
       `SELECT SUM(status = 'pending') AS pending, SUM(status = 'in_progress') AS in_progress
        FROM contacts WHERE deleted_at IS NULL`,
@@ -49,8 +62,12 @@ export default async function DashboardPage({
     query<{ pending: number }>(
       "SELECT SUM(status = 'pending') AS pending FROM service_applications WHERE deleted_at IS NULL",
     ),
-    query<{ active: number }>(
-      "SELECT COUNT(*) AS active FROM newsletter_subscribers WHERE status = 'active' AND deleted_at IS NULL",
+    query<{ total: number }>('SELECT COUNT(*) AS total FROM outbound_clicks WHERE created_at >= :start', {
+      start: monthStart,
+    }),
+    query<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM newsletter_subscribers WHERE subscribed_at >= :start AND deleted_at IS NULL',
+      { start: monthStart },
     ),
     query<{ campaign_key: string; total: number }>(
       `SELECT campaign_key, COUNT(*) AS total FROM present_applications
@@ -68,11 +85,11 @@ export default async function DashboardPage({
     { title: '対応中のお問い合わせ', value: Number(c[0]?.in_progress ?? 0), href: '/contacts?status=in_progress' },
     { title: '未対応の申し込み', value: Number(a[0]?.pending ?? 0), href: '/applications?status=pending' },
     {
-      title: '誘導（期間内）',
-      value: clicks.reduce((sum, v) => sum + v, 0),
-      href: `/clicks?from=${range.from}&to=${range.to}`,
+      title: '誘導（今月）',
+      value: Number(k[0]?.total ?? 0),
+      href: `/clicks?from=${monthStartJst()}&to=${todayJst()}`,
     },
-    { title: 'メルマガ登録中', value: Number(n[0]?.active ?? 0), href: '/newsletter?status=active' },
+    { title: 'メルマガ登録（今月）', value: Number(n[0]?.total ?? 0), href: '/newsletter' },
     {
       title: p[0] ? `プレゼント応募（${p[0].campaign_key}）` : 'プレゼント応募',
       value: Number(p[0]?.total ?? 0),

@@ -57,3 +57,8 @@ export function rangePresets() {
     { label: '直近 1 年', from: addDays(addMonths(today, -12), 1), to: today },
   ];
 }
+
+/** 今月 1 日 (日本時間の YYYY-MM-DD) */
+export function monthStartJst(): string {
+  return `${todayJst().slice(0, 8)}01`;
+}

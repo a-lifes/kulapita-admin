@@ -5,8 +5,8 @@ import { PRESENT_STATUS_LABEL } from '@/lib/format';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 
 /**
- * 絞り込み。景品の選択肢は選んだキャンペーンの景品だけを出す
- * (景品番号はキャンペーンごとに振られているため、キャンペーン未選択のときは選べない)。
+ * 絞り込み。開催月は必ず 1 つ選ぶ (初期値は一番新しい月)。
+ * 景品の選択肢は選んだ開催月の景品だけを出す (景品番号は開催月ごとに振られているため)。
  */
 export function PresentFilters({
   campaigns,
@@ -15,16 +15,16 @@ export function PresentFilters({
 }: {
   campaigns: string[];
   itemsByCampaign: Record<string, { index: number; name: string }[]>;
-  initial: { campaign?: string; item?: string; status?: string };
+  initial: { campaign: string; item?: string; status?: string };
 }) {
-  const [campaign, setCampaign] = useState(initial.campaign ?? '');
+  const [campaign, setCampaign] = useState(initial.campaign);
   const [item, setItem] = useState(initial.item ?? '');
-  const items = campaign ? (itemsByCampaign[campaign] ?? []) : [];
+  const items = itemsByCampaign[campaign] ?? [];
 
   return (
     <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
       <div>
-        <label className="label" htmlFor="campaign">キャンペーン （月）</label>
+        <label className="label" htmlFor="campaign">開催月</label>
         <select
           className="input"
           id="campaign"
@@ -35,7 +35,6 @@ export function PresentFilters({
             setItem('');
           }}
         >
-          <option value="">すべて</option>
           {campaigns.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -48,10 +47,9 @@ export function PresentFilters({
           id="item"
           name="item"
           value={item}
-          disabled={!campaign}
           onChange={(e) => setItem(e.target.value)}
         >
-          <option value="">{campaign ? 'すべて' : 'キャンペーンを選んでください'}</option>
+          <option value="">すべて</option>
           {items.map((i) => (
             <option key={i.index} value={String(i.index)}>
               {i.index + 1}. {i.name}

@@ -63,3 +63,91 @@ export async function setPresentStatusAction(id: string, status: string): Promis
   revalidatePath('/presents');
   return { ok: true, status };
 }
+
+export type BulkResult = { ok: true; updated: number } | { ok: false; error: string };
+
+/** 一度に設定できる件数 (一覧の表示件数の上限と同じ) */
+const BULK_MAX = 100;
+
+/**
+ * 選んだ応募の結果をまとめて設定する。
+ * 当選にするときは、景品ごとに「選んだ応募以外の当選数 + 新しく当選にする数」が当選者数を超えないか先に確かめ、
+ * 超える景品が 1 つでもあれば何も更新しない。
+ */
+export async function setPresentStatusBulkAction(ids: string[], status: string): Promise<BulkResult> {
+  const admin = await requireAdmin('support');
+  const uniq = [...new Set(ids)];
+  if (uniq.length === 0) return { ok: false, error: '応募を選んでください' };
+  if (uniq.length > BULK_MAX) return { ok: false, error: `一度に設定できるのは ${BULK_MAX} 件までです` };
+  if (!uniq.every((id) => UUID_RE.test(id)) || !PRESENT_STATUSES.includes(status as never)) {
+    return { ok: false, error: '指定が不正です' };
+  }
+
+  const idParams: Record<string, string> = {};
+  uniq.forEach((id, i) => (idParams[`id${i}`] = id));
+  const inList = uniq.map((_, i) => `:id${i}`).join(', ');
+
+  const { rows: apps } = await query<{ id: string; campaign_key: string; item_index: number; item_name: string; status: string }>(
+    `SELECT id, campaign_key, item_index, item_name, status FROM present_applications WHERE id IN (${inList})`,
+    idParams,
+  );
+  if (apps.length === 0) return { ok: false, error: '応募が見つかりません' };
+  const targets = apps.filter((a) => a.status !== status);
+  if (targets.length === 0) return { ok: true, updated: 0 };
+
+  if (status === 'won') {
+    // 景品ごとにまとめて当選者数を確かめる
+    const groups = new Map<string, { campaign: string; item: number; name: string; adding: number }>();
+    for (const a of targets) {
+      const key = `${a.campaign_key}:${a.item_index}`;
+      const g = groups.get(key) ?? { campaign: a.campaign_key, item: Number(a.item_index), name: a.item_name, adding: 0 };
+      g.adding += 1;
+      groups.set(key, g);
+    }
+    const cmsCache = new Map<string, Awaited<ReturnType<typeof getCampaignItems>>>();
+    for (const g of groups.values()) {
+      if (!cmsCache.has(g.campaign)) cmsCache.set(g.campaign, await getCampaignItems(g.campaign));
+      const { items, error } = cmsCache.get(g.campaign)!;
+      const winners = items?.[g.item]?.winners;
+      if (winners === null || winners === undefined) {
+        return {
+          ok: false,
+          error: `「${g.name}」の当選者数がわからないため当選にできません（${error ?? '景品に当選人数が設定されていません'}）`,
+        };
+      }
+      const current = await queryOne<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM present_applications
+         WHERE campaign_key = :campaign AND item_index = :item AND status = 'won'`,
+        { campaign: g.campaign, item: g.item },
+      );
+      const won = Number(current?.n ?? 0);
+      if (won + g.adding > winners) {
+        return {
+          ok: false,
+          error: `「${g.name}」は当選者数 ${winners} 名に対して、すでに ${won} 名が当選です。あと ${Math.max(0, winners - won)} 名まで当選にできます（選択中 ${g.adding} 名）`,
+        };
+      }
+    }
+  }
+
+  const targetParams: Record<string, string> = { status };
+  targets.forEach((a, i) => (targetParams[`t${i}`] = a.id));
+  const { affected } = await query(
+    `UPDATE present_applications SET status = :status WHERE id IN (${targets.map((_, i) => `:t${i}`).join(', ')})`,
+    targetParams,
+  );
+
+  await writeAudit({
+    admin,
+    action: 'present.bulk_update_status',
+    targetType: 'present_application',
+    diff: {
+      status,
+      count: affected,
+      items: [...new Set(targets.map((a) => `${a.campaign_key} ${Number(a.item_index) + 1}. ${a.item_name}`))],
+      ids: targets.map((a) => a.id),
+    },
+  });
+  revalidatePath('/presents');
+  return { ok: true, updated: affected };
+}

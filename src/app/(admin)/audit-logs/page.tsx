@@ -34,6 +34,7 @@ const ACTION_LABEL: Record<string, string> = {
   'export.newsletter': 'CSV 出力（メルマガ）',
   'export.presents': 'CSV 出力（プレゼント）',
   'present.update_status': 'プレゼント結果の設定',
+  'present.bulk_update_status': 'プレゼント結果の一括設定',
   'admin_user.create': 'アカウントの追加',
   'admin_user.update': 'アカウントの変更',
   'admin_user.reset_password': '仮パスワード再発行',
