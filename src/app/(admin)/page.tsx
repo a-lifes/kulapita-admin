@@ -135,7 +135,7 @@ export default async function DashboardPage({
               </a>
             </div>
             <DateRangeFilter from={range.from} to={range.to} presets={presets} keep={{ site: canChooseSite() ? site : undefined }}>
-              {/* 本番の管理画面では本番のサイトだけを出すので、選択は出さない */}
+              {/* 本番・開発の管理画面は同じ環境のサイトだけを出すので、選択はローカルだけ */}
               {canChooseSite() && (
                 <div>
                   <label className="label" htmlFor="site">PV のサイト</label>
