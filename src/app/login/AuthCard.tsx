@@ -1,16 +1,17 @@
 import { Logo } from '@/components/Logo';
 import { currentStage, STAGE_LABEL } from '@/lib/stage';
 
+/**
+ * ログイン・パスワード設定画面の枠。
+ * 背景はサイトのキービジュアル (kulapita/public/hero-parallax の各レイヤーを 1 枚に重ねた画像)。
+ */
 export function AuthCard({ title, children }: { title: string; children: React.ReactNode }) {
   const stage = currentStage();
   return (
-    <main className="flex min-h-[90vh] items-center justify-center px-4">
-      <div className="card w-full max-w-md">
+    <main className="relative flex min-h-screen items-center justify-center bg-[#fef1dc] bg-[url('/login-bg.webp')] bg-cover bg-center px-4 py-10">
+      <div className="card w-full max-w-md shadow-xl ring-1 ring-black/5">
         <div className="mb-5 flex items-start justify-between gap-3">
-          <div>
-            <Logo width={180} />
-            <p className="mt-1.5 text-xs font-bold tracking-wider text-slate-500">管理画面</p>
-          </div>
+          <Logo width={180} />
           {stage !== 'prod' && (
             <span className={`rounded-full px-3 py-1 text-xs font-bold text-white ${stage === 'dev' ? 'bg-sky-600' : 'bg-amber-500'}`}>
               {STAGE_LABEL[stage]}
