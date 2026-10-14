@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { MemberButton } from '@/components/MemberButton';
-import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
+import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
@@ -34,6 +34,7 @@ export default async function PresentsPage({
   const sp = await searchParams;
   const filter = normalizePresentFilter(sp);
   const page = pageFrom(sp.page);
+  const perPage = perPageFrom(sp.per);
   const where = presentWhere(filter);
 
   const [{ rows }, { rows: count }, { rows: summary }] = await Promise.all([
@@ -42,7 +43,7 @@ export default async function PresentsPage({
        FROM present_applications p LEFT JOIN users u ON u.id = p.user_id
        WHERE ${where.sql}
        ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset`,
-      { ...where.params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
+      { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM present_applications p WHERE ${where.sql}`, where.params),
     query<SummaryRow>(
@@ -67,7 +68,7 @@ export default async function PresentsPage({
   const canEdit = hasRole(admin.role, 'support');
 
   return (
-    <>
+    <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">プレゼント</h1>
         {hasRole(admin.role, 'admin') && (
@@ -101,7 +102,7 @@ export default async function PresentsPage({
 
       <PresentFilters campaigns={campaigns} itemsByCampaign={itemsByCampaign} initial={filter} />
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -148,7 +149,7 @@ export default async function PresentsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/presents" params={{ ...filter }} page={page} total={total} />
-    </>
+      <Pagination basePath="/presents" params={{ ...filter }} page={page} perPage={perPage} total={total} />
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
+import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
@@ -32,6 +32,7 @@ export default async function ContactsPage({
   const sp = await searchParams;
   const filter = normalizeContactFilter(sp);
   const page = pageFrom(sp.page);
+  const perPage = perPageFrom(sp.per);
   const where = contactWhere(filter);
 
   const [{ rows }, { rows: count }] = await Promise.all([
@@ -41,7 +42,7 @@ export default async function ContactsPage({
        FROM contacts c LEFT JOIN admin_users a ON a.id = c.assigned_to
        WHERE ${where.sql}
        ORDER BY c.created_at DESC LIMIT :limit OFFSET :offset`,
-      { ...where.params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
+      { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM contacts c WHERE ${where.sql}`, where.params),
   ]);
@@ -51,7 +52,7 @@ export default async function ContactsPage({
   ).toString();
 
   return (
-    <>
+    <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">お問い合わせ</h1>
         {hasRole(admin.role, 'admin') && (
@@ -88,7 +89,7 @@ export default async function ContactsPage({
         <Link className="btn-sub" href="/contacts">クリア</Link>
       </form>
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -127,7 +128,7 @@ export default async function ContactsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/contacts" params={{ ...filter }} page={page} total={total} />
-    </>
+      <Pagination basePath="/contacts" params={{ ...filter }} page={page} perPage={perPage} total={total} />
+    </div>
   );
 }

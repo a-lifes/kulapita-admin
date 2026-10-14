@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
+import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
@@ -30,6 +30,7 @@ export default async function NewsletterPage({
   const sp = await searchParams;
   const filter = normalizeNewsletterFilter(sp);
   const page = pageFrom(sp.page);
+  const perPage = perPageFrom(sp.per);
   const where = newsletterWhere(filter);
 
   const [{ rows }, { rows: count }] = await Promise.all([
@@ -39,7 +40,7 @@ export default async function NewsletterPage({
        FROM newsletter_subscribers n LEFT JOIN users u ON u.id = n.user_id
        WHERE ${where.sql}
        ORDER BY n.subscribed_at DESC LIMIT :limit OFFSET :offset`,
-      { ...where.params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
+      { ...where.params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM newsletter_subscribers n WHERE ${where.sql}`, where.params),
   ]);
@@ -47,7 +48,7 @@ export default async function NewsletterPage({
   const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
 
   return (
-    <>
+    <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">メルマガ</h1>
         {hasRole(admin.role, 'admin') && (
@@ -71,7 +72,7 @@ export default async function NewsletterPage({
         <button className="btn">絞り込む</button>
         <Link className="btn-sub" href="/newsletter">クリア</Link>
       </form>
-      <div className="card overflow-x-auto p-0">
+      <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -100,7 +101,7 @@ export default async function NewsletterPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/newsletter" params={{ ...filter }} page={page} total={total} />
-    </>
+      <Pagination basePath="/newsletter" params={{ ...filter }} page={page} perPage={perPage} total={total} />
+    </div>
   );
 }

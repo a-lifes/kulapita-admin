@@ -12,17 +12,17 @@
 
   /* 書体: Noto Sans JP (src/app/layout.tsx で読み込み) */
   --font-sans: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
-  /* 通常の文字の大きさは 12px。見出し (text-lg 以上) はそれより大きくする */
-  --text-sm: 12px;
+  /* 通常の文字の大きさは 13px。見出し (text-lg 以上) はそれより大きくする */
+  --text-sm: 13px;
   --text-sm--line-height: 1.6;
-  --text-base: 12px;
+  --text-base: 13px;
   --text-base--line-height: 1.6;
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
   font-family: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /*
@@ -100,6 +100,23 @@ body {
    * 画面の見出し。右上に「追加」などのボタンがある画面と無い画面で、
    * その下 (絞り込みエリアなど) の位置がずれないよう、高さをボタンに合わせて固定する。
    */
+  /*
+   * 一覧画面: 画面全体はスクロールさせず、表の中だけをスクロールする。
+   *   <div className="list-page"> 見出し・絞り込み … <div className="card table-scroll"> 表 </div> 件数 </div>
+   * 表の見出し行はスクロールしても上に残す。
+   */
+  .list-page {
+    @apply flex h-full min-h-0 flex-col;
+  }
+  .list-page > :not(.table-scroll) {
+    @apply shrink-0;
+  }
+  .table-scroll {
+    @apply min-h-0 flex-1 overflow-auto p-0;
+  }
+  .table-scroll .table thead th {
+    @apply sticky top-0 z-[1];
+  }
   .page-title {
     @apply mb-5 flex min-h-10 items-center text-xl font-bold;
   }

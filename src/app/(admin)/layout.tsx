@@ -49,7 +49,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         stageColor={STAGE_COLOR[stage]}
         user={{ name: admin.display_name, email: admin.email, role: label(ROLE_LABEL, admin.role) }}
       />
-      <main className="min-w-0 flex-1 px-8 py-6">{children}</main>
+      {/* 画面の高さに固定し、はみ出す分はこの中でスクロールする (一覧画面は表の中だけスクロール) */}
+      <main className="h-screen min-w-0 flex-1 overflow-y-auto px-8 py-6">{children}</main>
       <Toaster />
     </div>
     </HelpProvider>

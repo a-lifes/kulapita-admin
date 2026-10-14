@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { cidrContains, isIpv4 } from '@/lib/cidr';
@@ -26,19 +27,25 @@ export default async function AllowedIpsPage({
   // 件数が少ないので絞り込みは取得後に行う。
   // IP アドレス (例: 152.165.122.145) を入れたときは、その IP を含む範囲も見つかるようにする
   const keyword = q.toLowerCase();
-  const rows = all.filter(
+  const page = pageFrom(sp.page);
+  const perPage = perPageFrom(sp.per);
+  const filtered = all.filter(
     (r) =>
       !keyword ||
       r.cidr.includes(keyword) ||
       (r.label ?? '').toLowerCase().includes(keyword) ||
       (isIpv4(q) && cidrContains(r.cidr, q)),
   );
+  const rows = filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <>
+    <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">許可 IP</h1>
-        <AddIpButton />
+        <div className="flex items-center gap-2">
+          <ResyncButton />
+          <AddIpButton />
+        </div>
       </div>
 
       <form className="card mb-4 flex flex-wrap items-end gap-3">
@@ -50,7 +57,7 @@ export default async function AllowedIpsPage({
         <Link className="btn-sub" href="/allowed-ips">クリア</Link>
       </form>
 
-      <div className="card mb-4 overflow-x-auto p-0">
+      <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -80,9 +87,7 @@ export default async function AllowedIpsPage({
           </tbody>
         </table>
       </div>
-      {/* 件数 (ほかの一覧と同じ表示。全件を 1 ページで出している) */}
-      <p className="mt-4 text-sm">全 {rows.length.toLocaleString()} 件（1 / 1 ページ）</p>
-      <ResyncButton />
-    </>
+      <Pagination basePath="/allowed-ips" params={{ q }} page={page} perPage={perPage} total={filtered.length} />
+    </div>
   );
 }

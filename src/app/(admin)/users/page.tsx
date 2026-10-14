@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { PageHelp } from '@/components/PageHelp';
 import { listAdmins, Role, ROLES } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
@@ -22,7 +23,9 @@ export default async function UsersPage({
   const status = sp.status && sp.status in STATUSES ? (sp.status as keyof typeof STATUSES) : '';
   const all = await listAdmins();
   // アカウントは多くても数十件なので、絞り込みは取得後に行う
-  const users = all.filter(
+  const page = pageFrom(sp.page);
+  const perPage = perPageFrom(sp.per);
+  const filtered = all.filter(
     (u) =>
       (!q || u.display_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
       (!role || u.role === role) &&
@@ -32,9 +35,10 @@ export default async function UsersPage({
         (status === 'locked' && u.locked) ||
         (status === 'pending' && u.must_change_password)),
   );
+  const users = filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <>
+    <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">アカウント</h1>
         <CreateAdminButton />
@@ -76,7 +80,7 @@ export default async function UsersPage({
         </ul>
       </PageHelp>
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -124,8 +128,7 @@ export default async function UsersPage({
           </tbody>
         </table>
       </div>
-      {/* 件数 (ほかの一覧と同じ表示。全件を 1 ページで出している) */}
-      <p className="mt-4 text-sm">全 {users.length.toLocaleString()} 件（1 / 1 ページ）</p>
-    </>
+      <Pagination basePath="/users" params={{ q: sp.q, role, status }} page={page} perPage={perPage} total={filtered.length} />
+    </div>
   );
 }

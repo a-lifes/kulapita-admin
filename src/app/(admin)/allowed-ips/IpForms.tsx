@@ -1,21 +1,10 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { icons } from '@/components/icons';
 import { toast } from '@/components/Toaster';
-import { addIpAction, deleteIpAction, IpActionState, resyncWafAction, updateIpAction } from './actions';
-
-function Result({ state }: { state: IpActionState }) {
-  if (!state) return null;
-  return (
-    <div className="space-y-2">
-      {state.error && <p className="error">{state.error}</p>}
-      {state.message && <p className="notice">{state.message}</p>}
-      {state.warning && <p className="error">{state.warning}</p>}
-    </div>
-  );
-}
+import { addIpAction, deleteIpAction, resyncWafAction, updateIpAction } from './actions';
 
 /** 追加 (＋ボタン → 画面中央のダイアログで入力 → 結果はスナックバー) */
 export function AddIpButton() {
@@ -216,12 +205,25 @@ export function DeleteIpButton({ id, cidr, label }: { id: string; cidr: string; 
   );
 }
 
+/** WAF に再反映 (DB の許可 IP 一覧で WAF を上書きする。結果はスナックバー) */
 export function ResyncButton() {
-  const [state, action, pending] = useActionState(resyncWafAction, undefined);
+  const [pending, startTransition] = useTransition();
   return (
-    <form action={action} className="space-y-2">
-      <button className="btn-sub" disabled={pending}>{pending ? '反映中…' : 'WAF に再反映'}</button>
-      <Result state={state} />
-    </form>
+    <button
+      type="button"
+      className="btn-sub"
+      disabled={pending}
+      title="DB の許可 IP 一覧で WAF（入口の防御）を上書きします"
+      onClick={() =>
+        startTransition(async () => {
+          const res = await resyncWafAction();
+          if (res?.error) toast.error(res.error);
+          if (res?.message) toast.success(res.message);
+          if (res?.warning) toast.warning(res.warning);
+        })
+      }
+    >
+      {pending ? '反映中…' : 'WAF に反映'}
+    </button>
   );
 }

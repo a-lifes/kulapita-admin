@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Pagination, PAGE_SIZE, pageFrom } from '@/components/Pagination';
+import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { requireAdmin } from '@/lib/auth/guard';
 import { likeEscape, Params, query } from '@/lib/db';
 import { formatJst } from '@/lib/format';
@@ -70,6 +70,7 @@ export default async function AuditLogsPage({
   const action = sp.action && ACTION_LABEL[sp.action] ? sp.action : undefined;
   const q = sp.q?.trim().slice(0, 100) || undefined;
   const page = pageFrom(sp.page);
+  const perPage = perPageFrom(sp.per);
   // 件数が多くなるため 1 日ずつ表示する (初期値は今日)
   const today = todayJst();
   const date = sp.date && DATE_RE.test(sp.date) && !Number.isNaN(Date.parse(sp.date)) ? sp.date : today;
@@ -93,13 +94,13 @@ export default async function AuditLogsPage({
       `SELECT l.id, a.display_name AS account_name, a.email AS account_email, l.admin_email_snapshot, l.action,
               l.target_type, l.target_id, l.diff, l.ip_address, l.user_agent, l.created_at
        ${from} ${where} ORDER BY l.created_at DESC, l.id DESC LIMIT :limit OFFSET :offset`,
-      { ...params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
+      { ...params, limit: perPage, offset: (page - 1) * perPage },
     ),
     query<{ total: number }>(`SELECT COUNT(*) AS total ${from} ${where}`, params),
   ]);
 
   return (
-    <>
+    <div className="list-page">
       <h1 className="page-title">操作ログ</h1>
       <form className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
@@ -123,7 +124,7 @@ export default async function AuditLogsPage({
         <Link className="btn-sub" href="/audit-logs">クリア</Link>
       </form>
       {/* 横スクロールさせない: 内容以外の列は全文を出し、内容の列だけ残りの幅で省略する (全文は日時から開く) */}
-      <div className="card p-0">
+      <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -179,7 +180,7 @@ export default async function AuditLogsPage({
           </tbody>
         </table>
       </div>
-      <Pagination basePath="/audit-logs" params={{ date, q, action }} page={page} total={Number(count[0]?.total ?? 0)} />
-    </>
+      <Pagination basePath="/audit-logs" params={{ date, q, action }} page={page} perPage={perPage} total={Number(count[0]?.total ?? 0)} />
+    </div>
   );
 }
