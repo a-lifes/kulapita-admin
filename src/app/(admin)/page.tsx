@@ -7,7 +7,8 @@ import { DailyView } from './DailyCharts';
 import { dailyCounts } from '@/lib/dailyCounts';
 import { DateRangeFilter } from './DateRangeFilter';
 import { canChooseSite, resolveSite, SITES, topPageViews } from '@/lib/ga4';
-import { jstStartAsUtc, monthStartJst, rangePresets, resolveRange, todayJst } from '@/lib/dateRange';
+import { addDays, addMonths, jstStartAsUtc, monthStartJst, rangePresets, resolveRange, todayJst } from '@/lib/dateRange';
+import { CompareBadge } from './CompareBadge';
 
 export const metadata: Metadata = { title: 'ダッシュボード' };
 
@@ -27,6 +28,11 @@ export default async function DashboardPage({
   const monthStart = jstStartAsUtc(monthStartJst());
   // 「今日」のカードは日本時間の今日 0:00 から
   const today = todayJst();
+  const yesterday = addDays(today, -1);
+  // 前月比は「前月の同じ期間」(前月 1 日〜前月の今日と同じ日) と比べる
+  const prevMonthFrom = addMonths(monthStartJst(), -1);
+  const prevMonthTo = addMonths(today, -1);
+  const prevMonth = { start: jstStartAsUtc(prevMonthFrom), end: jstStartAsUtc(addDays(prevMonthTo, 1)) };
   const hostParams = Object.fromEntries(SITES[site].hosts.map((h, i) => [`host${i}`, h]));
   const hostList = SITES[site].hosts.map((_, i) => `:host${i}`).join(', ');
 
@@ -37,8 +43,10 @@ export default async function DashboardPage({
     { rows: n },
     { rows: p },
     daily,
-    todayPv,
-    todayLogins,
+    pv,
+    logins,
+    { rows: kPrev },
+    { rows: nPrev },
   ] = await Promise.all([
     query<{ pending: number; in_progress: number }>(
       `SELECT SUM(status = 'pending') AS pending, SUM(status = 'in_progress') AS in_progress
@@ -56,41 +64,82 @@ export default async function DashboardPage({
     ),
     query<{ campaign_key: string; total: number }>(
       `SELECT campaign_key, COUNT(*) AS total FROM present_applications
-       GROUP BY campaign_key ORDER BY campaign_key DESC LIMIT 1`,
+       GROUP BY campaign_key ORDER BY campaign_key DESC LIMIT 2`,
     ),
     dailyCounts(range.from, range.to, site),
-    // 今日のトップページ PV (GA4。取得できなければ null)
-    topPageViews(site, today, today)
-      .then((m) => m.get(today) ?? 0)
+    // 今日・昨日のトップページ表示回数 (GA4。取得できなければ null)
+    topPageViews(site, yesterday, today)
+      .then((m) => ({ today: m.get(today) ?? 0, yesterday: m.get(yesterday) ?? 0 }))
       .catch(() => null),
-    // 今日サイトにログインした回数 (選んでいるサイトのホスト名で数える。テーブルが無いなどで失敗したら null)
-    query<{ total: number }>(
-      `SELECT COUNT(*) AS total FROM member_logins WHERE created_at >= :start AND site_host IN (${hostList})`,
-      { start: jstStartAsUtc(today), ...hostParams },
+    // 今日・昨日サイトにログインした回数 (選んでいるサイトのホスト名で数える。テーブルが無いなどで失敗したら null)
+    query<{ today: number; yesterday: number }>(
+      `SELECT SUM(created_at >= :todayStart) AS today, SUM(created_at < :todayStart) AS yesterday
+       FROM member_logins WHERE created_at >= :yesterdayStart AND site_host IN (${hostList})`,
+      { todayStart: jstStartAsUtc(today), yesterdayStart: jstStartAsUtc(yesterday), ...hostParams },
     )
-      .then(({ rows }) => Number(rows[0]?.total ?? 0))
+      .then(({ rows }) => ({ today: Number(rows[0]?.today ?? 0), yesterday: Number(rows[0]?.yesterday ?? 0) }))
       .catch((e) => {
         console.error('[dashboard] ログイン数を取得できませんでした', e instanceof Error ? e.message : e);
         return null;
       }),
+    query<{ total: number }>(
+      'SELECT COUNT(*) AS total FROM outbound_clicks WHERE created_at >= :start AND created_at < :end',
+      prevMonth,
+    ),
+    query<{ total: number }>(
+      `SELECT COUNT(*) AS total FROM newsletter_subscribers
+       WHERE subscribed_at >= :start AND subscribed_at < :end AND deleted_at IS NULL`,
+      prevMonth,
+    ),
   ]);
 
-  const cards: { title: string; value: number | null; href?: string }[] = [
-    { title: 'トップページ（今日）', value: todayPv },
-    { title: 'ログイン数（今日）', value: todayLogins },
-    { title: '未対応のお問い合わせ', value: Number(c[0]?.pending ?? 0), href: '/contacts?status=pending' },
-    { title: '対応中のお問い合わせ', value: Number(c[0]?.in_progress ?? 0), href: '/contacts?status=in_progress' },
-    { title: '未対応の申し込み', value: Number(a[0]?.pending ?? 0), href: '/applications?status=pending' },
+  /** compare: 比べる相手の値と、その名前 (昨日比・前月比など) */
+  type Card = {
+    title: string;
+    value: number | null;
+    unit: string;
+    href?: string;
+    compare?: { label: string; base: number | null; note: string };
+  };
+  const prevMonthNote = `前月の同じ期間（${prevMonthFrom.slice(5).replace('-', '/')}〜${prevMonthTo.slice(5).replace('-', '/')}）`;
+  const cards: Card[] = [
     {
-      title: '誘導（今月）',
-      value: Number(k[0]?.total ?? 0),
-      href: `/clicks?from=${monthStartJst()}&to=${todayJst()}`,
+      title: 'トップページ表示回数（今日）',
+      value: pv?.today ?? null,
+      unit: '回',
+      compare: { label: '昨日比', base: pv?.yesterday ?? null, note: '昨日 1 日' },
     },
-    { title: 'メルマガ登録（今月）', value: Number(n[0]?.total ?? 0), href: '/newsletter' },
     {
-      title: p[0] ? `プレゼント応募（${p[0].campaign_key}）` : 'プレゼント応募',
+      title: 'ログイン数（今日）',
+      value: logins?.today ?? null,
+      unit: '回',
+      compare: { label: '昨日比', base: logins?.yesterday ?? null, note: '昨日 1 日' },
+    },
+    { title: '未対応のお問い合わせ', value: Number(c[0]?.pending ?? 0), unit: '件', href: '/contacts?status=pending' },
+    { title: '対応中のお問い合わせ', value: Number(c[0]?.in_progress ?? 0), unit: '件', href: '/contacts?status=in_progress' },
+    { title: '未対応の申し込み', value: Number(a[0]?.pending ?? 0), unit: '件', href: '/applications?status=pending' },
+    {
+      title: '誘導数（今月）',
+      value: Number(k[0]?.total ?? 0),
+      unit: '件',
+      href: `/clicks?from=${monthStartJst()}&to=${todayJst()}`,
+      compare: { label: '前月比', base: Number(kPrev[0]?.total ?? 0), note: prevMonthNote },
+    },
+    {
+      title: 'メルマガ登録（今月）',
+      value: Number(n[0]?.total ?? 0),
+      unit: '件',
+      href: '/newsletter',
+      compare: { label: '前月比', base: Number(nPrev[0]?.total ?? 0), note: prevMonthNote },
+    },
+    {
+      title: p[0] ? `プレゼント（${p[0].campaign_key}）` : 'プレゼント',
       value: Number(p[0]?.total ?? 0),
+      unit: '件',
       href: p[0] ? `/presents?campaign=${encodeURIComponent(p[0].campaign_key)}` : '/presents',
+      compare: p[1]
+        ? { label: '前月比', base: Number(p[1].total), note: `前回の開催月（${p[1].campaign_key}）の応募数` }
+        : undefined,
     },
   ];
 
@@ -105,10 +154,18 @@ export default async function DashboardPage({
         {cards.map((card) => {
           const body = (
             <>
-              <p className="text-sm text-slate-600">{card.title}</p>
-              <p className="mt-1 text-[26px] leading-tight font-bold tabular-nums">
-                {card.value === null ? '—' : <CountUp value={card.value} />}
-              </p>
+              <p className="text-sm font-semibold text-slate-600">{card.title}</p>
+              <div className="mt-1 flex items-center gap-4">
+                <p className="leading-tight tabular-nums">
+                  <span className="text-[26px] font-bold">
+                    {card.value === null ? '—' : <CountUp value={card.value} />}
+                  </span>
+                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">{card.unit}</span>}
+                </p>
+                {card.compare && card.value !== null && (
+                  <CompareBadge value={card.value} base={card.compare.base} label={card.compare.label} note={card.compare.note} />
+                )}
+              </div>
             </>
           );
           return card.href ? (
