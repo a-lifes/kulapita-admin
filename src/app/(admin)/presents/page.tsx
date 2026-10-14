@@ -66,7 +66,7 @@ export default async function PresentsPage({
   return (
     <>
       <div className="mb-5 flex items-center justify-between">
-        <h1 className="page-title mb-0">プレゼント応募</h1>
+        <h1 className="page-title mb-0">プレゼント</h1>
         {hasRole(admin.role, 'admin') && (
           <a className="btn-sub" href={`/api/export/presents${exportQuery ? `?${exportQuery}` : ''}`}>CSV ダウンロード</a>
         )}

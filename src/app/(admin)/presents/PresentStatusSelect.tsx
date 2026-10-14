@@ -21,7 +21,7 @@ export function PresentStatusSelect({ id, status, readOnly }: { id: string; stat
   return (
     <div className="min-w-28">
       <select
-        className={`rounded-md border px-2 py-1 text-sm font-semibold ${STYLES[value] ?? ''}`}
+        className={`rounded-md border py-1 pr-8 pl-2.5 text-sm font-semibold [background-position:right_0.5rem_center] ${STYLES[value] ?? ''}`}
         value={value}
         disabled={readOnly || pending}
         aria-label="抽選結果"

@@ -11,8 +11,8 @@ const NAV: { title: string; items: (NavItem & { min: Role })[] }[] = [
     items: [
       { href: '/', text: 'ダッシュボード', icon: 'dashboard', min: 'readonly' },
       { href: '/contacts', text: 'お問い合わせ', icon: 'contacts', min: 'readonly' },
-      { href: '/newsletter', text: 'メルマガ登録者', icon: 'newsletter', min: 'readonly' },
-      { href: '/presents', text: 'プレゼント応募', icon: 'presents', min: 'readonly' },
+      { href: '/newsletter', text: 'メルマガ', icon: 'newsletter', min: 'readonly' },
+      { href: '/presents', text: 'プレゼント', icon: 'presents', min: 'readonly' },
     ],
   },
   {

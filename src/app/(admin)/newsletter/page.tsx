@@ -46,7 +46,7 @@ export default async function NewsletterPage({
   return (
     <>
       <div className="mb-5 flex items-center justify-between">
-        <h1 className="page-title mb-0">メルマガ登録者</h1>
+        <h1 className="page-title mb-0">メルマガ</h1>
         {hasRole(admin.role, 'admin') && (
           <a className="btn-sub" href={`/api/export/newsletter${exportQuery ? `?${exportQuery}` : ''}`}>CSV ダウンロード</a>
         )}

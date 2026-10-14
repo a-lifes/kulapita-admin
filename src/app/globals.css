@@ -39,6 +39,20 @@ body {
   input:disabled {
     cursor: not-allowed;
   }
+
+  /*
+   * プルダウン: ブラウザ標準の矢印を消し、右端の内側に下向きの矢印 (シェブロン) を描く。
+   * 矢印の分だけ右の余白を広げ、文字と重ならないようにする。
+   */
+  select {
+    appearance: none;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2321213b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem 1rem;
+    text-overflow: ellipsis;
+  }
 }
 
 @layer components {
@@ -53,6 +67,9 @@ body {
   }
   .input {
     @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand;
+  }
+  select.input {
+    @apply pr-10;
   }
   .label {
     @apply mb-1 block text-sm font-semibold text-slate-700;
