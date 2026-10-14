@@ -70,7 +70,8 @@ export function SideNav({
           </span>
         )}
         <div className={`flex items-center ${collapsed ? 'flex-col gap-1' : 'gap-1'}`}>
-        <HelpButton />
+        {/* 画面の説明は、メニューを開いているときだけ出す */}
+        {!collapsed && <HelpButton />}
         <button
           type="button"
           onClick={toggle}

@@ -17,23 +17,79 @@ function Result({ state }: { state: IpActionState }) {
   );
 }
 
-export function AddIpForm() {
-  const [state, action, pending] = useActionState(addIpAction, undefined);
+/** 追加 (＋ボタン → 画面中央のダイアログで入力 → 結果はスナックバー) */
+export function AddIpButton() {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+
   return (
-    <form action={action} className="space-y-3">
-      <Result state={state} />
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="label" htmlFor="cidr">IP アドレス（CIDR）</label>
-          <input className="input font-mono" id="cidr" name="cidr" placeholder="152.165.122.145/32" required />
-        </div>
-        <div className="min-w-64 flex-1">
-          <label className="label" htmlFor="label">メモ（IPアドレスの説明、補足情報など）</label>
-          <input className="input" id="label" name="label" maxLength={100} placeholder="本社" />
-        </div>
-        <button className="btn" disabled={pending}>{pending ? '追加中…' : '追加'}</button>
-      </div>
-    </form>
+    <>
+      <button
+        type="button"
+        className="btn"
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
+      >
+        <icons.plus className="h-4 w-4" />
+        追加
+      </button>
+      <dialog
+        ref={ref}
+        onClose={() => setOpen(false)}
+        onClick={(e) => {
+          if (e.target === ref.current) setOpen(false);
+        }}
+        className="m-auto w-[min(520px,92vw)] rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
+      >
+        {open && (
+          <form
+            className="p-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              startTransition(async () => {
+                const res = await addIpAction(undefined, fd);
+                if (res?.error) {
+                  setError(res.error);
+                  return;
+                }
+                setOpen(false);
+                if (res?.message) toast.success(res.message);
+                if (res?.warning) toast.warning(res.warning);
+              });
+            }}
+          >
+            <h2 className="mb-4 text-base font-bold text-slate-900">許可 IP の追加</h2>
+            {error && <p className="error mb-4">{error}</p>}
+            <div className="space-y-4">
+              <div>
+                <label className="label" htmlFor="new-cidr">IP アドレス（CIDR）</label>
+                <input className="input font-mono" id="new-cidr" name="cidr" placeholder="152.165.122.145/32" required autoFocus />
+              </div>
+              <div>
+                <label className="label" htmlFor="new-label">メモ（IPアドレスの説明、補足情報など）</label>
+                <input className="input" id="new-label" name="label" maxLength={100} placeholder="本社" />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className="btn-sub" onClick={() => setOpen(false)}>キャンセル</button>
+              <button className="btn" disabled={pending}>{pending ? '追加中…' : '追加'}</button>
+            </div>
+          </form>
+        )}
+      </dialog>
+    </>
   );
 }
 
