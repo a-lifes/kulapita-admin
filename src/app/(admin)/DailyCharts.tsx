@@ -8,7 +8,7 @@ import { icons } from '@/components/icons';
  * 件数の規模が違うので 1 つの軸にまとめず、同じ日付の横軸でそろえた別々のグラフにする。
  * 棒にマウスを乗せると、その日の件数を出す。
  */
-export type DailySeries = { key: string; label: string; color: string; values: number[] };
+export type DailySeries = { key: string; label: string; shortLabel: string; color: string; values: number[] };
 
 const HEIGHT = 140;
 const PAD = { top: 12, right: 12, bottom: 24, left: 36 };
@@ -176,12 +176,24 @@ function DailyTable({ dates, series }: { dates: string[]; series: DailySeries[] 
   const totals = series.map((s) => s.values.reduce((a, b) => a + b, 0));
   return (
     <div className="max-h-[32rem] overflow-y-auto rounded border border-slate-200">
-      <table className="table">
+      {/* 日付の列だけ固定幅にし、件数の列はすべて同じ幅にする。列の区切りに縦線を入れる */}
+      <table className="table daily-table table-fixed">
+        <colgroup>
+          <col className="w-32" />
+          {series.map((s) => (
+            <col key={s.key} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             <th>日付</th>
             {series.map((s) => (
-              <th key={s.key} className="text-right">{s.label}</th>
+              <th key={s.key} className="text-right" title={s.label}>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} aria-hidden="true" />
+                  {s.shortLabel}
+                </span>
+              </th>
             ))}
           </tr>
         </thead>

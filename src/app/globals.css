@@ -118,6 +118,14 @@ body {
   .table tbody tr:not(:has(td[colspan])):hover td {
     @apply bg-slate-100/70;
   }
+  /* ダッシュボードの日ごとの件数の表: 列の区切りに縦線 */
+  .daily-table th + th,
+  .daily-table td + td {
+    @apply border-l border-slate-200;
+  }
+  .daily-table thead th {
+    @apply sticky top-0 z-[1];
+  }
   .table-scroll .table thead th {
     @apply sticky top-0 z-[1];
   }

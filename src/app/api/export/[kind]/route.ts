@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `日ごとの件数_${ymd(range.from)}-${ymd(range.to)}_${stamp()}.csv`,
       toCsv(
-        ['日付', ...series.map((s) => s.label)],
+        ['日付', ...series.map((s) => s.shortLabel)],
         [
           ...dates.map((d, i) => [d.replaceAll('-', '/'), ...series.map((s) => s.values[i])]),
           ['期間合計', ...totals],
