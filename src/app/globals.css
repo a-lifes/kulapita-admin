@@ -147,3 +147,23 @@ body {
     @apply inline-block rounded px-2 py-0.5 text-xs font-semibold whitespace-nowrap;
   }
 }
+
+/* ダッシュボードの棒グラフ: 表示したときに下から伸びる (左の棒から少しずつ遅らせる) */
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.bar-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-grow {
+    animation: none;
+  }
+}

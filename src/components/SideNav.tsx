@@ -41,6 +41,12 @@ export function SideNav({
   user: { name: string; email: string; role: string };
 }) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  // メニューにマウスを乗せたときのツールチップ (メニューの枠で切れないよう、画面に対する位置で出す)
+  const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
+  const showTip = (text: string, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    setTip({ text, top: r.top + r.height / 2, left: r.right + 8 });
+  };
   const pathname = usePathname();
 
   const toggle = () => {
@@ -116,8 +122,12 @@ export function SideNav({
                   <Link
                     key={item.href}
                     href={item.href}
-                    title={collapsed ? item.text : undefined}
                     aria-label={item.text}
+                    onMouseEnter={(e) => showTip(item.text, e.currentTarget)}
+                    onMouseLeave={() => setTip(null)}
+                    onFocus={(e) => showTip(item.text, e.currentTarget)}
+                    onBlur={() => setTip(null)}
+                    onClick={() => setTip(null)}
                     className={`flex items-center gap-3 rounded-md py-2.5 text-[13px] whitespace-nowrap ${
                       collapsed ? 'justify-center px-0' : 'px-3'
                     } ${
@@ -135,6 +145,16 @@ export function SideNav({
           </div>
         ))}
       </nav>
+
+      {tip && (
+        <div
+          role="tooltip"
+          className="pointer-events-none fixed z-50 -translate-y-1/2 rounded-md bg-slate-800 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg"
+          style={{ top: tip.top, left: tip.left }}
+        >
+          {tip.text}
+        </div>
+      )}
 
       {/* 一番下: ログイン中のユーザー */}
       <div className={`shrink-0 border-t border-slate-200 py-3 ${collapsed ? 'flex justify-center' : 'px-3'}`}>

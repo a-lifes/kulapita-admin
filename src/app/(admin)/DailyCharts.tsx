@@ -101,6 +101,8 @@ function Chart({ series, days, width }: { series: DailySeries; days: Day[]; widt
             <g key={dates[i]}>
               {v > 0 && (
                 <path
+                  className="bar-grow"
+                  style={{ animationDelay: `${Math.min(i * 12, 400)}ms` }}
                   d={barPath(x, y(v), barW, PAD.top + innerH - y(v), barW >= 8 ? 4 : 1)}
                   fill={series.color}
                   opacity={hover === null || hover === i ? 1 : 0.45}
