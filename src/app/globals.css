@@ -96,6 +96,11 @@ body {
   .table td {
     @apply h-13 border-b border-slate-100 px-3 py-0 align-middle font-normal whitespace-nowrap;
   }
+  /* 一番左の列は、枠からの余白を少しだけ広く (12px → 14px) */
+  .table th:first-child,
+  .table td:first-child {
+    @apply pl-3.5;
+  }
   /*
    * 画面の見出し。右上に「追加」などのボタンがある画面と無い画面で、
    * その下 (絞り込みエリアなど) の位置がずれないよう、高さをボタンに合わせて固定する。
