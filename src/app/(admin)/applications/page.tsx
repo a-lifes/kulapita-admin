@@ -102,9 +102,7 @@ export default async function ApplicationsPage({
           <select className="input max-w-72" id="service" name="service" defaultValue={filter.service ?? ''}>
             <option value="">すべて</option>
             {services.map((s) => (
-              <option key={s.service_name} value={s.service_name}>
-                {s.service_name}（{Number(s.total).toLocaleString()}）
-              </option>
+              <option key={s.service_name} value={s.service_name}>{s.service_name}</option>
             ))}
           </select>
         </div>
