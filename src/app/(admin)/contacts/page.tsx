@@ -4,6 +4,7 @@ import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
+import { CASE_COLUMN_WIDTH } from '@/lib/caseStatus';
 import { query } from '@/lib/db';
 import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { CONTACT_CATEGORIES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
@@ -108,9 +109,9 @@ export default async function ContactsPage({
         <table className="table">
           <thead>
             <tr>
-              <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
-              <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
-              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
+              <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.created} />
+              <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.number} />
+              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.status} />
               <SortableTh label="お問い合わせの種類" sortKey="content" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />
               <SortableTh label="メール" sortKey="email" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} />

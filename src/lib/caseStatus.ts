@@ -12,6 +12,16 @@ import { UUID_RE } from './uuid';
 export type CaseFormState = { error?: string; saved?: boolean } | undefined;
 export const CASE_STATUSES = ['pending', 'in_progress', 'completed', 'archived'] as const;
 
+/**
+ * お問い合わせ・申し込みの一覧で、左の 3 列 (受付日時・受付番号・対応状況) を同じ固定幅にする。
+ * 両方の画面で列の位置がそろう (残りの幅は右側の列に回る)。
+ */
+export const CASE_COLUMN_WIDTH = {
+  created: 'w-40 min-w-40 max-w-40',
+  number: 'w-28 min-w-28 max-w-28',
+  status: 'w-28 min-w-28 max-w-28',
+} as const;
+
 export async function updateCaseStatus(input: {
   table: 'contacts' | 'service_applications';
   auditAction: string;

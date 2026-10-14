@@ -7,7 +7,7 @@ import { SortableTh } from '@/components/SortableTh';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
-import { CASE_STATUSES } from '@/lib/caseStatus';
+import { CASE_COLUMN_WIDTH, CASE_STATUSES } from '@/lib/caseStatus';
 import { query } from '@/lib/db';
 import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
@@ -120,9 +120,9 @@ export default async function ApplicationsPage({
         <table className="table">
           <thead>
             <tr>
-              <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
-              <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
-              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
+              <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} className={CASE_COLUMN_WIDTH.created} />
+              <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} className={CASE_COLUMN_WIDTH.number} />
+              <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} className={CASE_COLUMN_WIDTH.status} />
               <SortableTh label="サービス" sortKey="service" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="サービス提供会社" sortKey="company" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
               <SortableTh label="お名前" sortKey="name" sort={sort} columns={SORT_COLUMNS} basePath="/applications" params={listParams} />
