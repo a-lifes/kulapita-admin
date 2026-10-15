@@ -67,6 +67,12 @@ export function CommandPalette({ groups }: { groups: NavGroup[] }) {
   }, [groups, q]);
   const items: Item[] = [...menu, ...(q.trim() ? results : [])];
 
+  // ↑↓ で選んだ行が見えるように、一覧をその行までスクロールする
+  const listRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    listRef.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [active]);
+
   const close = () => {
     setOpen(false);
     setQ('');
@@ -119,7 +125,7 @@ export function CommandPalette({ groups }: { groups: NavGroup[] }) {
           {pending && <span className="text-xs text-slate-400">検索中…</span>}
           <kbd className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-400">Esc</kbd>
         </div>
-        <ul className="max-h-[52vh] overflow-y-auto p-2" role="listbox">
+        <ul ref={listRef} className="max-h-[52vh] overflow-y-auto p-2" role="listbox">
           {items.length === 0 && (
             <li className="px-3 py-8 text-center text-slate-400">{pending ? '検索しています…' : '見つかりませんでした'}</li>
           )}
@@ -132,6 +138,7 @@ export function CommandPalette({ groups }: { groups: NavGroup[] }) {
                 )}
                 <button
                   type="button"
+                  data-index={i}
                   onMouseMove={() => setActive(i)}
                   onClick={() => go(item)}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left ${
