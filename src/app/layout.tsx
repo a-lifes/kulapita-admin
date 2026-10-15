@@ -2,8 +2,11 @@ import type { Metadata } from 'next';
 // 書体: Noto Sans JP (npm のパッケージに入っているフォントをこのアプリから配信する。外部への通信なし。
 // 文字の範囲ごとに分かれていて、画面で使う文字の分だけ読み込まれる)
 import '@fontsource-variable/noto-sans-jp';
-// 英数字は Inter (数字・日時・会員番号などをシャープに見せる。日本語は Noto Sans JP で表示される)
-import '@fontsource-variable/inter';
+// 英数字は Geist、日本語は LINE Seed JP (どちらも npm のパッケージからこのアプリで配信)。
+// LINE Seed JP に無い文字は Noto Sans JP で表示する
+import '@fontsource-variable/geist';
+import '@fontsource/line-seed-jp/400.css';
+import '@fontsource/line-seed-jp/700.css';
 import './globals.css';
 
 // 環境名 (STAGE) を実行時に読むため、ビルド時に固定しない

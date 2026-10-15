@@ -15,8 +15,8 @@
   --color-line-soft: #f1f3f7;
   --color-brand-soft: #f4f2ff;
 
-  /* 書体: 英数字は Inter、日本語は Noto Sans JP (src/app/layout.tsx で読み込み) */
-  --font-sans: 'Inter Variable', 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
+  /* 書体: 英数字は Geist、日本語は LINE Seed JP (src/app/layout.tsx で読み込み。無い文字は Noto Sans JP) */
+  --font-sans: 'Geist Variable', 'LINE Seed JP', 'Noto Sans JP Variable', sans-serif;
   /* 通常の文字の大きさは 13px。見出し (text-lg 以上) はそれより大きくする */
   --text-sm: 13px;
   --text-sm--line-height: 1.6;
@@ -26,7 +26,7 @@
 
 body {
   @apply bg-canvas text-slate-800 antialiased;
-  font-family: 'Inter Variable', 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
+  font-family: 'Geist Variable', 'LINE Seed JP', 'Noto Sans JP Variable', sans-serif;
   font-size: 13px;
   /* 数字の幅をそろえる (表の数字・日時が縦にきれいに並ぶ) */
   font-variant-numeric: tabular-nums;
