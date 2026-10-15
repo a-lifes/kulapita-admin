@@ -57,7 +57,7 @@ export function SelectAllCheckbox() {
   return (
     <input
       type="checkbox"
-      className="h-4 w-4 cursor-pointer accent-brand align-middle"
+      className="cursor-pointer"
       aria-label="表示中の行をすべて選ぶ"
       checked={all}
       ref={(el) => {
@@ -74,7 +74,7 @@ export function RowCheckbox({ id }: { id: string }) {
   return (
     <input
       type="checkbox"
-      className="h-4 w-4 cursor-pointer accent-brand align-middle"
+      className="cursor-pointer"
       aria-label="この行を選ぶ"
       checked={selected.has(id)}
       onChange={(e) => toggle(id, e.target.checked)}
