@@ -112,13 +112,12 @@ function Spinner({ className }: { className?: string }) {
 }
 
 /**
- * 検索中は画面の中央に、くるくる回るマークだけを大きめに出す。
- * 背景は付けないが、透明な層で画面を覆い、検索中に二重に押せないようにする。
+ * 検索中は、一覧をスケルトン (globals.css の form[aria-busy] の指定) に切り替える。
+ * ここでは透明な層で画面を覆い、検索中に二重に押せないようにするだけ。
  */
 function LoadingOverlay() {
   return (
-    <div className="fixed inset-0 z-40 flex cursor-wait items-center justify-center" role="status" aria-live="polite">
-      <Spinner className="h-14 w-14 text-brand drop-shadow" />
+    <div className="fixed inset-0 z-40 cursor-progress" role="status" aria-live="polite">
       <span className="sr-only">検索しています</span>
     </div>
   );

@@ -135,7 +135,7 @@ export default async function ApplicationsPage({
                 <tr key={r.id}>
                   <td>{formatJst(r.created_at)}</td>
                   <td>
-                    <Link className="text-brand underline" href={`/applications/${r.id}`}>
+                    <Link className="text-brand hover:underline" href={`/applications/${r.id}`}>
                       {r.reception_number}
                     </Link>
                   </td>

@@ -20,7 +20,7 @@ export function StatusSelect({
   status: string;
   readOnly: boolean;
   labels: Record<string, string>;
-  /** 状態ごとの色 */
+  /** 状態ごとの点の色 */
   styles: Record<string, string>;
   action: (id: string, status: string) => Promise<StatusResult>;
   ariaLabel: string;
@@ -30,9 +30,11 @@ export function StatusSelect({
   const router = useRouter();
 
   return (
-    <div className="min-w-28">
+    <div className="relative inline-flex min-w-28 items-center">
+      {/* 状態の色の点 (プルダウンの左端に重ねる) */}
+      <span className={`pointer-events-none absolute left-3 h-[7px] w-[7px] rounded-full ${styles[value] ?? 'bg-slate-400'}`} aria-hidden="true" />
       <select
-        className={`rounded-md border py-1 pr-8 pl-2.5 text-sm font-semibold [background-position:right_0.5rem_center] ${styles[value] ?? ''}`}
+        className="w-full rounded-full border border-slate-200 bg-white py-1 pr-8 pl-7 text-sm text-slate-700 hover:border-slate-300 focus:border-brand focus:outline-none disabled:bg-white [background-position:right_0.6rem_center] [background-size:0.85rem_0.85rem]"
         value={value}
         disabled={readOnly || pending}
         aria-label={ariaLabel}

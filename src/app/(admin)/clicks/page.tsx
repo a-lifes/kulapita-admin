@@ -167,7 +167,7 @@ export default async function ClicksPage({
                   </td>
                   <td className="max-w-80 truncate">
                     <a
-                      className="text-brand underline"
+                      className="text-brand hover:underline"
                       href={r.destination_url}
                       target="_blank"
                       rel="noreferrer noopener"

@@ -193,7 +193,7 @@ export default async function AuditLogsPage({
                   <td>{ACTION_LABEL[r.action] ?? r.action}</td>
                   <td>
                     {targetHref ? (
-                      <Link className="text-brand underline" href={targetHref}>{target}</Link>
+                      <Link className="text-brand hover:underline" href={targetHref}>{target}</Link>
                     ) : (
                       target
                     )}

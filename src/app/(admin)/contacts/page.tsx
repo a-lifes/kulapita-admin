@@ -129,7 +129,7 @@ export default async function ContactsPage({
               <tr key={r.id}>
                 <td>{formatJst(r.created_at)}</td>
                 <td>
-                  <Link className="text-brand underline" href={`/contacts/${r.id}`}>
+                  <Link className="text-brand hover:underline" href={`/contacts/${r.id}`}>
                     {r.reception_number}
                   </Link>
                 </td>

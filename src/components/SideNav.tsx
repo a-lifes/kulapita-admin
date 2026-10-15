@@ -128,14 +128,16 @@ export function SideNav({
                     onFocus={(e) => showTip(item.text, e.currentTarget)}
                     onBlur={() => setTip(null)}
                     onClick={() => setTip(null)}
-                    className={`flex items-center gap-3 rounded-md py-2.5 text-[13px] whitespace-nowrap ${
+                    className={`relative flex items-center gap-3 rounded-lg py-2.5 text-[13px] whitespace-nowrap ${
                       collapsed ? 'justify-center px-0' : 'px-3'
                     } ${
                       active
-                        ? 'bg-nav-active font-bold text-brand'
-                        : 'text-nav-text hover:bg-nav-active/60 hover:text-brand'
+                        ? 'bg-white font-semibold text-brand shadow-[0_1px_2px_rgba(15,23,42,0.06)]'
+                        : 'text-nav-text hover:bg-white/60 hover:text-brand'
                     }`}
                   >
+                    {/* 選んでいるメニューは左にブランド色の細い縦線 */}
+                    {active && <span className="absolute top-2 bottom-2 -left-2.5 w-[3px] rounded-r-full bg-brand" aria-hidden="true" />}
                     <Icon className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{item.text}</span>}
                   </Link>

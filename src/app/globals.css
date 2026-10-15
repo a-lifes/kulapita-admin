@@ -10,8 +10,8 @@
   --color-nav-heading: #50507a;
   --color-nav-active: #e2defb;
 
-  /* 書体: Noto Sans JP (src/app/layout.tsx で読み込み) */
-  --font-sans: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
+  /* 書体: 英数字は Inter、日本語は Noto Sans JP (src/app/layout.tsx で読み込み) */
+  --font-sans: 'Inter Variable', 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
   /* 通常の文字の大きさは 13px。見出し (text-lg 以上) はそれより大きくする */
   --text-sm: 13px;
   --text-sm--line-height: 1.6;
@@ -20,9 +20,11 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
-  font-family: 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
+  @apply bg-[#f7f8fb] text-slate-800 antialiased;
+  font-family: 'Inter Variable', 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
   font-size: 13px;
+  /* 数字の幅をそろえる (表の数字・日時が縦にきれいに並ぶ) */
+  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -63,16 +65,16 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50;
   }
   .btn-sub {
-    @apply inline-flex items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-1 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50;
   }
   .input {
-    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand;
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand;
   }
   select.input {
     @apply pr-10;
@@ -81,7 +83,7 @@ body {
     @apply mb-1 block text-sm font-semibold text-slate-700;
   }
   .card {
-    @apply rounded-lg border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-xl border border-[#eceef3] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
   }
   .table {
     @apply w-full border-collapse text-sm;
@@ -90,16 +92,20 @@ body {
    * 一覧の表: 全画面で行の高さを同じにし、文字は必ず 1 行で表示する
    * (列が収まらないときは表の中で横スクロール)
    */
+  /* 見出しは帯を付けず、小さめの灰色の文字にする。行は区切り線だけ (縦線なし) */
   .table th {
-    @apply h-11 border-b border-slate-200 bg-slate-100 px-3 py-0 text-left font-semibold whitespace-nowrap;
+    @apply h-10 border-b border-[#eef0f4] bg-white px-4 py-0 text-left text-xs font-medium whitespace-nowrap text-slate-400;
   }
   .table td {
-    @apply h-13 border-b border-slate-100 px-3 py-0 align-middle font-normal whitespace-nowrap;
+    @apply h-12 border-b border-[#f1f3f7] px-4 py-0 align-middle font-normal whitespace-nowrap;
   }
-  /* 一番左の列は、枠からの余白を少しだけ広く (12px → 14px) */
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  /* 一番左の列は、枠からの余白を少しだけ広く */
   .table th:first-child,
   .table td:first-child {
-    @apply pl-3.5;
+    @apply pl-5;
   }
   /*
    * 画面の見出し。右上に「追加」などのボタンがある画面と無い画面で、
@@ -121,7 +127,7 @@ body {
   }
   /* マウスを乗せた行は薄い灰色にする (「データがありません」の行は除く) */
   .table tbody tr:not(:has(td[colspan])):hover td {
-    @apply bg-slate-100/70;
+    @apply bg-slate-50;
   }
   /* ダッシュボードの日ごとの件数の表: 列の区切りに縦線 */
   .daily-table th + th,
@@ -143,8 +149,12 @@ body {
   .notice {
     @apply rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800;
   }
+  /* 状態の表示: 色の点 + 文字 */
   .badge {
-    @apply inline-block rounded px-2 py-0.5 text-xs font-semibold whitespace-nowrap;
+    @apply inline-flex items-center gap-1.5 text-sm whitespace-nowrap text-slate-700;
+  }
+  .badge-dot {
+    @apply h-[7px] w-[7px] shrink-0 rounded-full;
   }
 }
 
@@ -164,6 +174,56 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .bar-grow {
+    animation: none;
+  }
+}
+
+/*
+ * 5. 読み込み中のスケルトン: 絞り込み・期間の切り替えで読み込んでいる間 (form[aria-busy]) は、
+ * 一覧の各セルの中身を隠して、薄いグレーの帯の上を光が流れる表示にする。
+ */
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton-bar,
+body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan])::after {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef0f4 25%, #f7f8fb 50%, #eef0f4 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan]) {
+  position: relative;
+}
+body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan]) > *,
+body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan]) {
+  color: transparent;
+}
+body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan]) > * {
+  visibility: hidden;
+}
+body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan])::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  right: 24%;
+  height: 10px;
+  transform: translateY(-50%);
+}
+/* グラフ・カードなど一覧以外は、読み込み中だけ薄くする */
+body:has(form[aria-busy='true']) .busy-dim {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar,
+  body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan])::after {
     animation: none;
   }
 }

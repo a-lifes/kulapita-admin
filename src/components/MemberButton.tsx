@@ -45,7 +45,7 @@ export function MemberButton({
     <>
       <button
         type="button"
-        className="text-left text-brand underline"
+        className="text-left text-brand hover:underline"
         onClick={() => setOpen(true)}
       >
         {label || member.external_id}

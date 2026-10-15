@@ -31,9 +31,14 @@ export function SortableTh({
   q.set('dir', nextDir);
   return (
     <th className={className} aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <Link href={`${basePath}?${q}`} className="group inline-flex items-center gap-1 hover:text-brand" title="並べ替え">
+      <Link
+        href={`${basePath}?${q}`}
+        className={`group inline-flex items-center gap-1 hover:text-slate-700 ${active ? 'text-slate-700' : ''}`}
+        title="並べ替え"
+      >
         {label}
-        <span className={`text-[10px] ${active ? 'text-brand' : 'text-slate-300 group-hover:text-slate-500'}`}>
+        {/* 並べ替え中の列だけ矢印を出す (ほかの列はマウスを乗せたときだけ) */}
+        <span className={`text-[9px] ${active ? 'text-brand' : 'text-slate-300 opacity-0 group-hover:opacity-100'}`}>
           {active ? (sort.dir === 'asc' ? '▲' : '▼') : '▲▼'}
         </span>
       </Link>

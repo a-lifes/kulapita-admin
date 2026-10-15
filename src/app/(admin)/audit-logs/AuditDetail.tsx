@@ -45,7 +45,7 @@ export function AuditDetailLink({ data }: { data: AuditDetailData }) {
     [
       '対象',
       data.targetHref ? (
-        <Link className="text-brand underline" href={data.targetHref}>{data.target}</Link>
+        <Link className="text-brand hover:underline" href={data.targetHref}>{data.target}</Link>
       ) : (
         data.target
       ),
@@ -56,7 +56,7 @@ export function AuditDetailLink({ data }: { data: AuditDetailData }) {
 
   return (
     <>
-      <button type="button" className="text-brand underline" onClick={() => setOpen(true)}>
+      <button type="button" className="text-brand hover:underline" onClick={() => setOpen(true)}>
         {data.createdAt}
       </button>
       <dialog

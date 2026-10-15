@@ -191,7 +191,7 @@ export function DailyView({ days, series, header }: { days: Day[]; series: Daily
       </div>
       <div role="tabpanel" className="card relative z-[1] rounded-tl-none">
         {header}
-        <div className="mt-6">
+        <div className="busy-dim mt-6">
           {tab === 'chart' ? <DailyCharts key={replay} days={days} series={series} /> : <DailyTable days={days} series={series} />}
         </div>
       </div>

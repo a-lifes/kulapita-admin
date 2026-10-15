@@ -48,16 +48,16 @@ export const NEWSLETTER_STATUS_LABEL: Record<string, string> = {
   excluded: '登録対象外',
 };
 
-/** 一覧の行で状態を切り替えるプルダウンの色 */
+/** 一覧の行で状態を切り替えるプルダウンの、左の点の色 */
 export const NEWSLETTER_STATUS_STYLE: Record<string, string> = {
-  pending: 'border-slate-300 bg-slate-100 text-slate-700',
-  registered: 'border-emerald-400 bg-emerald-50 text-emerald-800',
-  excluded: 'border-amber-300 bg-amber-50 text-amber-800',
+  pending: 'bg-slate-400',
+  registered: 'bg-emerald-500',
+  excluded: 'bg-amber-500',
 };
 export const PRESENT_STATUS_STYLE: Record<string, string> = {
-  applied: 'border-sky-300 bg-sky-50 text-sky-800',
-  won: 'border-emerald-400 bg-emerald-50 text-emerald-800',
-  lost: 'border-slate-300 bg-slate-100 text-slate-700',
+  applied: 'bg-sky-500',
+  won: 'bg-emerald-500',
+  lost: 'bg-slate-400',
 };
 
 export const PRESENT_STATUS_LABEL: Record<string, string> = {
