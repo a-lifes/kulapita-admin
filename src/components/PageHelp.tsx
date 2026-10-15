@@ -47,7 +47,7 @@ export function HelpButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md p-1.5 text-nav-text hover:bg-nav-active hover:text-brand"
+        className="rounded-md p-1 text-nav-text hover:bg-nav-active hover:text-brand"
         aria-label={`この画面の説明: ${help.title}`}
         title="この画面の説明"
       >

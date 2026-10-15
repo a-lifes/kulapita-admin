@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ActiveFilters } from '@/components/ActiveFilters';
+import { PageHelp } from '@/components/PageHelp';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
@@ -53,7 +54,6 @@ export default async function PageViewsPage({
   const sorted = sortRows(filtered, sort, (r, key) => (key === 'views' ? r.views : key === 'users' ? r.users : key === 'path' ? r.path : r.title));
   const total = sorted.length;
   const shown = sorted.slice((page - 1) * perPage, page * perPage);
-  const totalViews = filtered.reduce((sum, r) => sum + r.views, 0);
   const exportQuery = new URLSearchParams(
     Object.entries({ from: range.from, to: range.to, site: listParams.site, q }).filter(([, v]) => v) as [string, string][],
   ).toString();
@@ -100,15 +100,17 @@ export default async function PageViewsPage({
         chips={[{ key: 'q', label: 'キーワード', value: q ?? '' }]}
       />
       {range.error && <p className="error mb-4">{range.error}</p>}
+      <PageHelp title="ページ別表示回数について">
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>GA4 の数値は数時間遅れて反映されます。</li>
+          <li>期間内にアクセスがあったページだけを、表示回数の多い順に表示します。</li>
+          <li>ページの URL を押すと、そのページを別のタブで開きます。</li>
+        </ul>
+      </PageHelp>
       {error ? (
         <p className="error">ページ別の表示回数を取得できませんでした：{error}</p>
       ) : (
         <>
-          <p className="mb-2 text-sm text-slate-600">
-            {range.from.replaceAll('-', '/')} 〜 {range.to.replaceAll('-', '/')} の合計{' '}
-            <strong className="text-slate-900">{totalViews.toLocaleString()}</strong> 回（{total.toLocaleString()} ページ）
-            <span className="ml-2 text-xs text-slate-400">※ GA4 の数値は数時間遅れて反映されます</span>
-          </p>
           <div className="card table-scroll">
             <table className="table">
               <thead>
@@ -124,7 +126,18 @@ export default async function PageViewsPage({
                 {shown.map((r, i) => (
                   <tr key={r.path}>
                     <td className="text-right text-slate-400">{(page - 1) * perPage + i + 1}</td>
-                    <td className="max-w-80 truncate" title={r.path}>{r.path}</td>
+                    <td className="max-w-80 truncate">
+                      {/* その環境のサイトのページを別タブで開く */}
+                      <a
+                        href={`${SITES[site].origin}${r.path}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        title={`${SITES[site].origin}${r.path}`}
+                        className="text-brand hover:underline"
+                      >
+                        {r.path}
+                      </a>
+                    </td>
                     <td className="max-w-96 truncate text-slate-600" title={r.title}>{r.title || '—'}</td>
                     <td className="text-right font-semibold">{r.views.toLocaleString()}</td>
                     <td className="text-right">{r.users.toLocaleString()}</td>

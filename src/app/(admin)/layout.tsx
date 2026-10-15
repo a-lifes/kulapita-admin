@@ -16,12 +16,12 @@ const NAV: { title: string; items: (NavItem & { min: Role })[] }[] = [
     items: [
       { href: '/', text: 'ダッシュボード', icon: 'dashboard', min: 'readonly' },
       { href: '/members', text: '会員', icon: 'members', min: 'readonly' },
-      { href: '/pageviews', text: 'ページ別表示回数', icon: 'barChart', min: 'readonly' },
       { href: '/contacts', text: 'お問い合わせ', icon: 'contacts', min: 'readonly' },
       { href: '/applications', text: 'コンバージョン（申し込み）', icon: 'applications', min: 'readonly' },
       { href: '/clicks', text: 'コンバージョン（誘導）', icon: 'clicks', min: 'readonly' },
       { href: '/newsletter', text: 'メルマガ', icon: 'newsletter', min: 'readonly' },
       { href: '/presents', text: 'プレゼント', icon: 'presents', min: 'readonly' },
+      { href: '/pageviews', text: 'ページ別表示回数', icon: 'barChart', min: 'readonly' },
     ],
   },
   {

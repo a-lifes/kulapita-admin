@@ -9,9 +9,9 @@ import { currentStage } from './stage';
  * 本番・開発・ローカルは同じ GA4 プロパティに入っているので、ホスト名で分けて集計する。
  */
 export const SITES = {
-  prod: { label: '本番（kulapita.com）', hosts: ['kulapita.com', 'www.kulapita.com'] },
-  dev: { label: '開発（dev.kulapita.com）', hosts: ['dev.kulapita.com'] },
-  local: { label: 'ローカル（localhost）', hosts: ['localhost'] },
+  prod: { label: '本番（kulapita.com）', hosts: ['kulapita.com', 'www.kulapita.com'], origin: 'https://kulapita.com' },
+  dev: { label: '開発（dev.kulapita.com）', hosts: ['dev.kulapita.com'], origin: 'https://dev.kulapita.com' },
+  local: { label: 'ローカル（localhost）', hosts: ['localhost'], origin: 'http://localhost:3000' },
 } as const;
 export type SiteKey = keyof typeof SITES;
 

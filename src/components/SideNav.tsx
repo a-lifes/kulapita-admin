@@ -78,23 +78,25 @@ export function SideNav({
             {stageLabel}
           </span>
         )}
-        <div className={`flex items-center ${collapsed ? 'flex-col gap-1' : 'gap-1'}`}>
+        <div className={`flex items-center ${collapsed ? 'flex-col' : 'gap-0'}`}>
         {/* 画面の説明は、メニューを開いているときだけ出す */}
         {!collapsed && <HelpButton />}
-        {/* 検索 (Ctrl+K と同じ) */}
+        {/* 検索 (Ctrl+K と同じ)。メニューを閉じているときは開閉ボタンだけにする */}
+        {!collapsed && (
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
-          className="rounded-md p-1.5 text-nav-text hover:bg-nav-active hover:text-brand"
+          className="rounded-md p-1 text-nav-text hover:bg-nav-active hover:text-brand"
           aria-label="検索（Ctrl+K）"
           title="検索（Ctrl+K）"
         >
           <icons.search className="h-5 w-5" />
         </button>
+        )}
         <button
           type="button"
           onClick={toggle}
-          className="relative rounded-md p-1.5 text-nav-text hover:bg-nav-active hover:text-brand"
+          className="relative rounded-md p-1 text-nav-text hover:bg-nav-active hover:text-brand"
           aria-label={collapsed ? 'メニューを開く' : 'メニューを閉じる'}
           title={collapsed ? `メニューを開く（${stageLabel}）` : 'メニューを閉じる'}
         >
