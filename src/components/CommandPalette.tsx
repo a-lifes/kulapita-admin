@@ -62,7 +62,7 @@ export function CommandPalette({ groups }: { groups: NavGroup[] }) {
   const menu: Item[] = useMemo(() => {
     const text = q.trim().toLowerCase();
     return groups
-      .flatMap((g) => g.items.map((i) => ({ kind: 'メニュー', label: i.text, sub: g.title, href: i.href })))
+      .flatMap((g) => g.items.map((i) => ({ kind: 'メニュー', label: i.text, sub: '', href: i.href })))
       .filter((i) => !text || i.label.toLowerCase().includes(text));
   }, [groups, q]);
   const items: Item[] = [...menu, ...(q.trim() ? results : [])];
@@ -89,7 +89,7 @@ export function CommandPalette({ groups }: { groups: NavGroup[] }) {
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="検索">
       <button type="button" className="drawer-backdrop absolute inset-0 cursor-default bg-slate-900/30" aria-label="閉じる" onClick={close} />
-      <div className="palette absolute top-[12vh] left-1/2 w-[min(640px,92vw)] -translate-x-1/2 overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+      <div className="palette absolute top-[12vh] left-1/2 w-[min(520px,92vw)] -translate-x-1/2 overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
         <div className="flex items-center gap-3 border-b border-slate-100 px-4">
           <icons.search className="h-5 w-5 shrink-0 text-slate-400" />
           <input

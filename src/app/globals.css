@@ -314,15 +314,21 @@ body:has(form[aria-busy='true']) .busy-dim {
   }
 }
 
-/* ⌘K の検索: 少し上から出る */
+/* ⌘K の検索: まとめて操作のバーと同じく、下からふわっと出す */
 @keyframes palette-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -8px) scale(0.98);
+    transform: translateY(16px);
   }
 }
 .palette {
-  animation: palette-in 0.16s ease-out;
+  animation: palette-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .palette,
+  .bulk-bar {
+    animation: none;
+  }
 }
 
 /*
