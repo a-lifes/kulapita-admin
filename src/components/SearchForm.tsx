@@ -1,7 +1,7 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
-import { createContext, useContext, useEffect, useRef, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { createContext, Fragment, useContext, useEffect, useRef, useState, useTransition } from 'react';
 
 /**
  * 絞り込みエリアのフォーム。「絞り込む」ボタンや Enter キーで検索している間、
@@ -15,9 +15,10 @@ import { createContext, useContext, useEffect, useRef, useTransition } from 'rea
  *
  * 入力内容は URL の ?q=… に入れて画面を読み直す (空の項目は付けない)。
  */
-const SearchContext = createContext<{ pending: boolean; navigate: (url: string) => void }>({
+const SearchContext = createContext<{ pending: boolean; navigate: (url: string) => void; clear: (url: string) => void }>({
   pending: false,
   navigate: () => {},
+  clear: () => {},
 });
 
 /** 絞り込み・表示が終わったときに window に送るイベント名 */
@@ -29,6 +30,17 @@ export function SearchForm({ className, children }: { className?: string; childr
   const [pending, startTransition] = useTransition();
   const navigate = (url: string) => startTransition(() => router.push(url, { scroll: false }));
 
+  /*
+   * 入力欄は「今の検索条件」を初期値に表示している。条件が変わったとき (検索・クリアの後) や、
+   * 「クリア」を押したとき (検索していなくても入力途中の値を消す) は入力欄を作り直し、初期の状態に戻す。
+   */
+  const searchParams = useSearchParams();
+  const [clearCount, setClearCount] = useState(0);
+  const clear = (url: string) => {
+    setClearCount((n) => n + 1);
+    navigate(url);
+  };
+
   // 検索が終わったら知らせる (同じ条件で検索し直したときに、グラフのアニメーションをやり直すため)
   const wasPending = useRef(false);
   useEffect(() => {
@@ -37,7 +49,7 @@ export function SearchForm({ className, children }: { className?: string; childr
   }, [pending]);
 
   return (
-    <SearchContext.Provider value={{ pending, navigate }}>
+    <SearchContext.Provider value={{ pending, navigate, clear }}>
       <form
         className={className}
         aria-busy={pending}
@@ -51,7 +63,7 @@ export function SearchForm({ className, children }: { className?: string; childr
           navigate(qs ? `${pathname}?${qs}` : pathname);
         }}
       >
-        {children}
+        <Fragment key={`${searchParams.toString()}#${clearCount}`}>{children}</Fragment>
       </form>
       {pending && <LoadingOverlay />}
     </SearchContext.Provider>
@@ -80,11 +92,11 @@ export function SearchButton({ label = '絞り込む' }: { label?: string }) {
   );
 }
 
-/** 「クリア」ボタン (条件を外して読み直す。読み込み中はローディングを出す) */
+/** 「クリア」ボタン (入力欄を初期の状態に戻し、条件を外して読み直す。読み込み中はローディングを出す) */
 export function ClearButton({ href }: { href: string }) {
-  const { pending, navigate } = useContext(SearchContext);
+  const { pending, clear } = useContext(SearchContext);
   return (
-    <button type="button" className="btn-sub" disabled={pending} onClick={() => navigate(href)}>
+    <button type="button" className="btn-sub" disabled={pending} onClick={() => clear(href)}>
       クリア
     </button>
   );
