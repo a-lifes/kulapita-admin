@@ -81,6 +81,16 @@ export function SideNav({
         <div className={`flex items-center ${collapsed ? 'flex-col gap-1' : 'gap-1'}`}>
         {/* 画面の説明は、メニューを開いているときだけ出す */}
         {!collapsed && <HelpButton />}
+        {/* 検索 (Ctrl+K と同じ) */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
+          className="rounded-md p-1.5 text-nav-text hover:bg-nav-active hover:text-brand"
+          aria-label="検索（Ctrl+K）"
+          title="検索（Ctrl+K）"
+        >
+          <icons.search className="h-5 w-5" />
+        </button>
         <button
           type="button"
           onClick={toggle}
@@ -107,27 +117,6 @@ export function SideNav({
           <Image src="/logo.png" alt="kulapita" width={150} height={28} unoptimized priority />
         )}
       </Link>
-
-      {/* ⌘K の検索を開くボタン */}
-      <div className={`shrink-0 ${collapsed ? 'flex justify-center pb-1' : 'px-3 pb-1'}`}>
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
-          className={`flex items-center gap-2 rounded-lg border border-slate-200 bg-white/70 text-slate-500 hover:border-slate-300 hover:text-slate-700 ${
-            collapsed ? 'h-9 w-9 justify-center' : 'w-full px-3 py-1.5'
-          }`}
-          aria-label="検索（⌘K）"
-          title="検索（⌘K）"
-        >
-          <icons.search className="h-4 w-4 shrink-0" />
-          {!collapsed && (
-            <>
-              <span className="flex-1 text-left text-xs">検索</span>
-              <kbd className="rounded border border-slate-200 px-1 text-[10px] text-slate-400">⌘K</kbd>
-            </>
-          )}
-        </button>
-      </div>
 
       {/* メニュー */}
       <nav className="flex-1 overflow-x-hidden overflow-y-auto pb-4">
