@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { quickSearch, type QuickResult } from '@/app/(admin)/quickSearch';
+import { openDetail } from './DetailDrawerHost';
 import { icons } from './icons';
 import type { NavGroup } from './SideNav';
 
@@ -75,6 +76,12 @@ export function CommandPalette({ groups }: { groups: NavGroup[] }) {
   const go = (item: Item | undefined) => {
     if (!item) return;
     close();
+    // お問い合わせ・申し込みは、今の画面のまま右側のパネルで開く
+    const m = item.href.match(/^\/(contacts|applications)\/([0-9a-f-]{36})$/);
+    if (m) {
+      openDetail({ kind: m[1] === 'contacts' ? 'contact' : 'application', id: m[2] });
+      return;
+    }
     router.push(item.href, { scroll: false });
   };
 

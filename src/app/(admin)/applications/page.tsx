@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
@@ -136,12 +135,12 @@ export default async function ApplicationsPage({
             {rows.map((r) => {
               const member = memberFromRow(r);
               return (
-                <ClickableRow key={r.id} href={`/applications/${r.id}`}>
+                <ClickableRow key={r.id} detail={{ kind: 'application', id: r.id }}>
                   <td><RelTime value={r.created_at} /></td>
                   <td>
-                    <Link className="text-brand hover:underline" href={`/applications/${r.id}`}>
+                    <a className="text-brand hover:underline" data-detail href={`/applications/${r.id}`}>
                       {r.reception_number}
-                    </Link>
+                    </a>
                   </td>
                   <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
                   <td className="max-w-64 truncate" title={r.service_name ?? undefined}>{r.service_name ?? '—'}</td>

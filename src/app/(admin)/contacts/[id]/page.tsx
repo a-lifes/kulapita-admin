@@ -1,9 +1,25 @@
 import type { Metadata } from 'next';
-import { ContactDetail } from './ContactDetail';
+import { notFound } from 'next/navigation';
+import { BackLink } from '@/components/BackLink';
+import { CaseDetailView } from '@/components/CaseDetailView';
+import { StatusBadge } from '@/components/StatusBadge';
+import { loadCaseDetail } from '@/lib/caseDetail';
 
 export const metadata: Metadata = { title: 'お問い合わせ詳細' };
 
-export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
+/** 詳細ページ (直接開いたとき)。一覧から開いたときは右側のパネル (DetailDrawerHost) で同じ中身を出す */
+export default async function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <ContactDetail id={id} variant="page" />;
+  const data = await loadCaseDetail('contact', id);
+  if (!data) notFound();
+  return (
+    <>
+      <h1 className="page-title gap-2">
+        <BackLink href="/contacts" label="お問い合わせ一覧に戻る" />
+        <span className="mr-1">お問い合わせ詳細</span>
+        <StatusBadge value={data.status} text={data.statusText} />
+      </h1>
+      <CaseDetailView data={data} layout="page" />
+    </>
+  );
 }

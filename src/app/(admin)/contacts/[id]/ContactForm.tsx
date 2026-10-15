@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { CONTACT_STATUS_LABEL } from '@/lib/format';
 import { ContactFormState, updateContactAction } from './actions';
 
@@ -14,6 +14,7 @@ export function ContactForm({
   admins,
   readOnly,
   action: save = updateContactAction,
+  onSaved,
 }: {
   id: string;
   status: string;
@@ -23,11 +24,16 @@ export function ContactForm({
   readOnly: boolean;
   /** 保存処理 (お問い合わせ・サービスの申し込みで切り替える) */
   action?: (id: string, prev: ContactFormState, formData: FormData) => Promise<ContactFormState>;
+  /** 保存できたときに呼ぶ */
+  onSaved?: () => void;
 }) {
   const [state, action, pending] = useActionState<ContactFormState, FormData>(
     save.bind(null, id),
     undefined,
   );
+  useEffect(() => {
+    if (state?.saved) onSaved?.();
+  }, [state, onSaved]);
   return (
     <form action={action} className="space-y-4">
       {state?.error && <p className="error">{state.error}</p>}

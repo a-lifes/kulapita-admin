@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -130,12 +129,12 @@ export default async function ContactsPage({
             {rows.map((r) => {
               const member = memberFromRow(r);
               return (
-              <ClickableRow key={r.id} href={`/contacts/${r.id}`}>
+              <ClickableRow key={r.id} detail={{ kind: 'contact', id: r.id }}>
                 <td><RelTime value={r.created_at} /></td>
                 <td>
-                  <Link className="text-brand hover:underline" href={`/contacts/${r.id}`}>
+                  <a className="text-brand hover:underline" data-detail href={`/contacts/${r.id}`}>
                     {r.reception_number}
-                  </Link>
+                  </a>
                 </td>
                 <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
                 <td>{r.category}</td>

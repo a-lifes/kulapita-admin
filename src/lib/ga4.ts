@@ -135,3 +135,66 @@ export async function topPageViews(site: SiteKey, from: string, to: string): Pro
   if (reportCache.size > 100) reportCache.delete(reportCache.keys().next().value!);
   return map;
 }
+
+/** ページ別の表示回数 (1 行分) */
+export type PageViewRow = { path: string; title: string; views: number; users: number };
+const pageCache = new Map<string, { at: number; value: PageViewRow[] }>();
+
+/**
+ * 期間内にアクセスがあったページの表示回数・ユーザー数 (多い順に最大 1000 ページ)。
+ * GA4 Data API に毎回問い合わせるが、同じ条件は 10 分だけ覚えておく (GA4 の反映も数時間遅れるため)。
+ * 同じページでタイトルが途中で変わった場合は 1 行にまとめ、表示回数が多い方のタイトルを使う。
+ */
+export async function pageViewsByPath(site: SiteKey, from: string, to: string): Promise<PageViewRow[]> {
+  const propertyId = process.env.GA4_PROPERTY_ID;
+  if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
+  const cacheKey = `${site}:${from}:${to}`;
+  const cached = pageCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
+
+  const token = await accessToken();
+  const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      dateRanges: [{ startDate: from, endDate: to }],
+      dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
+      metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
+      dimensionFilter: { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 1000,
+    }),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const detail = res.status === 403 ? '（サービスアカウントに GA4 の閲覧権限があるか確認してください）' : '';
+    throw new Error(`GA4 から取得できませんでした（status ${res.status}）${detail}`);
+  }
+  const data = (await res.json()) as {
+    rows?: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[];
+  };
+  const byPath = new Map<string, PageViewRow & { titleViews: number }>();
+  for (const r of data.rows ?? []) {
+    const path = r.dimensionValues[0].value;
+    const title = r.dimensionValues[1].value;
+    const views = Number(r.metricValues[0].value);
+    const users = Number(r.metricValues[1].value);
+    const cur = byPath.get(path);
+    if (!cur) {
+      byPath.set(path, { path, title, views, users, titleViews: views });
+    } else {
+      cur.views += views;
+      cur.users += users; // タイトル違いの行を足すため、ユーザー数は目安 (重複を含むことがある)
+      if (views > cur.titleViews) {
+        cur.title = title;
+        cur.titleViews = views;
+      }
+    }
+  }
+  const value = [...byPath.values()]
+    .map(({ path, title, views, users }) => ({ path, title, views, users }))
+    .sort((a, b) => b.views - a.views);
+  pageCache.set(cacheKey, { at: Date.now(), value });
+  if (pageCache.size > 100) pageCache.delete(pageCache.keys().next().value!);
+  return value;
+}
