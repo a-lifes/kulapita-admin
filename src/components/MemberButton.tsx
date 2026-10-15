@@ -69,11 +69,7 @@ export function MemberButton({
               </div>
             ))}
           </dl>
-          {!member.profile_updated_at && (
-            <p className="mt-4 text-xs text-slate-500">
-              ※ 住所・電話番号は、組合HP から届いたとき (ログイン・プレゼント応募) に保存されます。まだ届いていません。
-            </p>
-          )}
+          <p className="mt-4 text-xs text-slate-500">※会員情報はログイン時に毎回最新情報に更新しています。</p>
           <div className="mt-6 text-right">
             <button type="button" className="btn-sub" onClick={() => setOpen(false)}>閉じる</button>
           </div>
