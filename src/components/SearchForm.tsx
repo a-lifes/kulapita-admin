@@ -58,6 +58,11 @@ export function SearchForm({ className, children }: { className?: string; childr
   );
 }
 
+/** SearchForm の中で、検索と同じようにローディングを出しながら画面を切り替える (期間のボタンなど) */
+export function useSearchNavigate() {
+  return useContext(SearchContext);
+}
+
 /** 「絞り込む」ボタン (検索中は「検索中…」とくるくる回るマーク) */
 export function SearchButton({ label = '絞り込む' }: { label?: string }) {
   const { pending } = useContext(SearchContext);
