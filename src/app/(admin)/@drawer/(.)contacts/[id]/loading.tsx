@@ -1,13 +1,10 @@
-import { Drawer } from '@/components/Drawer';
-
 /**
  * 右側のパネルを開いた直後 (詳細を読み込んでいる間) は、パネルの形でスケルトンを出す。
  * (これが無いと、管理画面全体の読み込み表示が一瞬出てしまう)
  */
 export default function Loading() {
   return (
-    <Drawer label="読み込んでいます">
-      <div role="status" aria-live="polite">
+    <div role="status" aria-live="polite">
         <span className="sr-only">読み込んでいます</span>
         <div className="mb-5 flex items-center gap-3 pr-10">
           <span className="skeleton-bar block h-5 w-36" />
@@ -27,7 +24,6 @@ export default function Loading() {
           <span className="skeleton-bar block h-9 w-full" />
           <span className="skeleton-bar block h-24 w-full" />
         </div>
-      </div>
-    </Drawer>
+    </div>
   );
 }

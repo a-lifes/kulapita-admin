@@ -1,10 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-// 読み込み中のパネル → 中身の入ったパネルと続けて切り替わるときは、スライドを 1 回だけにする
-let lastClosedAt = 0;
+import { useEffect } from 'react';
 
 /**
  * 画面の右からスライドして出るパネル (一覧の行を押したときの詳細)。
@@ -12,8 +9,6 @@ let lastClosedAt = 0;
  */
 export function Drawer({ label, children }: { label: string; children: React.ReactNode }) {
   const router = useRouter();
-  const [animate] = useState(() => Date.now() - lastClosedAt > 400);
-  useEffect(() => () => void (lastClosedAt = Date.now()), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') router.back();
@@ -26,11 +21,11 @@ export function Drawer({ label, children }: { label: string; children: React.Rea
     <div className="fixed inset-0 z-[45]" role="dialog" aria-modal="true" aria-label={label}>
       <button
         type="button"
-        className={`${animate ? 'drawer-backdrop ' : ''}absolute inset-0 cursor-default bg-slate-900/25`}
+        className={`drawer-backdrop absolute inset-0 cursor-default bg-slate-900/25`}
         aria-label="閉じる"
         onClick={() => router.back()}
       />
-      <aside className={`${animate ? 'drawer-panel ' : ''}absolute inset-y-0 right-0 flex w-[min(720px,96vw)] flex-col bg-canvas shadow-2xl`}>
+      <aside className={`drawer-panel absolute inset-y-0 right-0 flex w-[min(720px,96vw)] flex-col bg-canvas shadow-2xl`}>
         <button
           type="button"
           onClick={() => router.back()}
