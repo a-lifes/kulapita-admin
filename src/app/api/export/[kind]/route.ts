@@ -19,6 +19,7 @@ import {
   normalizeClickFilter,
 } from '@/lib/queries/conversions';
 import { resolveRange } from '@/lib/dateRange';
+import { memberWhere, normalizeMemberFilter } from '@/lib/queries/members';
 import { dailyCounts } from '@/lib/dailyCounts';
 import { resolveSite, SITES } from '@/lib/ga4';
 import {
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     );
     await writeAudit({ admin, action: 'export.contacts', diff: { filter, rows: rows.length } });
     return csvResponse(
-      `contacts_${stamp()}.csv`,
+      `お問い合わせ_${stamp()}.csv`,
       toCsv(
         ['受付番号', '受付日時', 'お問い合わせの種類', '対応状況', '担当者', '会員番号', 'お名前', '郵便番号',
           '都道府県', '市区町村・番地', '建物名', '電話番号', 'メールアドレス', 'お問い合わせ内容', '対応メモ',
@@ -160,6 +161,31 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     );
   }
 
+  if (kind === 'members') {
+    const filter = normalizeMemberFilter(sp);
+    const where = memberWhere(filter);
+    const { rows } = await query<Row>(
+      `SELECT ${MEMBER_COLUMNS} FROM users u
+       WHERE ${where.sql} ORDER BY u.last_login_at DESC LIMIT ${MAX_ROWS}`,
+      where.params,
+    );
+    await writeAudit({ admin, action: 'export.members', diff: { filter, rows: rows.length } });
+    return csvResponse(
+      `会員_${stamp()}.csv`,
+      toCsv(
+        ['会員番号', '名前', 'メールアドレス', '電話番号', '郵便番号', '都道府県', '市区町村・番地', '建物名・部屋番号',
+          '初回ログイン日時', '最終ログイン日時', '会員情報の更新日時'],
+        rows.map((r) => {
+          const m = memberFromRow(r);
+          return [
+            m?.external_id, m?.display_name, m?.email, m?.phone, m?.zipcode, m?.prefecture, m?.city, m?.building,
+            formatJst(m?.first_authenticated_at), formatJst(m?.last_login_at), formatJst(m?.profile_updated_at),
+          ];
+        }),
+      ),
+    );
+  }
+
   if (kind === 'newsletter') {
     const filter = normalizeNewsletterFilter(sp);
     const where = newsletterWhere(filter);
@@ -172,7 +198,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     );
     await writeAudit({ admin, action: 'export.newsletter', diff: { filter, rows: rows.length } });
     return csvResponse(
-      `newsletter_${stamp()}.csv`,
+      `メルマガ_${stamp()}.csv`,
       toCsv(
         ['登録日時', 'メールアドレス', '状態', '姓', '名', '会員番号', '会員の名前', '登録したページ'],
         rows.map((r) => [

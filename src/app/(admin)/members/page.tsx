@@ -4,7 +4,9 @@ import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { requireAdmin } from '@/lib/auth/guard';
-import { likeEscape, Params, query } from '@/lib/db';
+import { query } from '@/lib/db';
+import { hasRole } from '@/lib/adminUsers';
+import { memberWhere, normalizeMemberFilter, PREFECTURES } from '@/lib/queries/members';
 import { formatJst } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
@@ -24,13 +26,6 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   last: { sql: 'u.last_login_at', firstDir: 'desc' },
 };
 
-const PREFECTURES = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県', '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県',
-  '東京都', '神奈川県', '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県', '三重県',
-  '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県', '徳島県',
-  '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県',
-];
-
 type Row = Record<string, unknown> & { id: string };
 
 export default async function MembersPage({
@@ -38,28 +33,16 @@ export default async function MembersPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const sp = await searchParams;
-  const q = sp.q?.trim().slice(0, 100) || undefined;
-  const prefecture = sp.prefecture && PREFECTURES.includes(sp.prefecture) ? sp.prefecture : undefined;
+  const filter = normalizeMemberFilter(sp);
+  const { q, prefecture } = filter;
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'last', dir: 'desc' });
   const listParams = { q, prefecture, per: sp.per };
 
-  // テストデータ (smoke-…) は出さない
-  const conds = ['u.deleted_at IS NULL', "u.external_id NOT LIKE 'smoke-%'"];
-  const params: Params = {};
-  if (q) {
-    conds.push('(u.external_id = :qExact OR u.display_name LIKE :qLike OR u.email LIKE :qLike OR u.phone LIKE :qLike)');
-    params.qExact = q;
-    params.qLike = `%${likeEscape(q)}%`;
-  }
-  if (prefecture) {
-    conds.push('u.prefecture = :prefecture');
-    params.prefecture = prefecture;
-  }
-  const where = conds.join(' AND ');
+  const { sql: where, params } = memberWhere(filter);
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
@@ -71,11 +54,15 @@ export default async function MembersPage({
     query<{ total: number }>(`SELECT COUNT(*) AS total FROM users u WHERE ${where}`, params),
   ]);
   const total = Number(count[0]?.total ?? 0);
+  const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
 
   return (
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">会員</h1>
+        {hasRole(admin.role, 'admin') && (
+          <a className="btn-sub" href={`/api/export/members${exportQuery ? `?${exportQuery}` : ''}`}>CSV ダウンロード</a>
+        )}
       </div>
 
       <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
