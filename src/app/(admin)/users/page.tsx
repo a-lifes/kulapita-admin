@@ -3,11 +3,13 @@ import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { PageHelp } from '@/components/PageHelp';
 import { listAdmins, Role, ROLES } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
-import { formatJst, label, ROLE_LABEL } from '@/lib/format';
+import { label, ROLE_LABEL } from '@/lib/format';
 import { CreateAdminButton, DeleteAdminButton, EditAdminButton, ResetPasswordButton } from './UserForms';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { resolveSort, sortRows, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: 'アカウント' };
 
@@ -96,6 +98,7 @@ export default async function UsersPage({
         <SearchButton />
         <ClearButton href="/users" />
       </SearchForm>
+      <ActiveFilters basePath="/users" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'role', label: '権限', value: role ? label(ROLE_LABEL, role) : '' }, { key: 'status', label: '状態', value: status ? STATUSES[status] : '' }, { key: 'q', label: 'キーワード', value: sp.q ?? '' }]} />
 
       <PageHelp title="権限の違い">
         <ul className="list-disc space-y-1.5 pl-5">
@@ -139,8 +142,8 @@ export default async function UsersPage({
                     {u.must_change_password && <span className="badge bg-amber-100 text-amber-800">初回ログイン待ち</span>}
                   </div>
                 </td>
-                <td>{formatJst(u.last_login_at) || '—'}</td>
-                <td>{formatJst(u.created_at)}</td>
+                <td><RelTime value={u.last_login_at} /></td>
+                <td><RelTime value={u.created_at} /></td>
                 <td className="w-36 text-right whitespace-nowrap">
                   <EditAdminButton user={u} isSelf={u.id === me.id} />
                   <ResetPasswordButton user={u} />

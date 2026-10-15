@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { OPEN_PALETTE_EVENT } from './CommandPalette';
 import { IconName, icons } from './icons';
 import { HelpButton } from './PageHelp';
 import { UserMenu } from './UserMenu';
@@ -30,12 +31,14 @@ export const NAV_COOKIE = 'kadm_nav';
 export function SideNav({
   groups,
   initialCollapsed,
+  initialDark,
   stageLabel,
   stageColor,
   user,
 }: {
   groups: NavGroup[];
   initialCollapsed: boolean;
+  initialDark: boolean;
   stageLabel: string;
   stageColor: string;
   user: { name: string; email: string; role: string };
@@ -105,6 +108,27 @@ export function SideNav({
         )}
       </Link>
 
+      {/* ⌘K の検索を開くボタン */}
+      <div className={`shrink-0 ${collapsed ? 'flex justify-center pb-1' : 'px-3 pb-1'}`}>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
+          className={`flex items-center gap-2 rounded-lg border border-slate-200 bg-white/70 text-slate-500 hover:border-slate-300 hover:text-slate-700 ${
+            collapsed ? 'h-9 w-9 justify-center' : 'w-full px-3 py-1.5'
+          }`}
+          aria-label="検索（⌘K）"
+          title="検索（⌘K）"
+        >
+          <icons.search className="h-4 w-4 shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left text-xs">検索</span>
+              <kbd className="rounded border border-slate-200 px-1 text-[10px] text-slate-400">⌘K</kbd>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* メニュー */}
       <nav className="flex-1 overflow-x-hidden overflow-y-auto pb-4">
         {groups.map((group) => (
@@ -160,7 +184,7 @@ export function SideNav({
 
       {/* 一番下: ログイン中のユーザー */}
       <div className={`shrink-0 border-t border-slate-200 py-3 ${collapsed ? 'flex justify-center' : 'px-3'}`}>
-        <UserMenu {...user} compact={collapsed} />
+        <UserMenu {...user} compact={collapsed} initialDark={initialDark} />
       </div>
     </aside>
   );

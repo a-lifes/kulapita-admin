@@ -13,6 +13,8 @@ import { NEWSLETTER_STATUSES, newsletterWhere, normalizeNewsletterFilter } from 
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: 'メルマガ' };
 
@@ -87,6 +89,7 @@ export default async function NewsletterPage({
         <SearchButton />
         <ClearButton href="/newsletter" />
       </SearchForm>
+      <ActiveFilters basePath="/newsletter" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'status', label: '状態', value: filter.status ? NEWSLETTER_STATUS_LABEL[filter.status] : '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
       <BulkProvider ids={rows.map((r) => r.id)}>
         {canEdit && (
           <BulkStatusBar
@@ -123,7 +126,7 @@ export default async function NewsletterPage({
                         <RowCheckbox id={r.id} />
                       </td>
                     )}
-                    <td>{formatJst(r.subscribed_at)}</td>
+                    <td><RelTime value={r.subscribed_at} /></td>
                     <td>{r.email}</td>
                     <td>
                       <StatusSelect

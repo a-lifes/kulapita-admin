@@ -16,6 +16,8 @@ import { formatJst, PRESENT_STATUS_LABEL, PRESENT_STATUS_STYLE } from '@/lib/for
 import { setPresentStatusAction, setPresentStatusBulkAction } from './actions';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: 'プレゼント' };
 
@@ -120,6 +122,19 @@ export default async function PresentsPage({
       </div>
 
       {campaign && <PresentFilters key={`${campaign}-${filter.item ?? ''}-${filter.status ?? ''}`} campaigns={campaigns} itemsByCampaign={itemsByCampaign} initial={{ ...filter, campaign }} />}
+      <ActiveFilters
+        basePath="/presents"
+        params={{ ...listParams, sort: sp.sort, dir: sp.dir }}
+        chips={[
+          {
+            key: 'item',
+            label: '景品',
+            value: filter.item ? ((campaign && itemsByCampaign[campaign]?.find((i) => String(i.index) === filter.item)?.name) ?? filter.item) : '',
+          },
+          { key: 'status', label: '結果', value: filter.status ? PRESENT_STATUS_LABEL[filter.status] : '' },
+          { key: 'q', label: 'キーワード', value: filter.q ?? '' },
+        ]}
+      />
 
       {shownSummary.length > 0 && (
         <div className="card mb-4">
@@ -223,7 +238,7 @@ export default async function PresentsPage({
                         ariaLabel="抽選結果"
                       />
                     </td>
-                    <td>{formatJst(r.created_at)}</td>
+                    <td><RelTime value={r.created_at} /></td>
                     <td>{Number(r.item_index) + 1}. {r.item_name}</td>
                     <td>
                       {member ? (

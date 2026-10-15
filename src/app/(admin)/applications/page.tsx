@@ -13,6 +13,9 @@ import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { applicationWhere, normalizeApplicationFilter } from '@/lib/queries/conversions';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
+import { ClickableRow } from '@/components/ClickableRow';
 
 export const metadata: Metadata = { title: 'コンバージョン（申し込み）' };
 
@@ -113,6 +116,7 @@ export default async function ApplicationsPage({
         <SearchButton />
         <ClearButton href="/applications" />
       </SearchForm>
+      <ActiveFilters basePath="/applications" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'status', label: '対応状況', value: filter.status ? CONTACT_STATUS_LABEL[filter.status] : '' }, { key: 'service', label: 'サービス', value: filter.service ?? '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
 
       <div className="card table-scroll">
         <table className="table">
@@ -132,8 +136,8 @@ export default async function ApplicationsPage({
             {rows.map((r) => {
               const member = memberFromRow(r);
               return (
-                <tr key={r.id}>
-                  <td>{formatJst(r.created_at)}</td>
+                <ClickableRow key={r.id} href={`/applications/${r.id}`}>
+                  <td><RelTime value={r.created_at} /></td>
                   <td>
                     <Link className="text-brand hover:underline" href={`/applications/${r.id}`}>
                       {r.reception_number}
@@ -159,7 +163,7 @@ export default async function ApplicationsPage({
                     )}
                   </td>
                   <td>{r.assignee ?? '—'}</td>
-                </tr>
+                </ClickableRow>
               );
             })}
             {rows.length === 0 && (

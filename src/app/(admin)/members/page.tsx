@@ -10,6 +10,8 @@ import { memberWhere, normalizeMemberFilter, PREFECTURES } from '@/lib/queries/m
 import { formatJst } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: '会員' };
 
@@ -82,6 +84,7 @@ export default async function MembersPage({
         <SearchButton />
         <ClearButton href="/members" />
       </SearchForm>
+      <ActiveFilters basePath="/members" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'prefecture', label: '都道府県', value: prefecture ?? '' }, { key: 'q', label: 'キーワード', value: q ?? '' }]} />
 
       <div className="card table-scroll">
         <table className="table">
@@ -114,8 +117,8 @@ export default async function MembersPage({
                   <td>{m.display_name ?? '—'}</td>
                   <td>{m.prefecture ?? '—'}</td>
                   <td>{m.email ?? '—'}</td>
-                  <td>{formatJst(m.first_authenticated_at) || '—'}</td>
-                  <td>{formatJst(m.last_login_at) || '—'}</td>
+                  <td><RelTime value={m.first_authenticated_at} /></td>
+                  <td><RelTime value={m.last_login_at} /></td>
                 </tr>
               );
             })}

@@ -8,6 +8,7 @@ import { AuditDetailLink } from './AuditDetail';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: '操作ログ' };
 
@@ -148,6 +149,7 @@ export default async function AuditLogsPage({
         <SearchButton />
         <ClearButton href="/audit-logs" />
       </SearchForm>
+      <ActiveFilters basePath="/audit-logs" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'action', label: '操作', value: action ? ACTION_LABEL[action] : '' }, { key: 'q', label: 'キーワード', value: q ?? '' }]} />
       {/* 横スクロールさせない: 内容以外の列は全文を出し、内容の列だけ残りの幅で省略する (全文は日時から開く) */}
       <div className="card table-scroll">
         <table className="table">

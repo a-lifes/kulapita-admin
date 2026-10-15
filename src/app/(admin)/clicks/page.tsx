@@ -12,6 +12,8 @@ import { clickWhere, normalizeClickFilter } from '@/lib/queries/conversions';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { getExternalServices } from '@/lib/microcms';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: 'コンバージョン（誘導）' };
 
@@ -128,6 +130,7 @@ export default async function ClicksPage({
         <SearchButton />
         <ClearButton href="/clicks" />
       </SearchForm>
+      <ActiveFilters basePath="/clicks" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'service', label: 'サービス', value: filter.service ? (summary.find((x) => x.service_slug === filter.service)?.service_name ?? filter.service) : '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
       {range.error && <p className="error -mt-2 mb-4">{range.error}</p>}
 
 
@@ -147,7 +150,7 @@ export default async function ClicksPage({
               const member = memberFromRow(r);
               return (
                 <tr key={r.id}>
-                  <td>{formatJst(r.created_at)}</td>
+                  <td><RelTime value={r.created_at} /></td>
                   <td className="max-w-64 truncate" title={r.service_name}>{r.service_name}</td>
                   <td className="max-w-56 truncate" title={r.service_company ?? undefined}>{r.service_company ?? '—'}</td>
                   <td>

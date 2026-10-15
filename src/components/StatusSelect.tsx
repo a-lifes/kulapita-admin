@@ -30,7 +30,7 @@ export function StatusSelect({
   const router = useRouter();
 
   return (
-    <div className="relative inline-flex min-w-28 items-center">
+    <div className="relative inline-flex min-w-[8.5rem] items-center">
       {/* 状態の色の点 (プルダウンの左端に重ねる) */}
       <span className={`pointer-events-none absolute left-3 h-[7px] w-[7px] rounded-full ${styles[value] ?? 'bg-slate-400'}`} aria-hidden="true" />
       <select

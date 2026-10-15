@@ -90,8 +90,8 @@ function Chart({ series, days, width }: { series: DailySeries; days: Day[]; widt
       >
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke="#e5e7eb" strokeWidth={1} />
-            <text x={PAD.left - 6} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={11} fill="#6b7280">
+            <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} strokeWidth={1} style={{ stroke: 'var(--color-slate-200)' }} />
+            <text x={PAD.left - 6} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={11} style={{ fill: 'var(--color-slate-500)' }}>
               {Number.isInteger(t) ? t : t.toFixed(1)}
             </text>
           </g>
@@ -119,7 +119,7 @@ function Chart({ series, days, width }: { series: DailySeries; days: Day[]; widt
                 onMouseEnter={() => setHover(i)}
               />
               {i % labelEvery === 0 && (
-                <text x={PAD.left + i * slot + slot / 2} y={HEIGHT - 6} textAnchor="middle" fontSize={11} fill="#6b7280">
+                <text x={PAD.left + i * slot + slot / 2} y={HEIGHT - 6} textAnchor="middle" fontSize={11} style={{ fill: 'var(--color-slate-500)' }}>
                   {dates[i].slice(5).replace('-', '/').replace(/^0/, '')}
                 </text>
               )}

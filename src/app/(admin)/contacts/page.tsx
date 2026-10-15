@@ -13,6 +13,9 @@ import { CONTACT_CATEGORIES, CONTACT_STATUSES, contactWhere, normalizeContactFil
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
+import { ClickableRow } from '@/components/ClickableRow';
 
 export const metadata: Metadata = { title: 'お問い合わせ' };
 
@@ -108,6 +111,7 @@ export default async function ContactsPage({
         <SearchButton />
         <ClearButton href="/contacts" />
       </SearchForm>
+      <ActiveFilters basePath="/contacts" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'status', label: '対応状況', value: filter.status ? CONTACT_STATUS_LABEL[filter.status] : '' }, { key: 'category', label: 'お問い合わせの種類', value: filter.category ?? '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
 
       <div className="card table-scroll">
         <table className="table">
@@ -126,8 +130,8 @@ export default async function ContactsPage({
             {rows.map((r) => {
               const member = memberFromRow(r);
               return (
-              <tr key={r.id}>
-                <td>{formatJst(r.created_at)}</td>
+              <ClickableRow key={r.id} href={`/contacts/${r.id}`}>
+                <td><RelTime value={r.created_at} /></td>
                 <td>
                   <Link className="text-brand hover:underline" href={`/contacts/${r.id}`}>
                     {r.reception_number}
@@ -152,7 +156,7 @@ export default async function ContactsPage({
                   )}
                 </td>
                 <td>{r.assignee ?? '—'}</td>
-              </tr>
+              </ClickableRow>
               );
             })}
             {rows.length === 0 && (

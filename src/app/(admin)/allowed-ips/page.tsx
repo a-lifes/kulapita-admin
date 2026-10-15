@@ -3,11 +3,12 @@ import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
 import { cidrContains, isIpv4 } from '@/lib/cidr';
-import { formatJst } from '@/lib/format';
 import { AddIpButton, DeleteIpButton, EditIpButton, ResyncButton } from './IpForms';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
 import { resolveSort, sortRows, SortColumn } from '@/lib/sort';
+import { RelTime } from '@/components/RelTime';
+import { ActiveFilters } from '@/components/ActiveFilters';
 
 export const metadata: Metadata = { title: '許可 IP' };
 
@@ -81,6 +82,7 @@ export default async function AllowedIpsPage({
         <SearchButton />
         <ClearButton href="/allowed-ips" />
       </SearchForm>
+      <ActiveFilters basePath="/allowed-ips" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'q', label: 'キーワード', value: q ?? '' }]} />
 
       <div className="card table-scroll">
         <table className="table">
@@ -98,7 +100,7 @@ export default async function AllowedIpsPage({
               <tr key={r.id}>
                 <td>{r.cidr}</td>
                 <td>{r.label ?? '—'}</td>
-                <td>{formatJst(r.created_at)}</td>
+                <td><RelTime value={r.created_at} /></td>
                 <td>{r.created_by_name ?? '（初期設定）'}</td>
                 <td className="w-28 text-right whitespace-nowrap">
                   <EditIpButton id={r.id} cidr={r.cidr} label={r.label} />

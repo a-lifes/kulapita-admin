@@ -57,11 +57,11 @@ export function MemberButton({
           // 枠の外 (背景) を押したら閉じる
           if (e.target === ref.current) setOpen(false);
         }}
-        className="m-auto w-[min(560px,92vw)] rounded-lg p-0 text-left font-normal whitespace-normal break-words backdrop:bg-black/40"
+        className="drawer-panel fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-[min(480px,92vw)] bg-canvas p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/25"
       >
         <div className="p-6">
           <h2 className="mb-4 text-lg font-bold">会員情報</h2>
-          <dl className="grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-sm">
+          <dl className="card grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-sm">
             {rows.map(([k, v]) => (
               <div key={k} className="contents">
                 <dt className="font-semibold text-slate-600">{k}</dt>

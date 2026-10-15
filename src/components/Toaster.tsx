@@ -28,9 +28,9 @@ export const toast = {
 };
 
 const STYLE: Record<Kind, string> = {
-  success: 'bg-slate-900 text-white',
-  error: 'bg-red-600 text-white',
-  warning: 'bg-amber-500 text-white',
+  success: 'bg-[#1d1f2b] text-[#fff]',
+  error: 'bg-red-600 text-[#fff]',
+  warning: 'bg-amber-500 text-[#fff]',
 };
 
 export function Toaster() {

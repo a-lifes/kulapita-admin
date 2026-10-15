@@ -68,5 +68,7 @@ export async function updateCaseStatus(input: {
   );
   await writeAudit({ admin, action: input.auditAction, targetType: input.targetType, targetId: id, diff });
   revalidatePath(input.detailPath);
+  // 一覧 (右側のパネルで開いているときの後ろの一覧) も最新にする
+  revalidatePath(input.table === 'contacts' ? '/contacts' : '/applications');
   return { saved: true };
 }

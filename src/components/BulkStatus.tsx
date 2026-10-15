@@ -130,30 +130,49 @@ export function BulkStatusBar({
   };
 
   return (
-    <div className="mb-2 flex min-h-9 flex-wrap items-center gap-3">
+    <>
       {confirmDialog}
-      <span className={count > 0 ? 'font-semibold text-brand' : 'text-slate-500'}>
-        {count > 0 ? `${count} 件を選択中` : `チェックした${noun}の${field}をまとめて設定できます`}
-      </span>
-      <select
-        className="rounded-md border border-slate-300 bg-white py-1 pr-8 pl-2.5 [background-position:right_0.5rem_center]"
-        value={status}
-        aria-label={`設定する${field}`}
-        disabled={count === 0 || pending}
-        onChange={(e) => setStatus(e.target.value)}
-      >
-        {Object.entries(labels).map(([k, v]) => (
-          <option key={k} value={k}>{v}</option>
-        ))}
-      </select>
-      <button type="button" className="btn py-1" disabled={count === 0 || pending} onClick={apply}>
-        {pending ? '設定中…' : 'まとめて設定'}
-      </button>
+      {/* チェックを入れたときだけ、画面の下にまとめて操作のバーを浮かせて出す */}
       {count > 0 && (
-        <button type="button" className="text-slate-500 underline hover:text-slate-700" onClick={clear} disabled={pending}>
-          選択を解除
-        </button>
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center px-4">
+          <div
+            className="bulk-bar pointer-events-auto flex flex-wrap items-center gap-3 rounded-2xl bg-[#1d1f2b] py-2.5 pr-3 pl-5 text-[#fff] shadow-2xl ring-1 ring-black/10"
+            role="region"
+            aria-label={`${noun}のまとめて操作`}
+          >
+            <span className="font-semibold">
+              <span className="tabular-nums">{count}</span> 件を選択中
+            </span>
+            <span className="h-5 w-px bg-white/20" aria-hidden="true" />
+            <label className="flex items-center gap-2 text-[#fff]/70">
+              {field}を
+              <select
+                className="rounded-lg border border-white/20 bg-[#2a2d3b] py-1 pr-8 pl-3 text-[#fff] [background-position:right_0.5rem_center] [background-size:0.85rem_0.85rem]"
+                value={status}
+                aria-label={`設定する${field}`}
+                disabled={pending}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                {Object.entries(labels).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="btn py-1.5" disabled={pending} onClick={apply}>
+              {pending ? '設定中…' : 'まとめて設定'}
+            </button>
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1.5 text-[#fff]/70 hover:bg-white/10 hover:text-[#fff]"
+              onClick={clear}
+              disabled={pending}
+              title="選択を解除"
+            >
+              選択を解除
+            </button>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }

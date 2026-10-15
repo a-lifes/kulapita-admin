@@ -9,6 +9,11 @@
   --color-nav-text: #6e6c99;
   --color-nav-heading: #50507a;
   --color-nav-active: #e2defb;
+  /* 画面の背景・枠線・薄いブランド色 (ダークモードで切り替える) */
+  --color-canvas: #f7f8fb;
+  --color-line: #eceef3;
+  --color-line-soft: #f1f3f7;
+  --color-brand-soft: #f4f2ff;
 
   /* 書体: 英数字は Inter、日本語は Noto Sans JP (src/app/layout.tsx で読み込み) */
   --font-sans: 'Inter Variable', 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
@@ -20,7 +25,7 @@
 }
 
 body {
-  @apply bg-[#f7f8fb] text-slate-800 antialiased;
+  @apply bg-canvas text-slate-800 antialiased;
   font-family: 'Inter Variable', 'Noto Sans JP Variable', 'Noto Sans JP', sans-serif;
   font-size: 13px;
   /* 数字の幅をそろえる (表の数字・日時が縦にきれいに並ぶ) */
@@ -54,7 +59,7 @@ body {
    */
   select {
     appearance: none;
-    background-color: #fff;
+    background-color: var(--color-white);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2321213b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
@@ -65,7 +70,7 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-[#fff] hover:bg-brand-dark disabled:opacity-50;
   }
   .btn-sub {
     @apply inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50;
@@ -83,7 +88,7 @@ body {
     @apply mb-1 block text-sm font-semibold text-slate-700;
   }
   .card {
-    @apply rounded-xl border border-[#eceef3] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+    @apply rounded-xl border border-line bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)];
   }
   .table {
     @apply w-full border-collapse text-sm;
@@ -94,10 +99,10 @@ body {
    */
   /* 見出しは帯を付けず、小さめの灰色の文字にする。行は区切り線だけ (縦線なし) */
   .table th {
-    @apply h-10 border-b border-[#eef0f4] bg-white px-4 py-0 text-left text-xs font-medium whitespace-nowrap text-slate-400;
+    @apply h-10 border-b border-line bg-white px-4 py-0 text-left text-xs font-medium whitespace-nowrap text-slate-400;
   }
   .table td {
-    @apply h-12 border-b border-[#f1f3f7] px-4 py-0 align-middle font-normal whitespace-nowrap;
+    @apply h-12 border-b border-line-soft px-4 py-0 align-middle font-normal whitespace-nowrap;
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
@@ -193,7 +198,7 @@ body {
 .skeleton-bar,
 body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan])::after {
   border-radius: 6px;
-  background: linear-gradient(90deg, #eef0f4 25%, #f7f8fb 50%, #eef0f4 75%);
+  background: linear-gradient(90deg, var(--color-line) 25%, var(--color-canvas) 50%, var(--color-line) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
@@ -226,4 +231,104 @@ body:has(form[aria-busy='true']) .busy-dim {
   body:has(form[aria-busy='true']) .table-scroll tbody td:not([colspan])::after {
     animation: none;
   }
+}
+
+/* まとめて操作のバー: 下からふわっと出す */
+@keyframes bulk-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+.bulk-bar {
+  animation: bulk-bar-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* プルダウンの矢印を白にする (暗い背景の上) */
+.bulk-bar select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* 右側のパネル (一覧から開いた詳細): 右からスライドして出る */
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes drawer-fade {
+  from {
+    opacity: 0;
+  }
+}
+.drawer-panel {
+  animation: drawer-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.drawer-backdrop {
+  animation: drawer-fade 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel,
+  .drawer-backdrop {
+    animation: none;
+  }
+}
+
+/* ⌘K の検索: 少し上から出る */
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+}
+.palette {
+  animation: palette-in 0.16s ease-out;
+}
+
+/*
+ * 11. ダークモード: 管理画面の一番外側に .dark を付けると切り替わる (アカウントメニューから)。
+ * 白・灰色 (slate) の色を暗い色に入れ替えて、画面全体をまとめて暗くする。
+ */
+.dark {
+  color-scheme: dark;
+  --color-white: #171a24;
+  --color-canvas: #0f1118;
+  --color-line: #262a37;
+  --color-line-soft: #1f2330;
+  --color-brand-soft: #262245;
+  --color-slate-50: #1c202b;
+  --color-slate-100: #232836;
+  --color-slate-200: #2d3343;
+  --color-slate-300: #3b4255;
+  --color-slate-400: #6f788c;
+  --color-slate-500: #8b94a7;
+  --color-slate-600: #a6aec0;
+  --color-slate-700: #c3c9d6;
+  --color-slate-800: #dbe0e8;
+  --color-slate-900: #eceff4;
+  --color-slate-950: #f8fafc;
+  --color-nav: #13151d;
+  --color-nav-text: #9a98c4;
+  --color-nav-heading: #b6b4dc;
+  --color-nav-active: #262245;
+  --color-brand: #7b66ff;
+  --color-brand-dark: #6a53ff;
+}
+.dark select:not(.bulk-bar select) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c3c9d6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+/* 薄い色の帯 (emerald-50 など) と、その上の濃い文字の色を、暗い画面向けに入れ替える */
+.dark {
+  --color-emerald-50: #0f2a20;
+  --color-emerald-200: #1f4d3a;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #6ee7b7;
+  --color-sky-50: #0e2433;
+  --color-sky-700: #7dd3fc;
+  --color-sky-800: #7dd3fc;
+  --color-rose-50: #2d151b;
+  --color-rose-600: #fda4af;
+  --color-red-50: #2d1517;
+  --color-red-200: #5b2328;
+  --color-red-700: #fca5a5;
+  --color-amber-50: #2b2110;
+  --color-amber-800: #fcd34d;
 }
