@@ -1,5 +1,6 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   clearLoginFailures,
@@ -11,12 +12,24 @@ import { writeAudit } from '@/lib/audit';
 import { burnPasswordCheck, hashPassword, validateNewPassword, verifyPassword } from '@/lib/auth/password';
 import { endSession, readPending, startPending, startSession } from '@/lib/auth/session';
 import { query } from '@/lib/db';
+import { LAST_EMAIL_COOKIE } from './lastEmail';
 
 /**
  * ログインは「メールアドレス + パスワード」。
  * 2 段階認証は使わない (入口を許可 IP で制限しているため)。
  */
 export type FormState = { error?: string } | undefined;
+
+/** 前回ログインしたメールアドレスを覚えておく (次回ログイン画面に入れておく)。パスワードは保存しない */
+async function rememberEmail(email: string) {
+  (await cookies()).set(LAST_EMAIL_COOKIE, email, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/login',
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
 
 const GENERIC_LOGIN_ERROR = 'メールアドレスまたはパスワードが違います';
 const LOCKED_ERROR = 'ログインに続けて失敗したため、15 分間ログインできません。時間をおいてお試しください';
@@ -39,6 +52,9 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
     await writeAudit({ admin: user, action: 'auth.login_failed', diff: { reason: ok ? 'inactive' : 'password' } });
     return { error: GENERIC_LOGIN_ERROR };
   }
+
+  // パスワードが合っていたら、次回のためにメールアドレスを覚えておく
+  await rememberEmail(email);
 
   // 仮パスワードのままなら、先に自分のパスワードを設定してもらう
   if (user.must_change_password) {

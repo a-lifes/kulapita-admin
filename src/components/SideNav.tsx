@@ -19,7 +19,7 @@ export const NAV_COOKIE = 'kadm_nav';
  * 左側のメニュー (microCMS の管理画面に近い構成)
  *
  *   ┌───────────────────┐
- *   │● ローカル環境 [?][⇤]│ ← 環境名・この画面の説明 (ある画面だけ)・開閉ボタン
+ *   │● 環境 [?][本][🔍][⇤]│ ← 環境名・この画面の説明 (ある画面だけ)・操作マニュアル・検索・開閉ボタン
  *   │ kulapita (ロゴ)     │ ← 閉じると正方形のロゴ
  *   │ グループ見出し       │
  *   │  ≡ 項目            │ ← 今いる画面は紫で強調
@@ -81,6 +81,19 @@ export function SideNav({
         <div className={`flex items-center ${collapsed ? 'flex-col' : 'gap-0'}`}>
         {/* 画面の説明は、メニューを開いているときだけ出す */}
         {!collapsed && <HelpButton />}
+        {/* 操作マニュアル (別タブで開く) */}
+        {!collapsed && (
+        <a
+          href="/manual"
+          target="_blank"
+          rel="noopener"
+          className="rounded-md p-1 text-nav-text hover:bg-nav-active hover:text-brand"
+          aria-label="操作マニュアル（別タブで開く）"
+          title="操作マニュアル"
+        >
+          <icons.book className="h-5 w-5" />
+        </a>
+        )}
         {/* 検索 (Ctrl+K と同じ)。メニューを閉じているときは開閉ボタンだけにする */}
         {!collapsed && (
         <button

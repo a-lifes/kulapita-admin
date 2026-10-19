@@ -7,7 +7,7 @@ function ErrorText({ state }: { state: FormState }) {
   return state?.error ? <p className="error mb-4">{state.error}</p> : null;
 }
 
-export function LoginForm() {
+export function LoginForm({ defaultEmail = '' }: { defaultEmail?: string }) {
   const [state, action, pending] = useActionState(loginAction, undefined);
   const [showPassword, setShowPassword] = useState(false);
   return (
@@ -15,7 +15,17 @@ export function LoginForm() {
       <ErrorText state={state} />
       <div>
         <label className="label" htmlFor="email">メールアドレス</label>
-        <input className="input" id="email" name="email" type="email" autoComplete="username" placeholder="example@kulapita.com" required />
+        <input
+          className="input"
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="username"
+          placeholder="example@kulapita.com"
+          defaultValue={defaultEmail}
+          autoFocus={!defaultEmail}
+          required
+        />
       </div>
       <div>
         <label className="label" htmlFor="password">パスワード</label>
@@ -25,6 +35,7 @@ export function LoginForm() {
           name="password"
           type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
+          autoFocus={!!defaultEmail}
           required
         />
         <label className="mt-2 flex w-fit items-center gap-2 text-sm text-slate-600">
