@@ -199,16 +199,18 @@ export async function pageViewsByPath(site: SiteKey, from: string, to: string): 
   return value;
 }
 
-export type LoginPopupUsers = { byPath: Map<string, number>; total: number };
-const popupCache = new Map<string, { at: number; value: LoginPopupUsers }>();
+/** ログインポップアップの表示回数 (count) と表示した人数 (users) */
+export type PopupStat = { count: number; users: number };
+export type LoginPopupStats = { byPath: Map<string, PopupStat>; total: PopupStat };
+const popupCache = new Map<string, { at: number; value: LoginPopupStats }>();
 
 /**
- * 「ログインポップアップ」を表示した人数 (サイトが送る GA4 イベント login_popup_view を起こしたユーザー数)。
- * ・byPath … ページ別の人数。ログインが必要なページを直接開いた人は、そのページに数える (サイト側で page_location を付け替え)
- * ・total … 期間内の人数。同じ人が複数のページで表示しても 1 人と数えるため、ページ別の合計とは一致しない
+ * 「ログインポップアップ」の表示回数と表示した人数 (サイトが送る GA4 イベント login_popup_view の回数・ユーザー数)。
+ * ・byPath … ページ別。ログインが必要なページを直接開いた人は、そのページに数える (サイト側で page_location を付け替え)
+ * ・total … 期間内の合計。人数は同じ人が複数のページで表示しても 1 人と数えるため、ページ別の合計とは一致しない
  * 同じ条件は 10 分だけ覚えておく。
  */
-export async function loginPopupUsers(site: SiteKey, from: string, to: string): Promise<LoginPopupUsers> {
+export async function loginPopupStats(site: SiteKey, from: string, to: string): Promise<LoginPopupStats> {
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
   const cacheKey = `${site}:${from}:${to}`;
@@ -223,7 +225,7 @@ export async function loginPopupUsers(site: SiteKey, from: string, to: string): 
       body: JSON.stringify({
         dateRanges: [{ startDate: from, endDate: to }],
         dimensions,
-        metrics: [{ name: 'totalUsers' }],
+        metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
         dimensionFilter: {
           andGroup: {
             expressions: [
@@ -243,12 +245,18 @@ export async function loginPopupUsers(site: SiteKey, from: string, to: string): 
     return data.rows ?? [];
   };
   const [pathRows, totalRows] = await Promise.all([report([{ name: 'pagePath' }]), report([])]);
-  const byPath = new Map<string, number>();
+  const stat = (r?: { metricValues: { value: string }[] }): PopupStat => ({
+    count: Number(r?.metricValues[0]?.value ?? 0),
+    users: Number(r?.metricValues[1]?.value ?? 0),
+  });
+  const byPath = new Map<string, PopupStat>();
   for (const r of pathRows) {
     const path = r.dimensionValues?.[0]?.value ?? '';
-    byPath.set(path, (byPath.get(path) ?? 0) + Number(r.metricValues[0].value));
+    const cur = byPath.get(path);
+    const add = stat(r);
+    byPath.set(path, cur ? { count: cur.count + add.count, users: cur.users + add.users } : add);
   }
-  const value = { byPath, total: Number(totalRows[0]?.metricValues[0]?.value ?? 0) };
+  const value = { byPath, total: stat(totalRows[0]) };
   popupCache.set(cacheKey, { at: Date.now(), value });
   if (popupCache.size > 100) popupCache.delete(popupCache.keys().next().value!);
   return value;

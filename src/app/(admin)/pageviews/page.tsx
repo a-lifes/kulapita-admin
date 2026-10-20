@@ -8,7 +8,7 @@ import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
 import { canChooseSite, Ga4NotConfiguredError, resolveSite, SITES } from '@/lib/ga4';
-import { PageStatRow, pageStats } from '@/lib/pageviewStats';
+import { PageStatRow, PageStats, pageStats } from '@/lib/pageviewStats';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'ページ別表示回数' };
@@ -17,14 +17,15 @@ export const metadata: Metadata = { title: 'ページ別表示回数' };
 const SORT_COLUMNS: Record<string, SortColumn> = {
   views: { sql: '', firstDir: 'desc' },
   users: { sql: '', firstDir: 'desc' },
-  popups: { sql: '', firstDir: 'desc' },
+  popupCount: { sql: '', firstDir: 'desc' },
+  popupUsers: { sql: '', firstDir: 'desc' },
   path: { sql: '' },
   title: { sql: '' },
 };
 
 /**
  * サイトのページ別の表示回数 (GA4)。期間内にアクセスがあったページだけを、多い順に出す。
- * あわせて、ログインポップアップを表示した人数 (GA4 のイベント) とログインした人数 (自前の DB) も出す。
+ * あわせて、ログインポップアップの表示回数・人数 (GA4 のイベント) と、ログイン数・人数 (自前の DB) も出す。
  * 開くたびに GA4 に問い合わせる (同じ条件は 10 分だけ覚えておく)。
  */
 export default async function PageViewsPage({
@@ -43,11 +44,11 @@ export default async function PageViewsPage({
   const listParams = { from: range.from, to: range.to, site: canChooseSite() ? site : undefined, q, per: sp.per };
 
   let rows: PageStatRow[] = [];
-  let popupUsers: number | null = null;
-  let loginUsers: number | null = null;
+  let popup: PageStats['popup'] = null;
+  let login: PageStats['login'] = null;
   let error: string | null = null;
   try {
-    ({ rows, popupUsers, loginUsers } = await pageStats(site, range.from, range.to));
+    ({ rows, popup, login } = await pageStats(site, range.from, range.to));
   } catch (e) {
     if (!(e instanceof Ga4NotConfiguredError)) console.error('[ga4]', e instanceof Error ? e.message : e);
     error = e instanceof Error ? e.message : 'GA4 から取得できませんでした';
@@ -57,7 +58,7 @@ export default async function PageViewsPage({
     ? rows.filter((r) => r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle))
     : rows;
   const sorted = sortRows(filtered, sort, (r, key) =>
-    key === 'views' ? r.views : key === 'users' ? r.users : key === 'popups' ? r.popups : key === 'path' ? r.path : r.title,
+    key === 'views' ? r.views : key === 'users' ? r.users : key === 'popupCount' ? r.popupCount : key === 'popupUsers' ? r.popupUsers : key === 'path' ? r.path : r.title,
   );
   const total = sorted.length;
   const shown = sorted.slice((page - 1) * perPage, page * perPage);
@@ -113,11 +114,11 @@ export default async function PageViewsPage({
           <li>期間内にアクセスがあったページだけを、表示回数の多い順に表示します。</li>
           <li>ページの URL を押すと、そのページを別のタブで開きます。</li>
           <li>
-            「ログインポップアップ」は、ログインを求めるポップアップを表示した人数です。サイト内でログインが必要なリンクを押したときはそのとき開いていたページに、
+            「ログインポップアップ」は、ログインを求めるポップアップを表示した回数と人数です。サイト内でログインが必要なリンクを押したときはそのとき開いていたページに、
             ログインが必要なページを直接開いたときはそのページに数えます（GA4 の数値なので数時間遅れます）。
           </li>
-          <li>上部の「ログインポップアップ表示人数」は期間内の人数です。同じ人が複数のページで表示しても 1 人と数えるため、一覧の合計とは一致しません。</li>
-          <li>「ログイン人数」は、期間内にサイトへログインした会員の数です。同じ会員が何度ログインしても 1 人です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
+          <li>上部の人数は期間内の人数です。同じ人は何回表示・ログインしても 1 人と数えます（ポップアップの人数は、同じ人が複数のページで表示しても 1 人のため、一覧の合計とは一致しません）。</li>
+          <li>「ログイン数」「ログイン人数」は、期間内にサイトへログインした回数と会員の数です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
         </ul>
       </PageHelp>
       {error ? (
@@ -126,14 +127,16 @@ export default async function PageViewsPage({
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { title: 'ログインポップアップ表示人数', value: popupUsers },
-              { title: 'ログイン人数', value: loginUsers },
+              { title: 'ログインポップアップ表示回数', value: popup?.count ?? null, unit: '回' },
+              { title: 'ログインポップアップ表示人数', value: popup?.users ?? null, unit: '人' },
+              { title: 'ログイン数', value: login?.count ?? null, unit: '回' },
+              { title: 'ログイン人数', value: login?.users ?? null, unit: '人' },
             ].map((card) => (
               <div key={card.title} className="card py-4">
                 <p className="text-sm font-semibold text-slate-600">{card.title}</p>
                 <p className="mt-1 leading-tight tabular-nums">
                   <span className="text-[26px] font-bold">{card.value === null ? '—' : card.value.toLocaleString()}</span>
-                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">人</span>}
+                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">{card.unit}</span>}
                 </p>
               </div>
             ))}
@@ -147,7 +150,8 @@ export default async function PageViewsPage({
                   <SortableTh label="タイトル" sortKey="title" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} />
                   <SortableTh label="表示回数" sortKey="views" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
                   <SortableTh label="ユーザー数" sortKey="users" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
-                  <SortableTh label="ログインポップアップ" sortKey="popups" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
+                  <SortableTh label="ポップアップ回数" sortKey="popupCount" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
+                  <SortableTh label="ポップアップ人数" sortKey="popupUsers" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
                 </tr>
               </thead>
               <tbody>
@@ -169,12 +173,13 @@ export default async function PageViewsPage({
                     <td className="max-w-96 truncate text-slate-600" title={r.title}>{r.title || '—'}</td>
                     <td className="text-right font-semibold">{r.views.toLocaleString()}</td>
                     <td className="text-right">{r.users.toLocaleString()}</td>
-                    <td className="text-right">{r.popups ? r.popups.toLocaleString() : <span className="text-slate-300">0</span>}</td>
+                    <td className="text-right">{r.popupCount ? r.popupCount.toLocaleString() : <span className="text-slate-300">0</span>}</td>
+                    <td className="text-right">{r.popupUsers ? r.popupUsers.toLocaleString() : <span className="text-slate-300">0</span>}</td>
                   </tr>
                 ))}
                 {shown.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-500">
+                    <td colSpan={7} className="py-8 text-center text-slate-500">
                       {q ? '検索内容に一致するデータはありません。' : 'この期間のアクセスはありません。'}
                     </td>
                   </tr>
