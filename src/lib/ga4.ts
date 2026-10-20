@@ -199,14 +199,16 @@ export async function pageViewsByPath(site: SiteKey, from: string, to: string): 
   return value;
 }
 
-const popupCache = new Map<string, { at: number; value: Map<string, number> }>();
+export type LoginPopupUsers = { byPath: Map<string, number>; total: number };
+const popupCache = new Map<string, { at: number; value: LoginPopupUsers }>();
 
 /**
- * ページ別の「ログインポップアップ」の表示回数 (サイトが送る GA4 イベント login_popup_view の回数)。
- * ログインが必要なページを直接開いた人は、そのページで表示したものとして数えている (サイト側で page_location を付け替え)。
+ * 「ログインポップアップ」を表示した人数 (サイトが送る GA4 イベント login_popup_view を起こしたユーザー数)。
+ * ・byPath … ページ別の人数。ログインが必要なページを直接開いた人は、そのページに数える (サイト側で page_location を付け替え)
+ * ・total … 期間内の人数。同じ人が複数のページで表示しても 1 人と数えるため、ページ別の合計とは一致しない
  * 同じ条件は 10 分だけ覚えておく。
  */
-export async function loginPopupViewsByPath(site: SiteKey, from: string, to: string): Promise<Map<string, number>> {
+export async function loginPopupUsers(site: SiteKey, from: string, to: string): Promise<LoginPopupUsers> {
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
   const cacheKey = `${site}:${from}:${to}`;
@@ -214,35 +216,40 @@ export async function loginPopupViewsByPath(site: SiteKey, from: string, to: str
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
   const token = await accessToken();
-  const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      dateRanges: [{ startDate: from, endDate: to }],
-      dimensions: [{ name: 'pagePath' }],
-      metrics: [{ name: 'eventCount' }],
-      dimensionFilter: {
-        andGroup: {
-          expressions: [
-            { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
-            { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'login_popup_view' } } },
-          ],
+  const report = async (dimensions: { name: string }[]) => {
+    const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dateRanges: [{ startDate: from, endDate: to }],
+        dimensions,
+        metrics: [{ name: 'totalUsers' }],
+        dimensionFilter: {
+          andGroup: {
+            expressions: [
+              { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
+              { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'login_popup_view' } } },
+            ],
+          },
         },
-      },
-      limit: 1000,
-    }),
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`GA4 から取得できませんでした（status ${res.status}）`);
-  const data = (await res.json()) as {
-    rows?: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[];
+        limit: 1000,
+      }),
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`GA4 から取得できませんでした（status ${res.status}）`);
+    const data = (await res.json()) as {
+      rows?: { dimensionValues?: { value: string }[]; metricValues: { value: string }[] }[];
+    };
+    return data.rows ?? [];
   };
-  const map = new Map<string, number>();
-  for (const r of data.rows ?? []) {
-    const path = r.dimensionValues[0].value;
-    map.set(path, (map.get(path) ?? 0) + Number(r.metricValues[0].value));
+  const [pathRows, totalRows] = await Promise.all([report([{ name: 'pagePath' }]), report([])]);
+  const byPath = new Map<string, number>();
+  for (const r of pathRows) {
+    const path = r.dimensionValues?.[0]?.value ?? '';
+    byPath.set(path, (byPath.get(path) ?? 0) + Number(r.metricValues[0].value));
   }
-  popupCache.set(cacheKey, { at: Date.now(), value: map });
+  const value = { byPath, total: Number(totalRows[0]?.metricValues[0]?.value ?? 0) };
+  popupCache.set(cacheKey, { at: Date.now(), value });
   if (popupCache.size > 100) popupCache.delete(popupCache.keys().next().value!);
-  return map;
+  return value;
 }

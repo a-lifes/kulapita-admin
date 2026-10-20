@@ -24,7 +24,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
 
 /**
  * サイトのページ別の表示回数 (GA4)。期間内にアクセスがあったページだけを、多い順に出す。
- * あわせて、ログインポップアップの表示回数 (GA4 のイベント) とログイン数 (自前の DB) も出す。
+ * あわせて、ログインポップアップを表示した人数 (GA4 のイベント) とログインした人数 (自前の DB) も出す。
  * 開くたびに GA4 に問い合わせる (同じ条件は 10 分だけ覚えておく)。
  */
 export default async function PageViewsPage({
@@ -43,11 +43,11 @@ export default async function PageViewsPage({
   const listParams = { from: range.from, to: range.to, site: canChooseSite() ? site : undefined, q, per: sp.per };
 
   let rows: PageStatRow[] = [];
-  let popupTotal: number | null = null;
-  let loginTotal: number | null = null;
+  let popupUsers: number | null = null;
+  let loginUsers: number | null = null;
   let error: string | null = null;
   try {
-    ({ rows, popupTotal, loginTotal } = await pageStats(site, range.from, range.to));
+    ({ rows, popupUsers, loginUsers } = await pageStats(site, range.from, range.to));
   } catch (e) {
     if (!(e instanceof Ga4NotConfiguredError)) console.error('[ga4]', e instanceof Error ? e.message : e);
     error = e instanceof Error ? e.message : 'GA4 から取得できませんでした';
@@ -113,10 +113,11 @@ export default async function PageViewsPage({
           <li>期間内にアクセスがあったページだけを、表示回数の多い順に表示します。</li>
           <li>ページの URL を押すと、そのページを別のタブで開きます。</li>
           <li>
-            「ログインポップアップ」は、ログインを求めるポップアップを表示した回数です。サイト内でログインが必要なリンクを押したときはそのとき開いていたページに、
+            「ログインポップアップ」は、ログインを求めるポップアップを表示した人数です。サイト内でログインが必要なリンクを押したときはそのとき開いていたページに、
             ログインが必要なページを直接開いたときはそのページに数えます（GA4 の数値なので数時間遅れます）。
           </li>
-          <li>「ログイン数」は、期間内にサイトへログインした回数です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
+          <li>上部の「ログインポップアップ表示人数」は期間内の人数です。同じ人が複数のページで表示しても 1 人と数えるため、一覧の合計とは一致しません。</li>
+          <li>「ログイン人数」は、期間内にサイトへログインした会員の数です。同じ会員が何度ログインしても 1 人です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
         </ul>
       </PageHelp>
       {error ? (
@@ -125,14 +126,14 @@ export default async function PageViewsPage({
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { title: 'ログインポップアップ表示回数', value: popupTotal },
-              { title: 'ログイン数', value: loginTotal },
+              { title: 'ログインポップアップ表示人数', value: popupUsers },
+              { title: 'ログイン人数', value: loginUsers },
             ].map((card) => (
               <div key={card.title} className="card py-4">
                 <p className="text-sm font-semibold text-slate-600">{card.title}</p>
                 <p className="mt-1 leading-tight tabular-nums">
                   <span className="text-[26px] font-bold">{card.value === null ? '—' : card.value.toLocaleString()}</span>
-                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">回</span>}
+                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">人</span>}
                 </p>
               </div>
             ))}

@@ -86,7 +86,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `ページ別表示回数_${ymd(range.from)}-${ymd(range.to)}.csv`,
       toCsv(
-        ['順位', 'ページの URL', 'タイトル', '表示回数', 'ユーザー数', 'ログインポップアップ'],
+        ['順位', 'ページの URL', 'タイトル', '表示回数', 'ユーザー数', 'ログインポップアップ（人数）'],
         rows.map((r, i) => [i + 1, r.path, r.title, r.views, r.users, r.popups]),
       ),
     );
