@@ -21,7 +21,8 @@ import {
 import { resolveRange } from '@/lib/dateRange';
 import { memberWhere, normalizeMemberFilter } from '@/lib/queries/members';
 import { dailyCounts } from '@/lib/dailyCounts';
-import { pageViewsByPath, resolveSite, SITES } from '@/lib/ga4';
+import { resolveSite, SITES } from '@/lib/ga4';
+import { pageStats } from '@/lib/pageviewStats';
 import {
   newsletterWhere,
   normalizeNewsletterFilter,
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const range = resolveRange(sp, 'thisMonth');
     const site = resolveSite(sp.site);
     const needle = sp.q?.trim().toLowerCase();
-    const rows = (await pageViewsByPath(site, range.from, range.to)).filter(
+    const rows = (await pageStats(site, range.from, range.to)).rows.filter(
       (r) => !needle || r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle),
     );
     await writeAudit({ admin: viewer, action: 'export.pageviews', diff: { from: range.from, to: range.to, site, q: needle } });
@@ -85,8 +86,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     return csvResponse(
       `ページ別表示回数_${ymd(range.from)}-${ymd(range.to)}.csv`,
       toCsv(
-        ['順位', 'ページの URL', 'タイトル', '表示回数', 'ユーザー数'],
-        rows.map((r, i) => [i + 1, r.path, r.title, r.views, r.users]),
+        ['順位', 'ページの URL', 'タイトル', '表示回数', 'ユーザー数', 'ログインポップアップ'],
+        rows.map((r, i) => [i + 1, r.path, r.title, r.views, r.users, r.popups]),
       ),
     );
   }

@@ -7,7 +7,8 @@ import { SortableTh } from '@/components/SortableTh';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
-import { canChooseSite, Ga4NotConfiguredError, pageViewsByPath, PageViewRow, resolveSite, SITES } from '@/lib/ga4';
+import { canChooseSite, Ga4NotConfiguredError, resolveSite, SITES } from '@/lib/ga4';
+import { PageStatRow, pageStats } from '@/lib/pageviewStats';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'ページ別表示回数' };
@@ -16,12 +17,14 @@ export const metadata: Metadata = { title: 'ページ別表示回数' };
 const SORT_COLUMNS: Record<string, SortColumn> = {
   views: { sql: '', firstDir: 'desc' },
   users: { sql: '', firstDir: 'desc' },
+  popups: { sql: '', firstDir: 'desc' },
   path: { sql: '' },
   title: { sql: '' },
 };
 
 /**
  * サイトのページ別の表示回数 (GA4)。期間内にアクセスがあったページだけを、多い順に出す。
+ * あわせて、ログインポップアップの表示回数 (GA4 のイベント) とログイン数 (自前の DB) も出す。
  * 開くたびに GA4 に問い合わせる (同じ条件は 10 分だけ覚えておく)。
  */
 export default async function PageViewsPage({
@@ -39,10 +42,12 @@ export default async function PageViewsPage({
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'views', dir: 'desc' });
   const listParams = { from: range.from, to: range.to, site: canChooseSite() ? site : undefined, q, per: sp.per };
 
-  let rows: PageViewRow[] = [];
+  let rows: PageStatRow[] = [];
+  let popupTotal: number | null = null;
+  let loginTotal: number | null = null;
   let error: string | null = null;
   try {
-    rows = await pageViewsByPath(site, range.from, range.to);
+    ({ rows, popupTotal, loginTotal } = await pageStats(site, range.from, range.to));
   } catch (e) {
     if (!(e instanceof Ga4NotConfiguredError)) console.error('[ga4]', e instanceof Error ? e.message : e);
     error = e instanceof Error ? e.message : 'GA4 から取得できませんでした';
@@ -51,7 +56,9 @@ export default async function PageViewsPage({
   const filtered = needle
     ? rows.filter((r) => r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle))
     : rows;
-  const sorted = sortRows(filtered, sort, (r, key) => (key === 'views' ? r.views : key === 'users' ? r.users : key === 'path' ? r.path : r.title));
+  const sorted = sortRows(filtered, sort, (r, key) =>
+    key === 'views' ? r.views : key === 'users' ? r.users : key === 'popups' ? r.popups : key === 'path' ? r.path : r.title,
+  );
   const total = sorted.length;
   const shown = sorted.slice((page - 1) * perPage, page * perPage);
   const exportQuery = new URLSearchParams(
@@ -105,12 +112,31 @@ export default async function PageViewsPage({
           <li>GA4 の数値は数時間遅れて反映されます。</li>
           <li>期間内にアクセスがあったページだけを、表示回数の多い順に表示します。</li>
           <li>ページの URL を押すと、そのページを別のタブで開きます。</li>
+          <li>
+            「ログインポップアップ」は、ログインを求めるポップアップを表示した回数です。サイト内でログインが必要なリンクを押したときはそのとき開いていたページに、
+            ログインが必要なページを直接開いたときはそのページに数えます（GA4 の数値なので数時間遅れます）。
+          </li>
+          <li>「ログイン数」は、期間内にサイトへログインした回数です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
         </ul>
       </PageHelp>
       {error ? (
         <p className="error">ページ別の表示回数を取得できませんでした：{error}</p>
       ) : (
         <>
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { title: 'ログインポップアップ表示回数', value: popupTotal },
+              { title: 'ログイン数', value: loginTotal },
+            ].map((card) => (
+              <div key={card.title} className="card py-4">
+                <p className="text-sm font-semibold text-slate-600">{card.title}</p>
+                <p className="mt-1 leading-tight tabular-nums">
+                  <span className="text-[26px] font-bold">{card.value === null ? '—' : card.value.toLocaleString()}</span>
+                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">回</span>}
+                </p>
+              </div>
+            ))}
+          </div>
           <div className="card table-scroll">
             <table className="table">
               <thead>
@@ -120,6 +146,7 @@ export default async function PageViewsPage({
                   <SortableTh label="タイトル" sortKey="title" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} />
                   <SortableTh label="表示回数" sortKey="views" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
                   <SortableTh label="ユーザー数" sortKey="users" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
+                  <SortableTh label="ログインポップアップ" sortKey="popups" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
                 </tr>
               </thead>
               <tbody>
@@ -141,11 +168,12 @@ export default async function PageViewsPage({
                     <td className="max-w-96 truncate text-slate-600" title={r.title}>{r.title || '—'}</td>
                     <td className="text-right font-semibold">{r.views.toLocaleString()}</td>
                     <td className="text-right">{r.users.toLocaleString()}</td>
+                    <td className="text-right">{r.popups ? r.popups.toLocaleString() : <span className="text-slate-300">0</span>}</td>
                   </tr>
                 ))}
                 {shown.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                    <td colSpan={6} className="py-8 text-center text-slate-500">
                       {q ? '検索内容に一致するデータはありません。' : 'この期間のアクセスはありません。'}
                     </td>
                   </tr>
