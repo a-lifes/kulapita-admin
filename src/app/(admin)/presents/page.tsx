@@ -81,7 +81,9 @@ export default async function PresentsPage({
   const campaign = sp.campaign && campaigns.includes(sp.campaign) ? sp.campaign : campaigns[0];
   const filter = normalizePresentFilter({ ...sp, campaign });
   const where = presentWhere(filter);
-  const listParams = { ...filter, per: sp.per };
+  const { campaignInvalid: _ci, ...filterParams } = filter;
+  void _ci;
+  const listParams = { ...filterParams, per: sp.per };
 
   const [{ rows }, { rows: count }] = campaign
     ? await Promise.all([

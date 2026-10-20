@@ -36,9 +36,13 @@ async function credentials(): Promise<Credentials | null> {
   return value;
 }
 
-/** サイト (kulapita/src/libs/presents.ts の campaignKey) と同じ規則でキーを作る */
+/**
+ * サイト (kulapita/src/libs/presents.ts の campaignKey) と同じ規則でキーを作る。
+ * slug は半角英数字・ハイフン・アンダースコアで 32 文字までのものだけ使い、合わなければ開催月 (yyyy-mm) にする
+ */
 function campaignKey(c: RawCampaign): string {
-  if (c.slug && c.slug.trim()) return c.slug.trim();
+  const slug = c.slug?.trim();
+  if (slug && /^[A-Za-z0-9_-]{1,32}$/.test(slug)) return slug;
   if (c.month) {
     const d = new Date(c.month);
     if (!Number.isNaN(d.getTime())) {

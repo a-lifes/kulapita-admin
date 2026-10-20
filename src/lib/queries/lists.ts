@@ -26,12 +26,20 @@ export function newsletterWhere(f: NewsletterFilter): { sql: string; params: Par
 }
 
 export const PRESENT_STATUSES = ['applied', 'won', 'lost'] as const;
-export type PresentFilter = { campaign?: string; item?: string; status?: string; q?: string };
+export type PresentFilter = {
+  campaign?: string;
+  /** 開催月の指定が不正 (形が合わない)。絞り込みを外して全月を出さないよう、何も出さない */
+  campaignInvalid?: boolean;
+  item?: string;
+  status?: string;
+  q?: string;
+};
 
 export function normalizePresentFilter(sp: Record<string, string | undefined>): PresentFilter {
-  const campaign = sp.campaign && /^[\w-]{1,32}$/.test(sp.campaign) ? sp.campaign : undefined;
+  const campaign = sp.campaign && /^[A-Za-z0-9_-]{1,32}$/.test(sp.campaign) ? sp.campaign : undefined;
   return {
     campaign,
+    campaignInvalid: Boolean(sp.campaign) && !campaign ? true : undefined,
     // 景品はキャンペーンごとの番号なので、キャンペーンを選んだときだけ使う
     item: campaign && sp.item && /^\d{1,2}$/.test(sp.item) ? sp.item : undefined,
     status: PRESENT_STATUSES.includes(sp.status as never) ? sp.status : undefined,
@@ -42,6 +50,7 @@ export function normalizePresentFilter(sp: Record<string, string | undefined>): 
 export function presentWhere(f: PresentFilter): { sql: string; params: Params } {
   const conds = ['1 = 1'];
   const params: Params = {};
+  if (f.campaignInvalid) conds.push('1 = 0');
   if (f.campaign) {
     conds.push('p.campaign_key = :campaign');
     params.campaign = f.campaign;
