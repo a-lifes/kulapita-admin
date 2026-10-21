@@ -118,20 +118,35 @@ export function AutoDrawButton({
       >
         初期化
       </button>
-      <button
-        type="button"
-        className="btn"
-        disabled={Boolean(disabledReason)}
-        title={disabledReason}
-        onClick={() => {
-          setError(null);
-          setPlan(null);
-          setOpen(true);
-        }}
+      {/* 使えない理由は、ボタンにマウスを乗せたとき (キーボードで選んだとき) だけ出す。
+          押せないボタンにはマウスの出入りが伝わらないブラウザがあるため、外側の枠で拾う */}
+      <span
+        className="group relative inline-block"
+        tabIndex={disabledReason ? 0 : undefined}
+        aria-describedby={disabledReason ? 'auto-draw-reason' : undefined}
       >
-        自動当選
-      </button>
-      {disabledReason && <p className="mt-1 max-w-xl text-xs text-slate-500">{disabledReason}</p>}
+        <button
+          type="button"
+          className="btn"
+          disabled={Boolean(disabledReason)}
+          onClick={() => {
+            setError(null);
+            setPlan(null);
+            setOpen(true);
+          }}
+        >
+          自動当選
+        </button>
+        {disabledReason && (
+          <span
+            id="auto-draw-reason"
+            role="tooltip"
+            className="pointer-events-none absolute top-full right-0 z-20 mt-2 hidden w-80 rounded-lg bg-slate-800 px-3 py-2 text-left text-xs leading-relaxed font-normal text-[#fff] shadow-lg group-hover:block group-focus:block"
+          >
+            {disabledReason}
+          </span>
+        )}
+      </span>
       <dialog
         ref={ref}
         onClose={() => setOpen(false)}
