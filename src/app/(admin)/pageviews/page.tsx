@@ -75,7 +75,7 @@ export default async function PageViewsPage({
         )}
       </div>
 
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="from">開始日</label>
           <input className="input" type="date" id="from" name="from" defaultValue={range.from} required />

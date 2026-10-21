@@ -12,6 +12,7 @@ import { PresentFilters } from './PresentFilters';
 import { StatusSelect } from '@/components/StatusSelect';
 import { ItemImage } from './ItemImage';
 import { AutoDrawButton } from './AutoDrawButton';
+import { Collapsible } from '@/components/Collapsible';
 import { BulkProvider, BulkStatusBar, RowCheckbox, SelectAllCheckbox } from '@/components/BulkStatus';
 import { formatJst, PRESENT_STATUS_LABEL, PRESENT_STATUS_STYLE } from '@/lib/format';
 import { setPresentStatusAction, setPresentStatusBulkAction } from './actions';
@@ -203,10 +204,11 @@ export default async function PresentsPage({
       />
 
       {shownSummary.length > 0 && (
-        <div className="card mb-4">
-          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-            <h2 className="text-sm font-bold">景品ごとの状況</h2>
-            {canEdit && (
+        <Collapsible
+          storageKey="presents:summary"
+          title="景品ごとの状況"
+          actions={
+            canEdit && (
               <div className="text-right">
                 <AutoDrawButton
                   campaign={campaign!}
@@ -215,8 +217,9 @@ export default async function PresentsPage({
                   decidedCount={decidedCount}
                 />
               </div>
-            )}
-          </div>
+            )
+          }
+        >
           <ul className="flex flex-wrap gap-3 text-sm">
             {shownSummary.map((s) => {
               const winners = cms.items?.[Number(s.item_index)]?.winners ?? null;
@@ -264,7 +267,7 @@ export default async function PresentsPage({
             })}
           </ul>
           {cms.error && <p className="mt-3 text-xs text-red-700">当選者数: {cms.error}</p>}
-        </div>
+        </Collapsible>
       )}
 
       <BulkProvider ids={rows.map((r) => r.id)}>

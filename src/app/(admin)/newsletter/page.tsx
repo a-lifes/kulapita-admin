@@ -72,7 +72,7 @@ export default async function NewsletterPage({
           <a className="btn-sub" href={`/api/export/newsletter${exportQuery ? `?${exportQuery}` : ''}`}>CSV ダウンロード</a>
         )}
       </div>
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="status">状態</label>
           <select className="input" id="status" name="status" defaultValue={filter.status ?? ''}>

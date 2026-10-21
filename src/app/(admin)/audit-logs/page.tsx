@@ -129,7 +129,7 @@ export default async function AuditLogsPage({
   return (
     <div className="list-page">
       <h1 className="page-title">操作ログ</h1>
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="date">日付</label>
           <input className="input w-44" type="date" id="date" name="date" defaultValue={date} max={today} required />

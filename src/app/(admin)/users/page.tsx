@@ -72,7 +72,7 @@ export default async function UsersPage({
         <CreateAdminButton />
       </div>
 
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">表示名・メールアドレス</label>
           <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} placeholder="表示名またはメールアドレスの一部を入力" />

@@ -89,7 +89,7 @@ export default async function ApplicationsPage({
         )}
       </div>
 
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="status">対応状況</label>
           <select className="input" id="status" name="status" defaultValue={filter.status ?? ''}>

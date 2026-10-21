@@ -101,7 +101,7 @@ export default async function ClicksPage({
       </div>
 
       {/* 絞り込み (他の画面と同じ 1 行の形) */}
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="from">開始日</label>
           <input className="input" type="date" id="from" name="from" defaultValue={range.from} required />

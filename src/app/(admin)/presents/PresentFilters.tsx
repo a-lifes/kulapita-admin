@@ -22,7 +22,7 @@ export function PresentFilters({
   const items = itemsByCampaign[campaign] ?? [];
 
   return (
-    <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+    <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
       <div>
         <label className="label" htmlFor="campaign">開催月</label>
         <select

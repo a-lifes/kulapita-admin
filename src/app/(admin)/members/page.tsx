@@ -67,7 +67,7 @@ export default async function MembersPage({
         )}
       </div>
 
-      <SearchForm className="card mb-4 flex flex-wrap items-end gap-3">
+      <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="label" htmlFor="prefecture">都道府県</label>
           <select className="input" id="prefecture" name="prefecture" defaultValue={prefecture ?? ''}>

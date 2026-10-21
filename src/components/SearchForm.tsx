@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, Fragment, useContext, useEffect, useRef, useState, useTransition } from 'react';
+import { CollapseHeader, useCollapsed } from './Collapsible';
 
 /**
  * 絞り込みエリアのフォーム。「絞り込む」ボタンや Enter キーで検索している間、
@@ -24,9 +25,19 @@ const SearchContext = createContext<{ pending: boolean; navigate: (url: string) 
 /** 絞り込み・表示が終わったときに window に送るイベント名 */
 export const SEARCH_DONE_EVENT = 'kadm:search-done';
 
-export function SearchForm({ className, children }: { className?: string; children: React.ReactNode }) {
+export function SearchForm({
+  className,
+  collapsible = false,
+  children,
+}: {
+  className?: string;
+  /** 「絞り込み」の見出しを付けて、開閉できるようにする (閉じた状態は画面ごとに覚える) */
+  collapsible?: boolean;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useCollapsed(`search:${pathname}`);
   const [pending, startTransition] = useTransition();
   const navigate = (url: string) => startTransition(() => router.push(url, { scroll: false }));
 
@@ -48,10 +59,14 @@ export function SearchForm({ className, children }: { className?: string; childr
     wasPending.current = pending;
   }, [pending]);
 
-  return (
-    <SearchContext.Provider value={{ pending, navigate, clear }}>
+  const form = (
       <form
-        className={className}
+        id={collapsible ? 'search-area' : undefined}
+        className={
+          collapsible
+            ? `${(className ?? '').replace(/\b(card|mb-4)\b/g, '').trim()} mt-3 ${collapsed ? 'hidden' : ''}`
+            : className
+        }
         aria-busy={pending}
         onSubmit={(e) => {
           e.preventDefault();
@@ -65,6 +80,23 @@ export function SearchForm({ className, children }: { className?: string; childr
       >
         <Fragment key={`${searchParams.toString()}#${clearCount}`}>{children}</Fragment>
       </form>
+  );
+
+  return (
+    <SearchContext.Provider value={{ pending, navigate, clear }}>
+      {collapsible ? (
+        <div className="card mb-4">
+          <CollapseHeader
+            title="絞り込み"
+            collapsed={collapsed}
+            onToggle={() => setCollapsed(!collapsed)}
+            controls="search-area"
+          />
+          {form}
+        </div>
+      ) : (
+        form
+      )}
       {pending && <LoadingOverlay />}
     </SearchContext.Provider>
   );
