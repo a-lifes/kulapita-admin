@@ -14,8 +14,8 @@ import {
 } from './autoDraw';
 
 const CONDITIONS: { key: keyof DrawConditions; label: string; note: string }[] = [
-  { key: 'frequent', label: '応募回数が多い人の当選確率を上げる', note: 'これまでのキャンペーンへの応募が多いほど選ばれやすくなります' },
-  { key: 'excludePast', label: '過去に当選実績のある会員は除く', note: 'ほかのキャンペーンで当選したことがある会員は選びません' },
+  { key: 'frequent', label: '応募回数が多い人の当選確率を上げる', note: 'これまでのプレゼントへの応募が多いほど当選する確率が上がります。' },
+  { key: 'excludePast', label: '過去に当選実績のある会員は除く', note: '過去にプレゼントに当選した実績がある会員は抽選対象外になります。' },
 ];
 
 /**
@@ -158,16 +158,18 @@ export function AutoDrawButton({
       >
         {open && (
           <div className="p-6">
-            <h2 className="text-base font-bold text-slate-900">自動当選（{campaignLabel}）</h2>
+            <h2 className="text-base font-bold text-slate-900">自動当選</h2>
             <p className="mt-1 mb-4 text-sm text-slate-500">
-              条件を選んで抽選します。結果を確認してから反映します（反映すると、選ばれなかった応募は「落選」になります）。
+              条件をもとにランダムで自動抽選します。
+              <br />
+              （当選しなかった応募は「落選」になります）。
             </p>
             {error && <p className="error mb-4">{error}</p>}
 
             {!plan ? (
               <>
                 <fieldset className="space-y-3">
-                  <legend className="mb-2 text-sm font-semibold text-slate-700">当選条件（複数選べます。何も選ばなければ全員同じ確率です）</legend>
+                  <legend className="mb-2 text-sm font-semibold text-slate-700">当選条件（複数選択可。未選択の場合、全会員の当選率は同じ確率となります。）</legend>
                   {CONDITIONS.map((c) => (
                     <label key={c.key} className="flex cursor-pointer items-start gap-2 text-sm">
                       <input
