@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
-import { icons } from '@/components/icons';
+import { icons, spacedLabel } from '@/components/icons';
 import { toast } from '@/components/Toaster';
 import {
   applyAutoDrawAction,
@@ -115,6 +115,7 @@ export function AutoDrawButton({
         type="button"
         className={`btn min-w-20 px-3 ${disabledReason ? 'opacity-50' : ''}`}
         aria-haspopup="dialog"
+        aria-label="抽選"
         onClick={() => {
           if (disabledReason) {
             setReasonOpen(true);
@@ -126,7 +127,7 @@ export function AutoDrawButton({
         }}
       >
         <icons.dice className="h-4 w-4" />
-        抽選
+        {spacedLabel('抽選')}
       </button>
       <button
         type="button"

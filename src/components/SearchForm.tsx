@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, Fragment, useContext, useEffect, useRef, useState, useTransition } from 'react';
 import { CollapseHeader, useCollapsed } from './Collapsible';
-import { icons } from './icons';
+import { icons, spacedLabel } from './icons';
 
 /**
  * 絞り込みエリアのフォーム。「絞込み」ボタンや Enter キーで検索している間、
@@ -120,7 +120,7 @@ export function SearchButton({
   const Icon = icons[icon];
   const { pending } = useContext(SearchContext);
   return (
-    <button className="btn min-w-20 px-3" disabled={pending}>
+    <button className="btn min-w-20 px-3" disabled={pending} aria-label={pending ? undefined : label}>
       {pending ? (
         <>
           <Spinner className="h-4 w-4" />
@@ -129,7 +129,7 @@ export function SearchButton({
       ) : (
         <>
           <Icon className="h-4 w-4" />
-          {label}
+          {spacedLabel(label)}
         </>
       )}
     </button>

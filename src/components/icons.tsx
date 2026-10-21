@@ -1,3 +1,12 @@
+/**
+ * ボタンの文字が 2 文字のとき、間に全角スペースを入れて 3 文字分の幅にする (ほかのボタンと見た目をそろえる)。
+ * 例: 表示 → 表　示。読み上げは元の文字のまま (aria-label に元の文字を入れる)
+ */
+export function spacedLabel(label: string): string {
+  const chars = Array.from(label);
+  return chars.length === 2 ? `${chars[0]}\u3000${chars[1]}` : label;
+}
+
 /** サイドメニュー・ヘッダー用のアイコン (線のアイコン・24×24) */
 type IconProps = { className?: string };
 
