@@ -56,6 +56,7 @@ export default async function PresentsPage({
 
   // 開催月ごとの応募の件数 (DB) と、キャンペーン・景品の一覧 (microCMS)。
   // 開催月・景品は microCMS を正とし、応募が 0 件の景品も出す。microCMS に無いもの (削除済みなど) は DB から補う。
+  // 応募は microCMS のコンテンツ ID (campaign_key) で記録しているので、キーは ID。画面には名前 (slug または yyyy-mm) を出す。
   const [{ rows: summary }, cmsAll] = await Promise.all([
     query<SummaryRow>(
       `SELECT campaign_key, item_index, MAX(item_name) AS item_name, COUNT(*) AS total, SUM(status = 'won') AS won
@@ -65,8 +66,8 @@ export default async function PresentsPage({
     getAllCampaigns(),
   ]);
   const itemsByCampaign: Record<string, { index: number; name: string }[]> = {};
-  for (const [key, items] of cmsAll.campaigns ?? []) {
-    itemsByCampaign[key] = items.map((item, index) => ({ index, name: item.name }));
+  for (const [key, info] of cmsAll.campaigns ?? []) {
+    itemsByCampaign[key] = info.items.map((item, index) => ({ index, name: item.name }));
   }
   for (const s of summary) {
     const list = (itemsByCampaign[s.campaign_key] ??= []);
@@ -75,10 +76,18 @@ export default async function PresentsPage({
       list.sort((a, b) => a.index - b.index);
     }
   }
-  const campaigns = Object.keys(itemsByCampaign).sort().reverse();
+  const labelOf = (key: string) => cmsAll.campaigns?.get(key)?.label ?? key;
+  // 新しい開催月から並べる (microCMS の開催月。microCMS に無いものは後ろに名前順)
+  const monthOf = (key: string) => cmsAll.campaigns?.get(key)?.month ?? '';
+  const campaigns = Object.keys(itemsByCampaign).sort(
+    (a, b) => monthOf(b).localeCompare(monthOf(a)) || labelOf(b).localeCompare(labelOf(a)),
+  );
 
-  // 開催月は必ず 1 つに絞る (指定が無い・存在しないときは一番新しい月)
-  const campaign = sp.campaign && campaigns.includes(sp.campaign) ? sp.campaign : campaigns[0];
+  // 開催月は必ず 1 つに絞る (指定が無い・存在しないときは一番新しい月)。
+  // 名前 (slug・yyyy-mm) での指定も受け付ける (以前のリンクやダッシュボードから来たとき)
+  const campaign =
+    (sp.campaign && (campaigns.includes(sp.campaign) ? sp.campaign : campaigns.find((k) => labelOf(k) === sp.campaign))) ||
+    campaigns[0];
   const filter = normalizePresentFilter({ ...sp, campaign });
   const where = presentWhere(filter);
   const { campaignInvalid: _ci, ...filterParams } = filter;
@@ -100,7 +109,7 @@ export default async function PresentsPage({
   const total = Number(count[0]?.total ?? 0);
 
   // 景品ごとの応募数・当選数・当選者数 (景品名・当選者数は microCMS、件数は DB)
-  const cmsItems = campaign ? (cmsAll.campaigns?.get(campaign) ?? null) : null;
+  const cmsItems = campaign ? (cmsAll.campaigns?.get(campaign)?.items ?? null) : null;
   const cms = {
     items: cmsItems,
     error: cmsAll.error ?? (campaign && !cmsItems ? 'microCMS にこのキャンペーンが見つかりません' : undefined),
@@ -110,7 +119,10 @@ export default async function PresentsPage({
     return { item_index: item.index, item_name: item.name, total: Number(counted?.total ?? 0), won: Number(counted?.won ?? 0) };
   });
 
-  const exportQuery = new URLSearchParams(Object.entries(filter).filter(([, v]) => v) as [string, string][]).toString();
+  // CSV は画面と同じ条件で出す (campaignInvalid のような内部の印は渡さない)
+  const exportQuery = new URLSearchParams(
+    Object.entries({ ...filterParams, campaign }).filter(([, v]) => v) as [string, string][],
+  ).toString();
   const canEdit = hasRole(admin.role, 'support');
   const colCount = canEdit ? 7 : 6;
 
@@ -123,7 +135,7 @@ export default async function PresentsPage({
         )}
       </div>
 
-      {campaign && <PresentFilters key={`${campaign}-${filter.item ?? ''}-${filter.status ?? ''}`} campaigns={campaigns} itemsByCampaign={itemsByCampaign} initial={{ ...filter, campaign }} />}
+      {campaign && <PresentFilters key={`${campaign}-${filter.item ?? ''}-${filter.status ?? ''}`} campaigns={campaigns.map((k) => ({ key: k, label: labelOf(k) }))} itemsByCampaign={itemsByCampaign} initial={{ ...filter, campaign }} />}
       <ActiveFilters
         basePath="/presents"
         params={{ ...listParams, sort: sp.sort, dir: sp.dir }}
@@ -140,7 +152,7 @@ export default async function PresentsPage({
 
       {shownSummary.length > 0 && (
         <div className="card mb-4">
-          <h2 className="mb-3 text-sm font-bold">景品ごとの状況（{campaign}）</h2>
+          <h2 className="mb-3 text-sm font-bold">景品ごとの状況（{labelOf(campaign!)}）</h2>
           <ul className="flex flex-wrap gap-3 text-sm">
             {shownSummary.map((s) => {
               const winners = cms.items?.[Number(s.item_index)]?.winners ?? null;

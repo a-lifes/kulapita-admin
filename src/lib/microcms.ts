@@ -15,10 +15,15 @@ type RawCampaign = {
 };
 
 export type CampaignItems = { name: string; winners: number | null; imageUrl: string | null }[];
+/**
+ * キャンペーン 1 件分。応募 (present_applications.campaign_key) は microCMS のコンテンツ ID で記録しているので、
+ * この Map も ID で引く。画面には label (slug または開催月 yyyy-mm) を出す。
+ */
+export type CampaignInfo = { label: string; month: string; items: CampaignItems };
 
 const sm = new SecretsManagerClient({ region: process.env.AWS_REGION ?? 'ap-northeast-1' });
 let credCache: { at: number; value: Credentials | null } | null = null;
-let campaignCache: { at: number; value: Map<string, CampaignItems> } | null = null;
+let campaignCache: { at: number; value: Map<string, CampaignInfo> } | null = null;
 
 async function credentials(): Promise<Credentials | null> {
   if (credCache && Date.now() - credCache.at < 5 * 60_000) return credCache.value;
@@ -37,10 +42,10 @@ async function credentials(): Promise<Credentials | null> {
 }
 
 /**
- * サイト (kulapita/src/libs/presents.ts の campaignKey) と同じ規則でキーを作る。
+ * 画面に出すキャンペーンの名前。サイトの URL (kulapita/src/libs/presents.ts の campaignKey) と同じ規則。
  * slug は半角英数字・ハイフン・アンダースコアで 32 文字までのものだけ使い、合わなければ開催月 (yyyy-mm) にする
  */
-function campaignKey(c: RawCampaign): string {
+function campaignLabel(c: RawCampaign): string {
   const slug = c.slug?.trim();
   if (slug && /^[A-Za-z0-9_-]{1,32}$/.test(slug)) return slug;
   if (c.month) {
@@ -55,12 +60,12 @@ function campaignKey(c: RawCampaign): string {
 
 export class MicrocmsNotConfiguredError extends Error {}
 
-/** キャンペーン (月のキー) → 景品ごとの名前・当選者数。1 分だけ覚えておく */
-async function campaigns(): Promise<Map<string, CampaignItems>> {
+/** キャンペーン (コンテンツ ID) → 名前・開催月・景品ごとの名前・当選者数。1 分だけ覚えておく */
+async function campaigns(): Promise<Map<string, CampaignInfo>> {
   if (campaignCache && Date.now() - campaignCache.at < 60_000) return campaignCache.value;
   const cred = await credentials();
   if (!cred) throw new MicrocmsNotConfiguredError('microCMS の API キーが設定されていません');
-  const map = new Map<string, CampaignItems>();
+  const map = new Map<string, CampaignInfo>();
   for (let offset = 0; ; offset += 100) {
     const url = new URL(`https://${cred.serviceDomain}.microcms.io/api/v1/presents`);
     url.searchParams.set('limit', '100');
@@ -70,14 +75,15 @@ async function campaigns(): Promise<Map<string, CampaignItems>> {
     if (!res.ok) throw new Error(`microCMS から取得できませんでした（status ${res.status}）`);
     const data = (await res.json()) as { contents: RawCampaign[]; totalCount: number };
     for (const c of data.contents) {
-      map.set(
-        campaignKey(c),
-        (c.items ?? []).map((i) => ({
+      map.set(c.id, {
+        label: campaignLabel(c),
+        month: c.month ?? '',
+        items: (c.items ?? []).map((i) => ({
           name: (i.name ?? '').replace(/\s+/g, ' ').trim(),
           winners: typeof i.winners === 'number' && i.winners >= 0 ? i.winners : null,
           imageUrl: typeof i.image?.url === 'string' && i.image.url.startsWith('https://') ? i.image.url : null,
         })),
-      );
+      });
     }
     if (offset + data.contents.length >= data.totalCount || data.contents.length === 0) break;
   }
@@ -85,12 +91,12 @@ async function campaigns(): Promise<Map<string, CampaignItems>> {
   return map;
 }
 
-/** 景品の当選者数。取得できなければ null と理由を返す */
+/** 景品の当選者数 (key はコンテンツ ID)。取得できなければ null と理由を返す */
 export async function getCampaignItems(
   key: string,
 ): Promise<{ items: CampaignItems | null; error?: string }> {
   try {
-    const items = (await campaigns()).get(key) ?? null;
+    const items = (await campaigns()).get(key)?.items ?? null;
     return items ? { items } : { items: null, error: 'microCMS にこのキャンペーンが見つかりません' };
   } catch (e) {
     console.error('microCMS fetch failed', (e as Error).message);
@@ -101,8 +107,8 @@ export async function getCampaignItems(
   }
 }
 
-/** microCMS にあるキャンペーン (月のキー) と景品の一覧。取得できなければ null と理由を返す */
-export async function getAllCampaigns(): Promise<{ campaigns: Map<string, CampaignItems> | null; error?: string }> {
+/** microCMS にあるキャンペーン (コンテンツ ID → 名前・景品) の一覧。取得できなければ null と理由を返す */
+export async function getAllCampaigns(): Promise<{ campaigns: Map<string, CampaignInfo> | null; error?: string }> {
   try {
     return { campaigns: await campaigns() };
   } catch (e) {

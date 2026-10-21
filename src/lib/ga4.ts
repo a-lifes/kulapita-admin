@@ -89,6 +89,28 @@ async function accessToken(): Promise<string> {
 }
 
 /**
+ * GA4 Data API の runReport を呼ぶ。
+ * アクセストークンが無効になっていたら (401: キーの入れ替え・無効化など) 作り直して 1 回だけやり直す。
+ */
+async function runReport(propertyId: string, body: Record<string, unknown>): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    const token = await accessToken();
+    const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+    if (res.status === 401 && attempt === 1) {
+      tokenCache = null;
+      keyCache = null;
+      continue;
+    }
+    return res;
+  }
+}
+
+/**
  * トップページ (/) の日ごとの PV。日付は GA4 のプロパティのタイムゾーン (日本時間) で集計される。
  * 10 分だけ覚えておく (GA4 の反映自体も数時間遅れるため)。
  */
@@ -99,25 +121,19 @@ export async function topPageViews(site: SiteKey, from: string, to: string): Pro
   const cached = reportCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
-  const token = await accessToken();
-  const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      dateRanges: [{ startDate: from, endDate: to }],
-      dimensions: [{ name: 'date' }],
-      metrics: [{ name: 'screenPageViews' }],
-      dimensionFilter: {
-        andGroup: {
-          expressions: [
-            { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
-            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'EXACT', value: '/' } } },
-          ],
-        },
+  const res = await runReport(propertyId, {
+    dateRanges: [{ startDate: from, endDate: to }],
+    dimensions: [{ name: 'date' }],
+    metrics: [{ name: 'screenPageViews' }],
+    dimensionFilter: {
+      andGroup: {
+        expressions: [
+          { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
+          { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'EXACT', value: '/' } } },
+        ],
       },
-      limit: 1000,
-    }),
-    cache: 'no-store',
+    },
+    limit: 1000,
   });
   if (!res.ok) {
     const detail = res.status === 403 ? '（サービスアカウントに GA4 の閲覧権限があるか確認してください）' : '';
@@ -152,19 +168,13 @@ export async function pageViewsByPath(site: SiteKey, from: string, to: string): 
   const cached = pageCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
-  const token = await accessToken();
-  const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      dateRanges: [{ startDate: from, endDate: to }],
-      dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
-      metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
-      dimensionFilter: { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
-      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-      limit: 1000,
-    }),
-    cache: 'no-store',
+  const res = await runReport(propertyId, {
+    dateRanges: [{ startDate: from, endDate: to }],
+    dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
+    metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
+    dimensionFilter: { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
+    orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+    limit: 1000,
   });
   if (!res.ok) {
     const detail = res.status === 403 ? '（サービスアカウントに GA4 の閲覧権限があるか確認してください）' : '';
@@ -217,26 +227,20 @@ export async function loginPopupStats(site: SiteKey, from: string, to: string): 
   const cached = popupCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
-  const token = await accessToken();
   const report = async (dimensions: { name: string }[]) => {
-    const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        dateRanges: [{ startDate: from, endDate: to }],
-        dimensions,
-        metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
-        dimensionFilter: {
-          andGroup: {
-            expressions: [
-              { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
-              { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'login_popup_view' } } },
-            ],
-          },
+    const res = await runReport(propertyId, {
+      dateRanges: [{ startDate: from, endDate: to }],
+      dimensions,
+      metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
+      dimensionFilter: {
+        andGroup: {
+          expressions: [
+            { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
+            { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'login_popup_view' } } },
+          ],
         },
-        limit: 1000,
-      }),
-      cache: 'no-store',
+      },
+      limit: 1000,
     });
     if (!res.ok) throw new Error(`GA4 から取得できませんでした（status ${res.status}）`);
     const data = (await res.json()) as {

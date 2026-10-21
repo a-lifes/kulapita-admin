@@ -9,6 +9,7 @@ import { DateRangeFilter } from './DateRangeFilter';
 import { canChooseSite, resolveSite, SITES, topPageViews } from '@/lib/ga4';
 import { addDays, addMonths, jstStartAsUtc, monthStartJst, rangePresets, resolveRange, todayJst } from '@/lib/dateRange';
 import { CompareBadge } from './CompareBadge';
+import { getAllCampaigns } from '@/lib/microcms';
 
 export const metadata: Metadata = { title: 'ダッシュボード' };
 
@@ -63,8 +64,9 @@ export default async function DashboardPage({
       { start: monthStart },
     ),
     query<{ campaign_key: string; total: number }>(
+      // 応募はキャンペーンの ID で記録しているので、最初の応募が新しい順に直近 2 回分を取る
       `SELECT campaign_key, COUNT(*) AS total FROM present_applications
-       GROUP BY campaign_key ORDER BY campaign_key DESC LIMIT 2`,
+       GROUP BY campaign_key ORDER BY MIN(created_at) DESC LIMIT 2`,
     ),
     dailyCounts(range.from, range.to, site),
     // 今日・昨日のトップページ表示回数 (GA4。取得できなければ null)
@@ -102,6 +104,10 @@ export default async function DashboardPage({
     compare?: { label: string; base: number | null; note: string };
   };
   const prevMonthNote = `前月の同じ期間（${prevMonthFrom.slice(5).replace('-', '/')}〜${prevMonthTo.slice(5).replace('-', '/')}）`;
+  // キャンペーンの名前 (slug または開催月)。microCMS から取れなければ ID のまま出す
+  const cmsCampaigns = p.length ? (await getAllCampaigns()).campaigns : null;
+  const campaignLabel = (key: string) => cmsCampaigns?.get(key)?.label ?? key;
+
   const cards: Card[] = [
     {
       title: 'トップページ表示回数（今日）',
@@ -133,12 +139,12 @@ export default async function DashboardPage({
       compare: { label: '前月比', base: Number(nPrev[0]?.total ?? 0), note: prevMonthNote },
     },
     {
-      title: p[0] ? `プレゼント（${p[0].campaign_key}）` : 'プレゼント',
+      title: p[0] ? `プレゼント（${campaignLabel(p[0].campaign_key)}）` : 'プレゼント',
       value: Number(p[0]?.total ?? 0),
       unit: '件',
       href: p[0] ? `/presents?campaign=${encodeURIComponent(p[0].campaign_key)}` : '/presents',
       compare: p[1]
-        ? { label: '前月比', base: Number(p[1].total), note: `前回の開催月（${p[1].campaign_key}）の応募数` }
+        ? { label: '前月比', base: Number(p[1].total), note: `前回の開催月（${campaignLabel(p[1].campaign_key)}）の応募数` }
         : undefined,
     },
   ];

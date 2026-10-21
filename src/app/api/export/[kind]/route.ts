@@ -23,6 +23,7 @@ import { memberWhere, normalizeMemberFilter } from '@/lib/queries/members';
 import { dailyCounts } from '@/lib/dailyCounts';
 import { resolveSite, SITES } from '@/lib/ga4';
 import { pageStats } from '@/lib/pageviewStats';
+import { getAllCampaigns } from '@/lib/microcms';
 import {
   newsletterWhere,
   normalizeNewsletterFilter,
@@ -78,7 +79,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const range = resolveRange(sp, 'thisMonth');
     const site = resolveSite(sp.site);
     const needle = sp.q?.trim().toLowerCase();
-    const rows = (await pageStats(site, range.from, range.to)).rows.filter(
+    let stats: Awaited<ReturnType<typeof pageStats>>;
+    try {
+      stats = await pageStats(site, range.from, range.to);
+    } catch (e) {
+      // GA4 に問い合わせできないときは、理由の分かるメッセージを返す (汎用の 500 にしない)
+      console.error('[export] ページ別表示回数を取得できませんでした', e instanceof Error ? e.message : e);
+      return new Response('GA4 から取得できなかったため、CSV を作成できませんでした。時間をおいてもう一度お試しください。', {
+        status: 503,
+        headers: { 'content-type': 'text/plain; charset=utf-8' },
+      });
+    }
+    const rows = stats.rows.filter(
       (r) => !needle || r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle),
     );
     await writeAudit({ admin: viewer, action: 'export.pageviews', diff: { from: range.from, to: range.to, site, q: needle } });
@@ -240,8 +252,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
       where.params,
     );
     await writeAudit({ admin, action: 'export.presents', diff: { filter, rows: rows.length } });
+    // キャンペーンは ID で記録しているので、microCMS の名前 (slug または開催月) に直して出す
+    const cmsCampaigns = (await getAllCampaigns()).campaigns;
+    const campaignLabel = (key: string) => cmsCampaigns?.get(key)?.label ?? key;
     // ファイル名: プレゼント_{キャンペーンの年月 yyyymm}_{出力日時 yyyymmddhhmm}.csv
-    const month = filter.campaign ? filter.campaign.replace(/[^0-9A-Za-z]/g, '') : '全キャンペーン';
+    const month = filter.campaign ? campaignLabel(filter.campaign).replace(/[^0-9A-Za-z]/g, '') : '全キャンペーン';
     return csvResponse(
       `プレゼント_${month}_${stamp()}.csv`,
       toCsv(
@@ -251,7 +266,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
         rows.map((r) => {
           const m = memberFromRow(r);
           return [
-            r.campaign_key, Number(r.item_index) + 1, r.item_name, label(PRESENT_STATUS_LABEL, r.status),
+            campaignLabel(String(r.campaign_key)), Number(r.item_index) + 1, r.item_name, label(PRESENT_STATUS_LABEL, r.status),
             formatJst(r.created_at), r.email,
             m?.external_id, m?.display_name, m?.email, m?.phone, m?.zipcode, m?.prefecture, m?.city, m?.building,
             formatJst(m?.profile_updated_at),

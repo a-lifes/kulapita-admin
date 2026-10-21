@@ -36,7 +36,8 @@ export type PresentFilter = {
 };
 
 export function normalizePresentFilter(sp: Record<string, string | undefined>): PresentFilter {
-  const campaign = sp.campaign && /^[A-Za-z0-9_-]{1,32}$/.test(sp.campaign) ? sp.campaign : undefined;
+  // キャンペーンは microCMS のコンテンツ ID (応募の記録と同じ形: 半角英数字・ハイフン・アンダースコアで 64 文字まで)
+  const campaign = sp.campaign && /^[A-Za-z0-9_-]{1,64}$/.test(sp.campaign) ? sp.campaign : undefined;
   return {
     campaign,
     campaignInvalid: Boolean(sp.campaign) && !campaign ? true : undefined,

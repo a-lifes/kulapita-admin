@@ -13,7 +13,7 @@ export function PresentFilters({
   itemsByCampaign,
   initial,
 }: {
-  campaigns: string[];
+  campaigns: { key: string; label: string }[];
   itemsByCampaign: Record<string, { index: number; name: string }[]>;
   initial: { campaign: string; item?: string; status?: string; q?: string };
 }) {
@@ -36,7 +36,7 @@ export function PresentFilters({
           }}
         >
           {campaigns.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c.key} value={c.key}>{c.label}</option>
           ))}
         </select>
       </div>
