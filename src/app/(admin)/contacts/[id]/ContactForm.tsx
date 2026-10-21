@@ -15,6 +15,8 @@ export function ContactForm({
   readOnly,
   action: save = updateContactAction,
   onSaved,
+  statuses = STATUSES,
+  labels = CONTACT_STATUS_LABEL,
 }: {
   id: string;
   status: string;
@@ -26,6 +28,9 @@ export function ContactForm({
   action?: (id: string, prev: ContactFormState, formData: FormData) => Promise<ContactFormState>;
   /** 保存できたときに呼ぶ */
   onSaved?: () => void;
+  /** 対応状況の選択肢 (申し込みは「成約」「失注」があり「アーカイブ」が無い) */
+  statuses?: readonly string[];
+  labels?: Record<string, string>;
 }) {
   const [state, action, pending] = useActionState<ContactFormState, FormData>(
     save.bind(null, id),
@@ -41,8 +46,8 @@ export function ContactForm({
       <div>
         <label className="label" htmlFor="status">対応状況</label>
         <select className="input" id="status" name="status" defaultValue={status} disabled={readOnly}>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{CONTACT_STATUS_LABEL[s]}</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>{labels[s] ?? s}</option>
           ))}
         </select>
       </div>

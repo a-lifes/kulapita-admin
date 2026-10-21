@@ -5,6 +5,7 @@ import { csvResponse, toCsv } from '@/lib/csv';
 import { query } from '@/lib/db';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import {
+  APPLICATION_STATUS_LABEL,
   CONTACT_STATUS_LABEL,
   formatJst,
   label,
@@ -158,7 +159,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
           '対応メモ', '対応完了日時'],
         rows.map((r) => [
           r.reception_number, formatJst(r.created_at), r.service_name, r.service_company, r.service_url,
-          label(CONTACT_STATUS_LABEL, r.status), r.assignee, r.member_id, r.name, r.zipcode, r.prefecture, r.city,
+          label(APPLICATION_STATUS_LABEL, r.status), r.assignee, r.member_id, r.name, r.zipcode, r.prefecture, r.city,
           r.building, r.phone, r.email, r.message, r.admin_notes, formatJst(r.responded_at),
         ]),
       ),

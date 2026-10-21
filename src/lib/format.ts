@@ -29,6 +29,19 @@ export const CONTACT_STATUS_LABEL: Record<string, string> = {
   archived: 'アーカイブ',
 };
 
+/**
+ * コンバージョン（申し込み）の対応状況。お問い合わせと違い「成約」「失注」がある (「アーカイブ」は無い)。
+ * ※ DB (service_applications.status) の値と同じ。migrations/0009 を参照
+ */
+export const APPLICATION_STATUSES = ['pending', 'in_progress', 'completed', 'contracted', 'lost'] as const;
+export const APPLICATION_STATUS_LABEL: Record<string, string> = {
+  pending: '未対応',
+  in_progress: '対応中',
+  completed: '対応済み',
+  contracted: '成約',
+  lost: '失注',
+};
+
 export const CONTACT_ROUTE_LABEL: Record<string, string> = {
   inquiry: '一般のお問い合わせ',
   publish: 'サービス掲載',

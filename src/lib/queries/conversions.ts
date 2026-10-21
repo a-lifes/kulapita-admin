@@ -1,7 +1,7 @@
 import 'server-only';
 import { likeEscape, Params } from '../db';
 import { addDays, DateRange, jstStartAsUtc } from '../dateRange';
-import { CASE_STATUSES } from '../caseStatus';
+import { APPLICATION_STATUSES } from '../format';
 
 /* ── コンバージョン（申し込み）: service_applications ── */
 
@@ -9,7 +9,7 @@ export type ApplicationFilter = { status?: string; service?: string; q?: string 
 
 export function normalizeApplicationFilter(sp: Record<string, string | undefined>): ApplicationFilter {
   return {
-    status: CASE_STATUSES.includes(sp.status as never) ? sp.status : undefined,
+    status: APPLICATION_STATUSES.includes(sp.status as never) ? sp.status : undefined,
     service: sp.service?.trim().slice(0, 200) || undefined,
     q: sp.q?.trim().slice(0, 100) || undefined,
   };

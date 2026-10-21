@@ -6,9 +6,9 @@ import { SortableTh } from '@/components/SortableTh';
 import { StatusBadge } from '@/components/StatusBadge';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
-import { CASE_COLUMN_WIDTH, CASE_STATUSES } from '@/lib/caseStatus';
+import { CASE_COLUMN_WIDTH } from '@/lib/caseStatus';
 import { query } from '@/lib/db';
-import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
+import { APPLICATION_STATUS_LABEL, APPLICATION_STATUSES, formatJst, label } from '@/lib/format';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
 import { applicationWhere, normalizeApplicationFilter } from '@/lib/queries/conversions';
 import { orderBySql, resolveSort, SortColumn } from '@/lib/sort';
@@ -26,7 +26,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
   company: { sql: 's.service_company' },
   name: { sql: 's.name' },
   member: { sql: 'COALESCE(u.display_name, u.external_id)' },
-  status: { sql: "FIELD(s.status, 'pending', 'in_progress', 'completed', 'archived')" },
+  status: { sql: "FIELD(s.status, 'pending', 'in_progress', 'completed', 'contracted', 'lost')" },
   assignee: { sql: 'a.display_name' },
 };
 
@@ -94,8 +94,8 @@ export default async function ApplicationsPage({
           <label className="label" htmlFor="status">対応状況</label>
           <select className="input" id="status" name="status" defaultValue={filter.status ?? ''}>
             <option value="">すべて</option>
-            {CASE_STATUSES.map((s) => (
-              <option key={s} value={s}>{CONTACT_STATUS_LABEL[s]}</option>
+            {APPLICATION_STATUSES.map((s) => (
+              <option key={s} value={s}>{APPLICATION_STATUS_LABEL[s]}</option>
             ))}
           </select>
         </div>
@@ -115,7 +115,7 @@ export default async function ApplicationsPage({
         <SearchButton />
         <ClearButton href="/applications" />
       </SearchForm>
-      <ActiveFilters basePath="/applications" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'status', label: '対応状況', value: filter.status ? CONTACT_STATUS_LABEL[filter.status] : '' }, { key: 'service', label: 'サービス', value: filter.service ?? '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
+      <ActiveFilters basePath="/applications" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'status', label: '対応状況', value: filter.status ? APPLICATION_STATUS_LABEL[filter.status] : '' }, { key: 'service', label: 'サービス', value: filter.service ?? '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
 
       <div className="card table-scroll">
         <table className="table">
@@ -142,7 +142,7 @@ export default async function ApplicationsPage({
                       {r.reception_number}
                     </a>
                   </td>
-                  <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
+                  <td><StatusBadge value={r.status} text={label(APPLICATION_STATUS_LABEL, r.status)} /></td>
                   <td className="max-w-64 truncate" title={r.service_name ?? undefined}>{r.service_name ?? '—'}</td>
                   <td className="max-w-56 truncate" title={r.service_company ?? undefined}>{r.service_company ?? '—'}</td>
                   <td>{r.name}</td>

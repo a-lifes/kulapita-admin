@@ -2,6 +2,7 @@ import { ContactForm } from '@/app/(admin)/contacts/[id]/ContactForm';
 import { updateContactAction } from '@/app/(admin)/contacts/[id]/actions';
 import { updateApplicationAction } from '@/app/(admin)/applications/[id]/actions';
 import type { CaseDetailData } from '@/lib/caseDetail';
+import { APPLICATION_STATUS_LABEL, APPLICATION_STATUSES } from '@/lib/format';
 
 /**
  * お問い合わせ・申し込みの詳細の表示 (項目の一覧 + 対応状況のフォーム)。
@@ -54,6 +55,7 @@ export function CaseDetailView({
           readOnly={data.form.readOnly}
           action={data.kind === 'contact' ? updateContactAction : updateApplicationAction}
           onSaved={onSaved}
+          {...(data.kind === 'contact' ? {} : { statuses: APPLICATION_STATUSES, labels: APPLICATION_STATUS_LABEL })}
         />
       </div>
     </div>

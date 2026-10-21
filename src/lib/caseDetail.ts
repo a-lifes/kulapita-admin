@@ -2,7 +2,7 @@ import 'server-only';
 import { hasRole } from './adminUsers';
 import { requireAdmin } from './auth/guard';
 import { query, queryOne } from './db';
-import { CONTACT_STATUS_LABEL, formatJst, label } from './format';
+import { APPLICATION_STATUS_LABEL, CONTACT_STATUS_LABEL, formatJst, label } from './format';
 import { UUID_RE } from './uuid';
 
 /**
@@ -90,7 +90,7 @@ export async function loadCaseDetail(kind: CaseKind, id: string): Promise<CaseDe
     id,
     title: CASE_TITLE[kind],
     status: r.status ?? 'pending',
-    statusText: label(CONTACT_STATUS_LABEL, r.status),
+    statusText: label(kind === 'contact' ? CONTACT_STATUS_LABEL : APPLICATION_STATUS_LABEL, r.status),
     fields,
     form: {
       status: r.status ?? 'pending',

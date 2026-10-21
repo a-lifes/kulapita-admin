@@ -4,6 +4,7 @@ const DOT: Record<string, string> = {
   in_progress: 'bg-amber-500',
   completed: 'bg-emerald-500',
   archived: 'bg-slate-400',
+  contracted: 'bg-indigo-500',
   registered: 'bg-emerald-500',
   excluded: 'bg-amber-500',
   applied: 'bg-sky-500',

@@ -4,13 +4,17 @@ import { writeAudit } from './audit';
 import { requireAdmin } from './auth/guard';
 import { query, queryOne } from './db';
 import { UUID_RE } from './uuid';
+import { APPLICATION_STATUSES } from './format';
 
 /**
  * お問い合わせ・サービスの申し込みに共通の「対応状況・担当者・対応メモ」の更新。
  * (テーブル名は呼び出し元で固定の値だけを渡す)
  */
 export type CaseFormState = { error?: string; saved?: boolean } | undefined;
+/** お問い合わせの対応状況 (申し込みは format.ts の APPLICATION_STATUSES) */
 export const CASE_STATUSES = ['pending', 'in_progress', 'completed', 'archived'] as const;
+/** 対応が終わった状態 (対応完了日時を記録する) */
+const DONE_STATUSES = ['completed', 'contracted', 'lost'];
 
 /**
  * お問い合わせ・申し込みの一覧で、左の 3 列 (受付日時・受付番号・対応状況) を同じ固定幅にする。
@@ -37,7 +41,8 @@ export async function updateCaseStatus(input: {
   const status = String(formData.get('status') ?? '');
   const assignedTo = String(formData.get('assigned_to') ?? '') || null;
   const notes = String(formData.get('admin_notes') ?? '').slice(0, 5000);
-  if (!CASE_STATUSES.includes(status as never)) return { error: '対応状況が不正です' };
+  const allowed: readonly string[] = table === 'service_applications' ? APPLICATION_STATUSES : CASE_STATUSES;
+  if (!allowed.includes(status)) return { error: '対応状況が不正です' };
   if (assignedTo) {
     if (!UUID_RE.test(assignedTo)) return { error: '担当者が不正です' };
     const exists = await queryOne(
@@ -62,9 +67,9 @@ export async function updateCaseStatus(input: {
 
   await query(
     `UPDATE ${table} SET status = :status, assigned_to = :assignedTo, admin_notes = :notes,
-       responded_at = IF(:status = 'completed' AND responded_at IS NULL, UTC_TIMESTAMP(), responded_at)
+       responded_at = IF(:done AND responded_at IS NULL, UTC_TIMESTAMP(), responded_at)
      WHERE id = :id`,
-    { status, assignedTo, notes: notes || null, id },
+    { status, assignedTo, notes: notes || null, id, done: DONE_STATUSES.includes(status) },
   );
   await writeAudit({ admin, action: input.auditAction, targetType: input.targetType, targetId: id, diff });
   revalidatePath(input.detailPath);
