@@ -19,7 +19,7 @@ const CONDITIONS: { key: keyof DrawConditions; label: string; note: string }[] =
 ];
 
 /**
- * プレゼント一覧の「自動当選」。条件を選んで抽選 → 結果を確認 → 反映 (当選・残りは落選)。
+ * プレゼント一覧の「自動抽選」。条件を選んで抽選 → 結果を確認 → 反映 (当選・残りは落選)。
  * disabledReason があるとき (応募数が当選者数に満たない景品があるなど) は押せない。
  */
 export function AutoDrawButton({
@@ -125,7 +125,7 @@ export function AutoDrawButton({
           setOpen(true);
         }}
       >
-        自動当選
+        自動抽選
       </button>
       <button
         type="button"
@@ -137,7 +137,7 @@ export function AutoDrawButton({
         初期化
       </button>
       {disabledReason && (
-        <InfoDialog open={reasonOpen} onClose={() => setReasonOpen(false)} title="自動当選は使えません">
+        <InfoDialog open={reasonOpen} onClose={() => setReasonOpen(false)} title="自動抽選は使えません">
           <p>{disabledReason.message}</p>
           {disabledReason.items && disabledReason.items.length > 0 && (
             <ul className="mt-3 list-disc space-y-1.5 pl-5">
@@ -158,7 +158,7 @@ export function AutoDrawButton({
       >
         {open && (
           <div className="p-6">
-            <h2 className="text-base font-bold text-slate-900">自動当選</h2>
+            <h2 className="text-base font-bold text-slate-900">自動抽選</h2>
             <p className="mt-1 mb-4 text-sm text-slate-500">
               条件をもとにランダムで自動抽選します。
               <br />
