@@ -5,7 +5,7 @@ import { createContext, Fragment, useContext, useEffect, useRef, useState, useTr
 import { CollapseHeader, useCollapsed } from './Collapsible';
 
 /**
- * 絞り込みエリアのフォーム。「絞り込む」ボタンや Enter キーで検索している間、
+ * 絞り込みエリアのフォーム。「絞込み」ボタンや Enter キーで検索している間、
  * 画面にローディングを出して、検索が動いていることが分かるようにする。
  *
  *   <SearchForm className="card …">
@@ -87,7 +87,7 @@ export function SearchForm({
       {collapsible ? (
         <div className="card mb-4">
           <CollapseHeader
-            title="絞り込み"
+            title="絞込み"
             collapsed={collapsed}
             onToggle={() => setCollapsed(!collapsed)}
             controls="search-area"
@@ -107,11 +107,11 @@ export function useSearchNavigate() {
   return useContext(SearchContext);
 }
 
-/** 「絞り込む」ボタン (検索中は「検索中…」とくるくる回るマーク) */
-export function SearchButton({ label = '絞り込む' }: { label?: string }) {
+/** 「絞込み」ボタン (検索中は「検索中…」とくるくる回るマーク) */
+export function SearchButton({ label = '絞込み' }: { label?: string }) {
   const { pending } = useContext(SearchContext);
   return (
-    <button className="btn min-w-24" disabled={pending}>
+    <button className="btn min-w-20 px-3" disabled={pending}>
       {pending ? (
         <>
           <Spinner className="h-4 w-4" />
@@ -128,7 +128,7 @@ export function SearchButton({ label = '絞り込む' }: { label?: string }) {
 export function ClearButton({ href }: { href: string }) {
   const { pending, clear } = useContext(SearchContext);
   return (
-    <button type="button" className="btn-sub min-w-24" disabled={pending} onClick={() => clear(href)}>
+    <button type="button" className="btn-sub min-w-20 px-3" disabled={pending} onClick={() => clear(href)}>
       クリア
     </button>
   );

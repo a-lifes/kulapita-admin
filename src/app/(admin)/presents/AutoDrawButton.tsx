@@ -113,7 +113,7 @@ export function AutoDrawButton({
       {/* 使えないときも押せるようにして、押したら理由を説明のポップアップで出す */}
       <button
         type="button"
-        className={`btn min-w-24 ${disabledReason ? 'opacity-50' : ''}`}
+        className={`btn min-w-20 px-3 ${disabledReason ? 'opacity-50' : ''}`}
         aria-haspopup="dialog"
         onClick={() => {
           if (disabledReason) {
@@ -129,7 +129,7 @@ export function AutoDrawButton({
       </button>
       <button
         type="button"
-        className="btn-sub ml-2 min-w-24"
+        className="btn-sub ml-2 min-w-20 px-3"
         disabled={decidedCount === 0 || pending}
         title={decidedCount === 0 ? '当選・落選にしている応募はありません' : '当選・落選をすべて「応募中」に戻します'}
         onClick={reset}
