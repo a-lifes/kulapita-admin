@@ -19,7 +19,7 @@ const CONDITIONS: { key: keyof DrawConditions; label: string; note: string }[] =
 ];
 
 /**
- * プレゼント一覧の「自動抽選」。条件を選んで抽選 → 結果を確認 → 反映 (当選・残りは落選)。
+ * プレゼント一覧の「抽選」。条件を選んで抽選 → 結果を確認 → 反映 (当選・残りは落選)。
  * disabledReason があるとき (応募数が当選者数に満たない景品があるなど) は押せない。
  */
 export function AutoDrawButton({
@@ -125,7 +125,8 @@ export function AutoDrawButton({
           setOpen(true);
         }}
       >
-        自動抽選
+        <icons.dice className="h-4 w-4" />
+        抽選
       </button>
       <button
         type="button"
@@ -134,10 +135,11 @@ export function AutoDrawButton({
         title={decidedCount === 0 ? '当選・落選にしている応募はありません' : '当選・落選をすべて「応募中」に戻します'}
         onClick={reset}
       >
+        <icons.reset className="h-4 w-4" />
         初期化
       </button>
       {disabledReason && (
-        <InfoDialog open={reasonOpen} onClose={() => setReasonOpen(false)} title="自動抽選は使えません">
+        <InfoDialog open={reasonOpen} onClose={() => setReasonOpen(false)} title="抽選は使えません">
           <p>{disabledReason.message}</p>
           {disabledReason.items && disabledReason.items.length > 0 && (
             <ul className="mt-3 list-disc space-y-1.5 pl-5">
@@ -158,7 +160,7 @@ export function AutoDrawButton({
       >
         {open && (
           <div className="p-6">
-            <h2 className="text-base font-bold text-slate-900">自動抽選</h2>
+            <h2 className="text-base font-bold text-slate-900">抽選</h2>
             <p className="mt-1 mb-4 text-sm text-slate-500">
               条件をもとにランダムで自動抽選します。
               <br />

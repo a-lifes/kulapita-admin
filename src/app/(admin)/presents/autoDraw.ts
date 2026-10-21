@@ -9,7 +9,7 @@ import { getCampaignItems } from '@/lib/microcms';
 import { UUID_RE } from '@/lib/uuid';
 
 /**
- * プレゼントの自動抽選 (抽選)。
+ * プレゼントの抽選 (抽選)。
  *
  * 1. previewAutoDrawAction … 条件に合わせて景品ごとに当選者を選び、結果を返すだけ (DB は変えない)
  * 2. applyAutoDrawAction   … 画面で確認した結果を反映する。当選者を「当選」、残りの応募中を「落選」にする
@@ -75,9 +75,9 @@ export async function previewAutoDrawAction(campaign: string, conditions: DrawCo
   const cond = { frequent: !!conditions.frequent, excludePast: !!conditions.excludePast };
 
   const { items, error } = await getCampaignItems(campaign);
-  if (!items) return { ok: false, error: `当選者数がわからないため自動抽選できません（${error ?? ''}）` };
+  if (!items) return { ok: false, error: `当選者数がわからないため抽選できません（${error ?? ''}）` };
   if (items.some((i) => i.winners === null)) {
-    return { ok: false, error: '当選者数が設定されていない景品があるため、自動抽選できません' };
+    return { ok: false, error: '当選者数が設定されていない景品があるため、抽選できません' };
   }
 
   const [{ rows: apps }, { rows: past }] = await Promise.all([
@@ -105,7 +105,7 @@ export async function previewAutoDrawAction(campaign: string, conditions: DrawCo
   if (short.length > 0) {
     return {
       ok: false,
-      error: `応募数が当選者数に満たない景品があるため、自動抽選は使えません（${short
+      error: `応募数が当選者数に満たない景品があるため、抽選は使えません（${short
         .map((x) => `${x.index + 1}. ${x.item.name}：応募 ${x.count} 件 / 当選者数 ${x.item.winners} 名`)
         .join('、')}）`,
     };
@@ -243,7 +243,7 @@ export type DrawResetResult = { ok: true; reset: number } | { ok: false; error: 
 
 /**
  * 初期化: このキャンペーンの応募の結果 (当選・落選) をすべて「応募中」に戻す。
- * 自動抽選をやり直したいときなどに使う。当選メールの送信記録 (notified_at) は消さない。
+ * 抽選をやり直したいときなどに使う。当選メールの送信記録 (notified_at) は消さない。
  */
 export async function resetDrawAction(campaign: string): Promise<DrawResetResult> {
   const admin = await requireAdmin('support');
@@ -251,7 +251,7 @@ export async function resetDrawAction(campaign: string): Promise<DrawResetResult
   let reset: number;
   try {
     reset = await withTransaction(async (tx) => {
-      // 当選の操作と重ならないよう、自動抽選・当選と同じくロックしてから戻す
+      // 当選の操作と重ならないよう、抽選・当選と同じくロックしてから戻す
       await tx.query('SELECT id FROM present_applications WHERE campaign_key = :campaign ORDER BY id FOR UPDATE', {
         campaign,
       });

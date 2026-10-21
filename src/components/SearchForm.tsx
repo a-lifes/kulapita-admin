@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, Fragment, useContext, useEffect, useRef, useState, useTransition } from 'react';
 import { CollapseHeader, useCollapsed } from './Collapsible';
+import { icons } from './icons';
 
 /**
  * 絞り込みエリアのフォーム。「絞込み」ボタンや Enter キーで検索している間、
@@ -108,7 +109,15 @@ export function useSearchNavigate() {
 }
 
 /** 「絞込み」ボタン (検索中は「検索中…」とくるくる回るマーク) */
-export function SearchButton({ label = '絞込み' }: { label?: string }) {
+export function SearchButton({
+  label = '絞込み',
+  icon = 'filter',
+}: {
+  label?: string;
+  /** 文字の左に出すアイコン (icons の名前) */
+  icon?: 'filter' | 'eye';
+}) {
+  const Icon = icons[icon];
   const { pending } = useContext(SearchContext);
   return (
     <button className="btn min-w-20 px-3" disabled={pending}>
@@ -118,7 +127,10 @@ export function SearchButton({ label = '絞込み' }: { label?: string }) {
           検索中…
         </>
       ) : (
-        label
+        <>
+          <Icon className="h-4 w-4" />
+          {label}
+        </>
       )}
     </button>
   );
@@ -129,6 +141,7 @@ export function ClearButton({ href }: { href: string }) {
   const { pending, clear } = useContext(SearchContext);
   return (
     <button type="button" className="btn-sub min-w-20 px-3" disabled={pending} onClick={() => clear(href)}>
+      <icons.close className="h-4 w-4" />
       クリア
     </button>
   );

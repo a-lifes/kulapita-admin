@@ -109,6 +109,39 @@ export const icons = {
       <path d="m20 20-3.5-3.5" />
     </Svg>
   ),
+  /** 絞込み (じょうご) */
+  filter: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 5h16l-6 7.5V19l-4 1.5v-8z" />
+    </Svg>
+  ),
+  /** クリア (×) */
+  close: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Svg>
+  ),
+  /** 抽選 (さいころ) */
+  dice: (p: IconProps) => (
+    <Svg {...p}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" strokeWidth={2.6} />
+    </Svg>
+  ),
+  /** 初期化 (左回りの矢印) */
+  reset: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+      <path d="M4 4v4.5h4.5" />
+    </Svg>
+  ),
+  /** 表示 (目) */
+  eye: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </Svg>
+  ),
   book: (p: IconProps) => (
     <Svg {...p}>
       <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" />

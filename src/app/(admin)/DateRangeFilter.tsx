@@ -37,7 +37,7 @@ export function DateRangeFilter({
       {children}
       {/* 「表示」ボタンと期間のボタンは上下中央でそろえる */}
       <div className="flex flex-wrap items-center gap-3">
-        <SearchButton label="表示" />
+        <SearchButton label="表示" icon="eye" />
         <div className="flex flex-wrap gap-2">
           {presets.map((p) => {
             const active = p.from === from && p.to === to;
