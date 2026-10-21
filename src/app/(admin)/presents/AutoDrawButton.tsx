@@ -15,7 +15,6 @@ import {
 
 const CONDITIONS: { key: keyof DrawConditions; label: string; note: string }[] = [
   { key: 'frequent', label: '応募回数が多い人の当選確率を上げる', note: 'これまでのキャンペーンへの応募が多いほど選ばれやすくなります' },
-  { key: 'early', label: '応募時期が早い人の当選確率を上げる', note: '最初の応募は最後の応募の約 2 倍選ばれやすくなります' },
   { key: 'excludePast', label: '過去に当選実績のある会員は除く', note: 'ほかのキャンペーンで当選したことがある会員は選びません' },
 ];
 
@@ -41,7 +40,7 @@ export function AutoDrawButton({
   const router = useRouter();
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
-  const [conditions, setConditions] = useState<DrawConditions>({ frequent: false, early: false, excludePast: false });
+  const [conditions, setConditions] = useState<DrawConditions>({ frequent: false, excludePast: false });
   const [plan, setPlan] = useState<{ items: DrawItemPlan[]; shortage: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

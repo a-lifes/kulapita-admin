@@ -16,14 +16,13 @@ import { UUID_RE } from '@/lib/uuid';
  *
  * 条件 (組み合わせ可):
  *   frequent    … 応募回数が多い人の当選確率を上げる (このキャンペーン以外への応募 1 回ごとに重みを +1)
- *   early       … 応募時期が早い人の当選確率を上げる (その景品で 1 番目の応募は重み 2 倍、最後は 1 倍)
  *   excludePast … 過去に当選した会員は除く (このキャンペーン以外で当選したことがある会員)
  * 重み付きの抽選は、重みに比例して選ばれやすくする (重みが 2 倍なら選ばれる確率もおよそ 2 倍)。
  *
  * 景品ごとに「応募数が当選者数に満たない」ときは使えない (全員当選で抽選の必要がないため)。
  * すでに当選にしている応募はそのまま残し、当選者数の残りの枠だけを選ぶ。
  */
-export type DrawConditions = { frequent: boolean; early: boolean; excludePast: boolean };
+export type DrawConditions = { frequent: boolean; excludePast: boolean };
 
 export type DrawWinner = { id: string; name: string; memberId: string | null; appliedAt: string; pastApplied: number; pastWon: number };
 export type DrawItemPlan = {
@@ -73,7 +72,7 @@ const CAMPAIGN_RE = /^[A-Za-z0-9_-]{1,64}$/;
 export async function previewAutoDrawAction(campaign: string, conditions: DrawConditions): Promise<DrawPreview> {
   await requireAdmin('support');
   if (!CAMPAIGN_RE.test(campaign)) return { ok: false, error: 'キャンペーンの指定が不正です' };
-  const cond = { frequent: !!conditions.frequent, early: !!conditions.early, excludePast: !!conditions.excludePast };
+  const cond = { frequent: !!conditions.frequent, excludePast: !!conditions.excludePast };
 
   const { items, error } = await getCampaignItems(campaign);
   if (!items) return { ok: false, error: `当選者数がわからないため自動当選できません（${error ?? ''}）` };
@@ -120,13 +119,9 @@ export async function previewAutoDrawAction(campaign: string, conditions: DrawCo
     const open = all.filter((a) => a.status === 'applied');
     const eligible = cond.excludePast ? open.filter((a) => !(a.user_id && (pastByUser.get(a.user_id)?.won ?? 0) > 0)) : open;
     const slots = Math.max(0, (item.winners ?? 0) - alreadyWon);
-    // 応募が早い順の順位 (0 始まり)。この景品の応募全体の中での順番
-    const rank = new Map(all.map((a, i) => [a.id, i]));
-    const last = Math.max(1, all.length - 1);
     const weighted = eligible.map((a) => {
       let weight = 1;
       if (cond.frequent) weight *= 1 + (a.user_id ? (pastByUser.get(a.user_id)?.applied ?? 0) : 0);
-      if (cond.early) weight *= 2 - (rank.get(a.id) ?? last) / last;
       return { value: a, weight };
     });
     const picked = weightedSample(weighted, slots);
@@ -234,7 +229,7 @@ export async function applyAutoDrawAction(
     targetType: 'present_campaign',
     diff: {
       campaign,
-      conditions: { frequent: !!conditions?.frequent, early: !!conditions?.early, excludePast: !!conditions?.excludePast },
+      conditions: { frequent: !!conditions?.frequent, excludePast: !!conditions?.excludePast },
       won: result.won,
       lost: result.lost,
       items: ordered.map((p) => ({ item: p.index + 1, won: p.winnerIds.length })),
