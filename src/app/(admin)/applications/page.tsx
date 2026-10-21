@@ -111,7 +111,7 @@ export default async function ApplicationsPage({
         </div>
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">受付番号・お名前・メール・電話</label>
-          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} />
+          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} placeholder="例）2TRVPA、山田、yamada@example.com、090-1234-5678" />
         </div>
         <SearchButton />
         <ClearButton href="/applications" />

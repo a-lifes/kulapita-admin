@@ -75,7 +75,7 @@ export default async function UsersPage({
       <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">表示名・メールアドレス</label>
-          <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} placeholder="表示名またはメールアドレスの一部を入力" />
+          <input className="input" id="q" name="q" defaultValue={sp.q ?? ''} placeholder="例）山田、yamada@example.com" />
         </div>
         <div>
           <label className="label" htmlFor="role">権限</label>

@@ -126,7 +126,7 @@ export default async function ClicksPage({
         </div>
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">サービス・会社・会員・誘導先</label>
-          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} />
+          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} placeholder="例）サマリーポケット、株式会社サマリー、山田、summary.jp" />
         </div>
         <SearchButton />
         <ClearButton href="/clicks" />

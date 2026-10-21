@@ -136,7 +136,7 @@ export default async function AuditLogsPage({
         </div>
         <div className="min-w-48 flex-1">
           <label className="label" htmlFor="q">操作アカウント</label>
-          <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="アカウント名またはメールアドレスの一部を入力" />
+          <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="例）山田、yamada@example.com" />
         </div>
         <div>
           <label className="label" htmlFor="action">操作</label>

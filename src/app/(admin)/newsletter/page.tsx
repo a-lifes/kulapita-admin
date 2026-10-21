@@ -85,7 +85,7 @@ export default async function NewsletterPage({
         </div>
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">メール・お名前</label>
-          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} />
+          <input className="input" id="q" name="q" defaultValue={filter.q ?? ''} placeholder="例）yamada@example.com、山田" />
         </div>
         <SearchButton />
         <ClearButton href="/newsletter" />

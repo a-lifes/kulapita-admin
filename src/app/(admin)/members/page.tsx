@@ -80,7 +80,7 @@ export default async function MembersPage({
         </div>
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">会員番号・名前・メール・電話</label>
-          <input className="input" id="q" name="q" defaultValue={q ?? ''} />
+          <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="例）山田、yamada@example.com、090-1234-5678" />
         </div>
         <SearchButton />
         <ClearButton href="/members" />

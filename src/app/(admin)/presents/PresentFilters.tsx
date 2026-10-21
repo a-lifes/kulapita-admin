@@ -68,7 +68,7 @@ export function PresentFilters({
       </div>
       <div className="min-w-64 flex-1">
         <label className="label" htmlFor="q">会員番号・名前・メール</label>
-        <input className="input" id="q" name="q" defaultValue={initial.q ?? ''} />
+        <input className="input" id="q" name="q" defaultValue={initial.q ?? ''} placeholder="例）山田、yamada@example.com" />
       </div>
       <SearchButton />
       <ClearButton href="/presents" />

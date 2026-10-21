@@ -98,7 +98,7 @@ export default async function PageViewsPage({
         )}
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">ページの URL・タイトル</label>
-          <input className="input" id="q" name="q" defaultValue={q ?? ''} />
+          <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="例）/service、/presents、プレゼント" />
         </div>
         <SearchButton />
         <ClearButton href="/pageviews" />

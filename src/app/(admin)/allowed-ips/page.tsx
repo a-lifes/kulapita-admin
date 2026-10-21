@@ -77,7 +77,7 @@ export default async function AllowedIpsPage({
       <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">IP アドレス・メモ</label>
-          <input className="input" id="q" name="q" defaultValue={q} placeholder="IP アドレスを入れると、その IP を含む範囲も表示します" />
+          <input className="input" id="q" name="q" defaultValue={q} placeholder="例）203.0.113.10、本社（IP を入れると、その IP を含む範囲も表示）" />
         </div>
         <SearchButton />
         <ClearButton href="/allowed-ips" />
