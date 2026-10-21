@@ -129,7 +129,7 @@ export function AutoDrawButton({
       </button>
       <button
         type="button"
-        className="btn-sub ml-2 min-w-20 px-3"
+        className="btn-sub ml-3 min-w-20 px-3"
         disabled={decidedCount === 0 || pending}
         title={decidedCount === 0 ? '当選・落選にしている応募はありません' : '当選・落選をすべて「応募中」に戻します'}
         onClick={reset}
