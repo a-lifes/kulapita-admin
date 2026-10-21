@@ -11,6 +11,7 @@ import { normalizePresentFilter, presentWhere } from '@/lib/queries/lists';
 import { PresentFilters } from './PresentFilters';
 import { StatusSelect } from '@/components/StatusSelect';
 import { ItemImage } from './ItemImage';
+import { AutoDrawButton } from './AutoDrawButton';
 import { BulkProvider, BulkStatusBar, RowCheckbox, SelectAllCheckbox } from '@/components/BulkStatus';
 import { formatJst, PRESENT_STATUS_LABEL, PRESENT_STATUS_STYLE } from '@/lib/format';
 import { setPresentStatusAction, setPresentStatusBulkAction } from './actions';
@@ -42,7 +43,7 @@ type Row = Record<string, unknown> & {
   created_at: string;
 };
 
-type SummaryRow = { campaign_key: string; item_index: number; item_name: string; total: number; won: number };
+type SummaryRow = { campaign_key: string; item_index: number; item_name: string; total: number; won: number; lost: number };
 
 export default async function PresentsPage({
   searchParams,
@@ -60,7 +61,8 @@ export default async function PresentsPage({
   // 応募は microCMS のコンテンツ ID (campaign_key) で記録しているので、キーは ID。画面には名前 (slug または yyyy-mm) を出す。
   const [{ rows: summary }, cmsAll] = await Promise.all([
     query<SummaryRow>(
-      `SELECT campaign_key, item_index, MAX(item_name) AS item_name, COUNT(*) AS total, SUM(status = 'won') AS won
+      `SELECT campaign_key, item_index, MAX(item_name) AS item_name, COUNT(*) AS total, SUM(status = 'won') AS won,
+              SUM(status = 'lost') AS lost
        FROM present_applications GROUP BY campaign_key, item_index
        ORDER BY campaign_key DESC, item_index LIMIT 500`,
     ),
@@ -136,8 +138,28 @@ export default async function PresentsPage({
   };
   const shownSummary = (campaign ? (itemsByCampaign[campaign] ?? []) : []).map((item) => {
     const counted = summary.find((s) => s.campaign_key === campaign && Number(s.item_index) === item.index);
-    return { item_index: item.index, item_name: item.name, total: Number(counted?.total ?? 0), won: Number(counted?.won ?? 0) };
+    return {
+      item_index: item.index,
+      item_name: item.name,
+      total: Number(counted?.total ?? 0),
+      won: Number(counted?.won ?? 0),
+      lost: Number(counted?.lost ?? 0),
+    };
   });
+
+  // 自動当選が使えない理由 (無ければ使える)。景品ごとに、応募数が当選者数に満たないものがあれば使えない
+  const autoDrawDisabledReason = (() => {
+    if (!campaign) return undefined;
+    if (!cms.items) return `当選者数がわからないため使えません（${cms.error ?? ''}）`;
+    if (cms.items.some((i) => i.winners === null)) return '当選者数が設定されていない景品があるため使えません';
+    const short = cms.items
+      .map((i, index) => ({ name: i.name, index, winners: i.winners ?? 0, total: shownSummary.find((s) => s.item_index === index)?.total ?? 0 }))
+      .filter((x) => x.total < x.winners);
+    return short.length > 0
+      ? `応募数が当選者数に満たない景品があるため使えません（${short.map((x) => `${x.index + 1}. ${x.name}：応募 ${x.total} 件 / ${x.winners} 名`).join('、')}）`
+      : undefined;
+  })();
+  const decidedCount = shownSummary.reduce((n, s) => n + s.won + s.lost, 0);
 
   // CSV は画面と同じ条件で出す (campaignInvalid のような内部の印は渡さない)
   const exportQuery = new URLSearchParams(
@@ -173,7 +195,19 @@ export default async function PresentsPage({
 
       {shownSummary.length > 0 && (
         <div className="card mb-4">
-          <h2 className="mb-3 text-sm font-bold">景品ごとの状況（{labelOf(campaign!)}）</h2>
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <h2 className="text-sm font-bold">景品ごとの状況</h2>
+            {canEdit && (
+              <div className="text-right">
+                <AutoDrawButton
+                  campaign={campaign!}
+                  campaignLabel={labelOf(campaign!)}
+                  disabledReason={autoDrawDisabledReason}
+                  decidedCount={decidedCount}
+                />
+              </div>
+            )}
+          </div>
           <ul className="flex flex-wrap gap-3 text-sm">
             {shownSummary.map((s) => {
               const winners = cms.items?.[Number(s.item_index)]?.winners ?? null;
