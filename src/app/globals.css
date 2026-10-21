@@ -123,10 +123,10 @@ body {
    * 白いボタン (btn-sub) は白いカードや画面の地色に埋もれないよう、薄い藍色の地と枠を付ける。
    */
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-md bg-btn px-4 py-2 text-sm font-semibold text-[#fff] hover:bg-btn-dark disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded bg-btn px-4 py-2 text-sm font-semibold text-[#fff] hover:bg-btn-dark disabled:opacity-50;
   }
   .btn-sub {
-    @apply inline-flex items-center justify-center gap-1 rounded-md border border-btn-sub-line bg-btn-sub px-4 py-2 text-sm font-semibold text-btn-sub-text hover:bg-btn-sub-hover disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded border border-btn-sub-line bg-btn-sub px-4 py-2 text-sm font-semibold text-btn-sub-text hover:bg-btn-sub-hover disabled:opacity-50;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-1 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50;
