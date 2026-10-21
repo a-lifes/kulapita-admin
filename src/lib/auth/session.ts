@@ -23,7 +23,11 @@ const cookieBase = {
   httpOnly: true,
   // 本番・dev は HTTPS。ローカル (http://localhost) でもログインできるよう開発時だけ外す
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  // lax: Chatwork やメールのリンクから開いたとき (ほかのサイトからの移動) もログイン状態のまま開けるようにする。
+  //   strict だと、ほかのサイトから来たときに Cookie が送られず、ログイン画面が出てしまう。
+  //   lax でも、ほかのサイトからの POST (書き換えの操作) には Cookie が送られないので、なりすましの操作は防げる
+  //   (サーバーアクションは Next.js が送信元も確かめている)
+  sameSite: 'lax' as const,
   path: '/',
 };
 
