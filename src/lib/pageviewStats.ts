@@ -3,6 +3,9 @@ import { addDays, jstStartAsUtc } from './dateRange';
 import { query } from './db';
 import { loginPopupStats, pageViewsByPath, PopupStat, SiteKey, SITES } from './ga4';
 
+/** ログインが必要なページ (サービス詳細・プレゼント詳細) のパス */
+const PROTECTED_PATH_RE = /^\/(service|presents)\/[^/]+\/?$/;
+
 /** ページ別表示回数の 1 行 (GA4 の表示回数 + ログインポップアップの表示回数・人数) */
 export type PageStatRow = {
   path: string;
@@ -42,11 +45,12 @@ export async function pageStats(site: SiteKey, from: string, to: string): Promis
     return { ...r, popupCount: p?.count ?? 0, popupUsers: p?.users ?? 0 };
   });
   // ログインが必要なページを直接開いた人は、そのページの表示回数が付かない (すぐ /login-required に移る) ため、
-  // ポップアップだけのページも行として足す
+  // ポップアップだけのページも行として足す。足すのはログインが必要なページ (サービス詳細・プレゼント詳細) だけ
+  // (GA4 のイベントは外から送ることもできるため、存在しないページの行を作らせない)
   if (popups) {
     const known = new Set(rows.map((r) => r.path));
     for (const [path, p] of popups.byPath) {
-      if (!known.has(path)) rows.push({ path, title: '', views: 0, users: 0, popupCount: p.count, popupUsers: p.users });
+      if (!known.has(path) && PROTECTED_PATH_RE.test(path)) rows.push({ path, title: '', views: 0, users: 0, popupCount: p.count, popupUsers: p.users });
     }
   }
   return { rows, popup: popups?.total ?? null, login: logins };

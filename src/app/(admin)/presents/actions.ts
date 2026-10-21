@@ -3,12 +3,28 @@
 import { revalidatePath } from 'next/cache';
 import { writeAudit } from '@/lib/audit';
 import { requireAdmin } from '@/lib/auth/guard';
-import { query, queryOne } from '@/lib/db';
+import { isLockConflictError, query, queryOne, Tx, withTransaction } from '@/lib/db';
 import { getCampaignItems } from '@/lib/microcms';
 import { PRESENT_STATUSES } from '@/lib/queries/lists';
 import { UUID_RE } from '@/lib/uuid';
 
 export type StatusResult = { ok: true; status: string } | { ok: false; error: string };
+
+const LOCK_CONFLICT_MESSAGE = 'ほかの人の操作と重なったため設定できませんでした。もう一度お試しください';
+
+/**
+ * その景品の応募をすべてロックして (SELECT ... FOR UPDATE)、指定した応募以外の当選数を返す。
+ * 同じ景品を同時に当選にしようとした人は、先の人の更新が終わるまで待たされるので、当選者数を超えない。
+ */
+async function lockAndCountWon(tx: Tx, campaign: string, item: number, exclude: Set<string>): Promise<number> {
+  const { rows } = await tx.query<{ id: string; status: string }>(
+    `SELECT id, status FROM present_applications
+     WHERE campaign_key = :campaign AND item_index = :item
+     ORDER BY id FOR UPDATE`,
+    { campaign, item },
+  );
+  return rows.filter((r) => r.status === 'won' && !exclude.has(r.id)).length;
+}
 
 /**
  * 応募の結果 (応募 / 当選 / 落選) を設定する。あとから何度でも変更できる。
@@ -34,18 +50,18 @@ export async function setPresentStatusAction(id: string, status: string): Promis
     if (winners === null || winners === undefined) {
       return { ok: false, error: `当選者数がわからないため当選にできません（${error ?? '景品に当選人数が設定されていません'}）` };
     }
-    // 「この応募以外の当選数 < 当選者数」のときだけ更新する (同時に操作されても超えないよう 1 文で判定)
-    // ※ MySQL は UPDATE 対象と同じ表をサブクエリで直接参照できないため、派生表で包む
-    ({ affected } = await query(
-      `UPDATE present_applications SET status = 'won'
-       WHERE id = :id AND (
-         SELECT n FROM (
-           SELECT COUNT(*) AS n FROM present_applications
-           WHERE campaign_key = :campaign AND item_index = :item AND status = 'won' AND id <> :id
-         ) AS t
-       ) < :winners`,
-      { id, campaign: app.campaign_key, item: itemIndex, winners },
-    ));
+    // 「この応募以外の当選数 < 当選者数」のときだけ更新する。
+    // 景品の応募をロックしてから数えるので、同時に操作されても当選者数を超えない
+    try {
+      affected = await withTransaction(async (tx) => {
+        const won = await lockAndCountWon(tx, app.campaign_key, itemIndex, new Set([id]));
+        if (won >= winners) return 0;
+        return (await tx.query("UPDATE present_applications SET status = 'won' WHERE id = :id", { id })).affected;
+      });
+    } catch (e) {
+      if (isLockConflictError(e)) return { ok: false, error: LOCK_CONFLICT_MESSAGE };
+      throw e;
+    }
     if (affected === 0) {
       return { ok: false, error: `この景品の当選者数（${winners} 名）に達しているため、これ以上当選にできません` };
     }
@@ -71,8 +87,10 @@ const BULK_MAX = 100;
 
 /**
  * 選んだ応募の結果をまとめて設定する。
- * 当選にするときは、景品ごとに「選んだ応募以外の当選数 + 新しく当選にする数」が当選者数を超えないか先に確かめ、
+ * 当選にするときは、景品ごとに「選んだ応募以外の当選数 + 新しく当選にする数」が当選者数を超えないか確かめ、
  * 超える景品が 1 つでもあれば何も更新しない。
+ * 確かめるのと更新するのは 1 つのトランザクションで行い、景品の応募をロックしてから数える
+ * (同時に操作されても当選者数を超えない)。
  */
 export async function setPresentStatusBulkAction(ids: string[], status: string): Promise<BulkResult> {
   const admin = await requireAdmin('support');
@@ -95,12 +113,18 @@ export async function setPresentStatusBulkAction(ids: string[], status: string):
   const targets = apps.filter((a) => a.status !== status);
   if (targets.length === 0) return { ok: true, updated: 0 };
 
+  const targetIds = targets.map((a) => a.id);
+  const targetParams: Record<string, string> = { status };
+  targets.forEach((a, i) => (targetParams[`t${i}`] = a.id));
+  const updateSql = `UPDATE present_applications SET status = :status WHERE id IN (${targets.map((_, i) => `:t${i}`).join(', ')})`;
+
+  let affected: number;
   if (status === 'won') {
-    // 景品ごとにまとめて当選者数を確かめる
-    const groups = new Map<string, { campaign: string; item: number; name: string; adding: number }>();
+    // 景品ごとにまとめて当選者数を確かめる (microCMS の当選者数はロックの前に取っておく)
+    const groups = new Map<string, { campaign: string; item: number; name: string; adding: number; winners: number }>();
     for (const a of targets) {
       const key = `${a.campaign_key}:${a.item_index}`;
-      const g = groups.get(key) ?? { campaign: a.campaign_key, item: Number(a.item_index), name: a.item_name, adding: 0 };
+      const g = groups.get(key) ?? { campaign: a.campaign_key, item: Number(a.item_index), name: a.item_name, adding: 0, winners: 0 };
       g.adding += 1;
       groups.set(key, g);
     }
@@ -115,27 +139,34 @@ export async function setPresentStatusBulkAction(ids: string[], status: string):
           error: `「${g.name}」の当選者数がわからないため当選にできません（${error ?? '景品に当選人数が設定されていません'}）`,
         };
       }
-      const current = await queryOne<{ n: number }>(
-        `SELECT COUNT(*) AS n FROM present_applications
-         WHERE campaign_key = :campaign AND item_index = :item AND status = 'won'`,
-        { campaign: g.campaign, item: g.item },
-      );
-      const won = Number(current?.n ?? 0);
-      if (won + g.adding > winners) {
-        return {
-          ok: false,
-          error: `「${g.name}」は当選者数 ${winners} 名に対して、すでに ${won} 名が当選です。あと ${Math.max(0, winners - won)} 名まで当選にできます（選択中 ${g.adding} 名）`,
-        };
-      }
+      g.winners = winners;
     }
-  }
 
-  const targetParams: Record<string, string> = { status };
-  targets.forEach((a, i) => (targetParams[`t${i}`] = a.id));
-  const { affected } = await query(
-    `UPDATE present_applications SET status = :status WHERE id IN (${targets.map((_, i) => `:t${i}`).join(', ')})`,
-    targetParams,
-  );
+    const exclude = new Set(targetIds);
+    let result: { error: string } | { affected: number };
+    try {
+      result = await withTransaction(async (tx) => {
+        // ロックする順番をそろえる (キャンペーン・景品の順)。順番が違うと、同時操作でお互いを待ち合って止まることがある
+        const ordered = [...groups.values()].sort((x, y) => x.campaign.localeCompare(y.campaign) || x.item - y.item);
+        for (const g of ordered) {
+          const won = await lockAndCountWon(tx, g.campaign, g.item, exclude);
+          if (won + g.adding > g.winners) {
+            return {
+              error: `「${g.name}」は当選者数 ${g.winners} 名に対して、すでに ${won} 名が当選です。あと ${Math.max(0, g.winners - won)} 名まで当選にできます（選択中 ${g.adding} 名）`,
+            };
+          }
+        }
+        return { affected: (await tx.query(updateSql, targetParams)).affected };
+      });
+    } catch (e) {
+      if (isLockConflictError(e)) return { ok: false, error: LOCK_CONFLICT_MESSAGE };
+      throw e;
+    }
+    if ('error' in result) return { ok: false, error: result.error };
+    affected = result.affected;
+  } else {
+    ({ affected } = await query(updateSql, targetParams));
+  }
 
   await writeAudit({
     admin,

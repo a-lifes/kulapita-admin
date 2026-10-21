@@ -1,7 +1,10 @@
 import {
+  BeginTransactionCommand,
+  CommitTransactionCommand,
   ExecuteStatementCommand,
   Field,
   RDSDataClient,
+  RollbackTransactionCommand,
   SqlParameter,
 } from '@aws-sdk/client-rds-data';
 
@@ -41,6 +44,10 @@ export async function query<T = Record<string, unknown>>(
   sql: string,
   params: Params = {},
 ): Promise<{ rows: T[]; affected: number }> {
+  return run<T>(sql, params);
+}
+
+async function run<T>(sql: string, params: Params, transactionId?: string): Promise<{ rows: T[]; affected: number }> {
   for (let attempt = 1; ; attempt++) {
     try {
       const res = await client.send(
@@ -49,6 +56,7 @@ export async function query<T = Record<string, unknown>>(
           sql,
           parameters: toSqlParameters(params),
           includeResultMetadata: true,
+          transactionId,
         }),
       );
       const cols = (res.columnMetadata ?? []).map((c) => c.label ?? c.name ?? '');
@@ -64,6 +72,47 @@ export async function query<T = Record<string, unknown>>(
       throw e;
     }
   }
+}
+
+export type Tx = {
+  query: <T = Record<string, unknown>>(sql: string, params?: Params) => Promise<{ rows: T[]; affected: number }>;
+};
+
+/**
+ * まとめて 1 つのトランザクションで実行する。fn が例外を投げたら全部取り消す (ロールバック)。
+ * SELECT ... FOR UPDATE で行をロックしてから数えて更新する、のように「確かめてから更新」を同時操作に強くするために使う。
+ */
+export async function withTransaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const { resourceArn, secretArn, database } = target();
+  let transactionId: string | undefined;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      ({ transactionId } = await client.send(new BeginTransactionCommand({ resourceArn, secretArn, database })));
+      break;
+    } catch (e) {
+      if ((e as { name?: string }).name === 'DatabaseResumingException' && attempt <= 10) {
+        await sleep(3000);
+        continue;
+      }
+      throw e;
+    }
+  }
+  if (!transactionId) throw new Error('トランザクションを開始できませんでした');
+  const id = transactionId;
+  try {
+    const result = await fn({ query: (sql, params = {}) => run(sql, params, id) });
+    await client.send(new CommitTransactionCommand({ resourceArn, secretArn, transactionId: id }));
+    return result;
+  } catch (e) {
+    await client.send(new RollbackTransactionCommand({ resourceArn, secretArn, transactionId: id })).catch(() => undefined);
+    throw e;
+  }
+}
+
+/** 同時に操作されてロックがぶつかった (デッドロック・ロック待ちの時間切れ) */
+export function isLockConflictError(e: unknown): boolean {
+  const message = (e as { message?: string }).message ?? '';
+  return message.includes('Deadlock') || message.includes('Lock wait timeout');
 }
 
 export async function queryOne<T = Record<string, unknown>>(
