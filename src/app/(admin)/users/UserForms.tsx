@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
-import { icons } from '@/components/icons';
+import { icons, spacedLabel } from '@/components/icons';
 import { toast } from '@/components/Toaster';
 import { ROLE_LABEL } from '@/lib/format';
 import {
@@ -190,7 +190,8 @@ export function CreateAdminButton() {
     <>
       <button
         type="button"
-        className="btn"
+        className="btn min-w-20 px-3"
+        aria-label="追加"
         onClick={() => {
           setError(null);
           setCreated(undefined);
@@ -198,7 +199,7 @@ export function CreateAdminButton() {
         }}
       >
         <icons.plus className="h-4 w-4" />
-        追加
+        {spacedLabel('追加')}
       </button>
       <Modal open={open} onClose={close}>
         {created?.tempPassword ? (

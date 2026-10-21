@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
-import { icons } from '@/components/icons';
+import { icons, spacedLabel } from '@/components/icons';
 import { toast } from '@/components/Toaster';
 import { addIpAction, deleteIpAction, resyncWafAction, updateIpAction } from './actions';
 
@@ -24,14 +24,15 @@ export function AddIpButton() {
     <>
       <button
         type="button"
-        className="btn"
+        className="btn min-w-20 px-3"
+        aria-label="追加"
         onClick={() => {
           setError(null);
           setOpen(true);
         }}
       >
         <icons.plus className="h-4 w-4" />
-        追加
+        {spacedLabel('追加')}
       </button>
       <dialog
         ref={ref}
