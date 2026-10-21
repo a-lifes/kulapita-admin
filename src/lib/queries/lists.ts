@@ -33,6 +33,8 @@ export type PresentFilter = {
   item?: string;
   status?: string;
   q?: string;
+  /** 会員番号 (external_id)。会員情報の「応募数」「当選数」から開いたとき。全キャンペーンを対象にする */
+  member?: string;
 };
 
 export function normalizePresentFilter(sp: Record<string, string | undefined>): PresentFilter {
@@ -45,6 +47,7 @@ export function normalizePresentFilter(sp: Record<string, string | undefined>): 
     item: campaign && sp.item && /^\d{1,2}$/.test(sp.item) ? sp.item : undefined,
     status: PRESENT_STATUSES.includes(sp.status as never) ? sp.status : undefined,
     q: sp.q?.trim().slice(0, 100) || undefined,
+    member: sp.member && /^[A-Za-z0-9_.@:-]{1,255}$/.test(sp.member) ? sp.member : undefined,
   };
 }
 
@@ -55,6 +58,10 @@ export function presentWhere(f: PresentFilter): { sql: string; params: Params } 
   if (f.campaign) {
     conds.push('p.campaign_key = :campaign');
     params.campaign = f.campaign;
+  }
+  if (f.member) {
+    conds.push('u.external_id = :member');
+    params.member = f.member;
   }
   if (f.item) {
     conds.push('p.item_index = :item');

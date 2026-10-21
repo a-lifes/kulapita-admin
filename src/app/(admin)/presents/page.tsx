@@ -33,6 +33,7 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
 
 type Row = Record<string, unknown> & {
   id: string;
+  user_id: string | null;
   campaign_key: string;
   item_index: number;
   item_name: string;
@@ -84,20 +85,23 @@ export default async function PresentsPage({
   );
 
   // 開催月は必ず 1 つに絞る (指定が無い・存在しないときは一番新しい月)。
-  // 名前 (slug・yyyy-mm) での指定も受け付ける (以前のリンクやダッシュボードから来たとき)
-  const campaign =
-    (sp.campaign && (campaigns.includes(sp.campaign) ? sp.campaign : campaigns.find((k) => labelOf(k) === sp.campaign))) ||
-    campaigns[0];
+  // 名前 (slug・yyyy-mm) での指定も受け付ける (以前のリンクやダッシュボードから来たとき)。
+  // ただし会員で絞り込んだとき (会員情報の「応募数」「当選数」から来たとき) は、開催月の指定が無ければ全キャンペーンを出す
+  const memberOnly = Boolean(normalizePresentFilter(sp).member) && !sp.campaign;
+  const campaign = memberOnly
+    ? undefined
+    : (sp.campaign && (campaigns.includes(sp.campaign) ? sp.campaign : campaigns.find((k) => labelOf(k) === sp.campaign))) ||
+      campaigns[0];
   const filter = normalizePresentFilter({ ...sp, campaign });
   const where = presentWhere(filter);
   const { campaignInvalid: _ci, ...filterParams } = filter;
   void _ci;
   const listParams = { ...filterParams, per: sp.per };
 
-  const [{ rows }, { rows: count }] = campaign
+  const [{ rows }, { rows: count }] = campaign || filter.member
     ? await Promise.all([
         query<Row>(
-          `SELECT p.id, p.campaign_key, p.item_index, p.item_name, p.email, p.status, p.created_at, ${MEMBER_COLUMNS}
+          `SELECT p.id, p.user_id, p.campaign_key, p.item_index, p.item_name, p.email, p.status, p.created_at, ${MEMBER_COLUMNS}
            FROM present_applications p LEFT JOIN users u ON u.id = p.user_id
            WHERE ${where.sql}
            ORDER BY ${orderBySql(SORT_COLUMNS, sort, 'p.id DESC')} LIMIT :limit OFFSET :offset`,
@@ -107,6 +111,22 @@ export default async function PresentsPage({
       ])
     : [{ rows: [] as Row[] }, { rows: [] as { total: number }[] }];
   const total = Number(count[0]?.total ?? 0);
+
+  // 表示中の会員ごとの、これまでのプレゼントの応募数・当選数 (全キャンペーン)。会員情報のモーダルに出す
+  const userIds = [...new Set(rows.map((r) => r.user_id).filter((v): v is string => Boolean(v)))];
+  const statsByUser = new Map<string, { applied: number; won: number }>();
+  if (userIds.length > 0) {
+    const userParams = Object.fromEntries(userIds.map((id, i) => [`u${i}`, id]));
+    const { rows: statRows } = await query<{ user_id: string; applied: number; won: number }>(
+      `SELECT user_id, COUNT(*) AS applied, SUM(status = 'won') AS won FROM present_applications
+       WHERE user_id IN (${userIds.map((_, i) => `:u${i}`).join(', ')}) GROUP BY user_id`,
+      userParams,
+    );
+    for (const r of statRows) statsByUser.set(r.user_id, { applied: Number(r.applied), won: Number(r.won ?? 0) });
+  }
+  const memberName = filter.member
+    ? (rows.map(memberFromRow).find((m) => m?.external_id === filter.member)?.display_name ?? filter.member)
+    : '';
 
   // 景品ごとの応募数・当選数・当選者数 (景品名・当選者数は microCMS、件数は DB)
   const cmsItems = campaign ? (cmsAll.campaigns?.get(campaign)?.items ?? null) : null;
@@ -130,7 +150,7 @@ export default async function PresentsPage({
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">プレゼント</h1>
-        {hasRole(admin.role, 'admin') && campaign && (
+        {hasRole(admin.role, 'admin') && (campaign || filter.member) && (
           <a className="btn-sub" href={`/api/export/presents?${exportQuery}`}>CSV ダウンロード</a>
         )}
       </div>
@@ -140,6 +160,7 @@ export default async function PresentsPage({
         basePath="/presents"
         params={{ ...listParams, sort: sp.sort, dir: sp.dir }}
         chips={[
+          { key: 'member', label: '会員', value: memberName },
           {
             key: 'item',
             label: '景品',
@@ -253,7 +274,11 @@ export default async function PresentsPage({
                       />
                     </td>
                     <td><RelTime value={r.created_at} /></td>
-                    <td>{Number(r.item_index) + 1}. {r.item_name}</td>
+                    <td>
+                      {/* 全キャンペーンを出しているとき (会員で絞り込んだとき) は、どの開催月の景品かも出す */}
+                      {!campaign && <span className="mr-1 text-slate-500">{labelOf(r.campaign_key)}</span>}
+                      {Number(r.item_index) + 1}. {r.item_name}
+                    </td>
                     <td>
                       {member ? (
                         <MemberButton
@@ -264,6 +289,14 @@ export default async function PresentsPage({
                             last_login_at: formatJst(member.last_login_at),
                             profile_updated_at: formatJst(member.profile_updated_at),
                           }}
+                          stats={(() => {
+                            const st = r.user_id ? statsByUser.get(r.user_id) : undefined;
+                            const base = `/presents?member=${encodeURIComponent(member.external_id)}`;
+                            return [
+                              { label: 'プレゼント応募数', value: st?.applied ?? 0, href: base, title: 'この会員の応募を表示する' },
+                              { label: 'プレゼント当選数', value: st?.won ?? 0, href: `${base}&status=won`, title: 'この会員の当選を表示する' },
+                            ];
+                          })()}
                         />
                       ) : (
                         '—'
@@ -275,7 +308,7 @@ export default async function PresentsPage({
                 );
               })}
               {rows.length === 0 && (
-                <tr><td colSpan={colCount} className="py-8 text-center text-slate-500">{filter.item || filter.status || filter.q ? '検索内容に一致するデータはありません。' : 'プレゼントの応募はまだありません。'}</td></tr>
+                <tr><td colSpan={colCount} className="py-8 text-center text-slate-500">{filter.item || filter.status || filter.q || filter.member ? '検索内容に一致するデータはありません。' : 'プレゼントの応募はまだありません。'}</td></tr>
               )}
             </tbody>
           </table>

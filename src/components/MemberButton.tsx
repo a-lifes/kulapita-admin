@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { type Member } from '@/lib/members';
 
@@ -7,15 +8,20 @@ import { type Member } from '@/lib/members';
  * 会員番号 (または label に渡した名前など) を押すと、会員情報をモーダルで表示する。
  * 会員一覧・申し込み・誘導・プレゼントで共通。
  */
+/** 会員情報に足して出す件数 (押すとその一覧へ移る)。例: プレゼントの応募数・当選数 */
+export type MemberLinkStat = { label: string; value: number; href: string; title?: string };
+
 export function MemberButton({
   member,
   formatted,
   label,
+  stats,
 }: {
   member: Member;
   formatted: Record<string, string>;
   /** ボタンに出す文字 (省略時は会員番号) */
   label?: string;
+  stats?: MemberLinkStat[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
@@ -69,6 +75,26 @@ export function MemberButton({
               </div>
             ))}
           </dl>
+          {stats && stats.length > 0 && (
+            <dl className="card mt-3 grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-sm">
+              {stats.map((s) => (
+                <div key={s.label} className="contents">
+                  <dt className="font-semibold text-slate-600">{s.label}</dt>
+                  <dd>
+                    {/* 押すと一覧へ移る (モーダルは閉じる) */}
+                    <Link
+                      href={s.href}
+                      title={s.title}
+                      className="font-semibold text-brand hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      {s.value.toLocaleString()} 件
+                    </Link>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <p className="mt-4 text-xs text-slate-500">※会員情報はログイン時に毎回最新情報に更新しています。</p>
           <div className="mt-6 text-right">
             <button type="button" className="btn-sub" onClick={() => setOpen(false)}>閉じる</button>
