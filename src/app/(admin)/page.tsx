@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { icons } from '@/components/icons';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/guard';
 import { query } from '@/lib/db';
@@ -193,8 +194,8 @@ export default async function DashboardPage({
           <>
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="font-bold">日ごとの件数</h2>
-              <a className="btn-sub" href={`/api/export/daily?from=${range.from}&to=${range.to}&site=${site}`}>
-                CSV ダウンロード
+              <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/daily?from=${range.from}&to=${range.to}&site=${site}`}>
+                <icons.fileDownload className="h-4 w-4" />ダウンロード
               </a>
             </div>
             <DateRangeFilter from={range.from} to={range.to} presets={presets} keep={{ site: canChooseSite() ? site : undefined }}>

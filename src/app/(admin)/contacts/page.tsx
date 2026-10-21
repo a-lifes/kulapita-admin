@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { icons } from '@/components/icons';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -78,8 +79,8 @@ export default async function ContactsPage({
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">お問い合わせ</h1>
         {hasRole(admin.role, 'admin') && (
-          <a className="btn-sub" href={`/api/export/contacts${exportQuery ? `?${exportQuery}` : ''}`}>
-            CSV ダウンロード
+          <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/contacts${exportQuery ? `?${exportQuery}` : ''}`}>
+            <icons.fileDownload className="h-4 w-4" />ダウンロード
           </a>
         )}
       </div>

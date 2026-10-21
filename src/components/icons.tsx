@@ -176,6 +176,14 @@ export const icons = {
       <path d="m6 9 6 6 6-6" />
     </Svg>
   ),
+  /** ファイル + 下向きの矢印 (CSV のダウンロード) */
+  fileDownload: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M12 11v6M9.5 14.5 12 17l2.5-2.5" />
+    </Svg>
+  ),
   key: (p: IconProps) => (
     <Svg {...p}>
       <circle cx="8" cy="15" r="4" />

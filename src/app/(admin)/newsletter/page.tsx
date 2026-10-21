@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { icons } from '@/components/icons';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { BulkProvider, BulkStatusBar, RowCheckbox, SelectAllCheckbox } from '@/components/BulkStatus';
 import { MemberButton } from '@/components/MemberButton';
@@ -69,7 +70,7 @@ export default async function NewsletterPage({
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">メルマガ</h1>
         {hasRole(admin.role, 'admin') && (
-          <a className="btn-sub" href={`/api/export/newsletter${exportQuery ? `?${exportQuery}` : ''}`}>CSV ダウンロード</a>
+          <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/newsletter${exportQuery ? `?${exportQuery}` : ''}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
       </div>
       <SearchForm collapsible className="card mb-4 flex flex-wrap items-end gap-3">

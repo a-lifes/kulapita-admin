@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { icons } from '@/components/icons';
 import { ActiveFilters } from '@/components/ActiveFilters';
 import { PageHelp } from '@/components/PageHelp';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
@@ -71,7 +72,7 @@ export default async function PageViewsPage({
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">ページ別表示回数</h1>
         {hasRole(admin.role, 'admin') && !error && (
-          <a className="btn-sub" href={`/api/export/pageviews?${exportQuery}`}>CSV ダウンロード</a>
+          <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/pageviews?${exportQuery}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
       </div>
 

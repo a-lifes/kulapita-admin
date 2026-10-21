@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { icons } from '@/components/icons';
 import Link from 'next/link';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
@@ -183,7 +184,7 @@ export default async function PresentsPage({
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">プレゼント</h1>
         {hasRole(admin.role, 'admin') && (campaign || filter.member) && (
-          <a className="btn-sub" href={`/api/export/presents?${exportQuery}`}>CSV ダウンロード</a>
+          <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/presents?${exportQuery}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
       </div>
 
