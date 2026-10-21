@@ -148,15 +148,24 @@ export default async function PresentsPage({
   });
 
   // 自動当選が使えない理由 (無ければ使える)。景品ごとに、応募数が当選者数に満たないものがあれば使えない
-  const autoDrawDisabledReason = (() => {
+  const autoDrawDisabledReason = ((): { message: string; items?: string[] } | undefined => {
     if (!campaign) return undefined;
-    if (!cms.items) return `当選者数がわからないため使えません（${cms.error ?? ''}）`;
-    if (cms.items.some((i) => i.winners === null)) return '当選者数が設定されていない景品があるため使えません';
+    if (!cms.items) return { message: `景品の当選者数を microCMS から取得できないため、自動当選は使えません。${cms.error ?? ''}` };
+    const noWinners = cms.items.map((i, index) => ({ ...i, index })).filter((i) => i.winners === null);
+    if (noWinners.length > 0) {
+      return {
+        message: '当選者数が設定されていない景品があるため、自動当選は使えません。microCMS で当選者数を設定してください。',
+        items: noWinners.map((i) => `${i.index + 1}. ${i.name}`),
+      };
+    }
     const short = cms.items
       .map((i, index) => ({ name: i.name, index, winners: i.winners ?? 0, total: shownSummary.find((s) => s.item_index === index)?.total ?? 0 }))
       .filter((x) => x.total < x.winners);
     return short.length > 0
-      ? `応募数が当選者数に満たない景品があるため使えません（${short.map((x) => `${x.index + 1}. ${x.name}：応募 ${x.total} 件 / ${x.winners} 名`).join('、')}）`
+      ? {
+          message: '応募数が当選者数に満たない景品があるため、自動当選は使えません（応募者全員が当選になり、抽選の必要がないため）。当選は 1 件ずつ、またはまとめて設定してください。',
+          items: short.map((x) => `${x.index + 1}. ${x.name}：応募 ${x.total} 件 / 当選者数 ${x.winners} 名`),
+        }
       : undefined;
   })();
   const decidedCount = shownSummary.reduce((n, s) => n + s.won + s.lost, 0);

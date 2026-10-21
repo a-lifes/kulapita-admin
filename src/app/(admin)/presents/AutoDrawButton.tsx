@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { icons } from '@/components/icons';
 import { toast } from '@/components/Toaster';
 import { formatJst } from '@/lib/format';
 import {
@@ -31,10 +32,12 @@ export function AutoDrawButton({
 }: {
   campaign: string;
   campaignLabel: string;
-  disabledReason?: string;
+  /** 使えない理由。あるときはボタンを押すと理由を出す (抽選は始めない) */
+  disabledReason?: { message: string; items?: string[] };
   /** 当選・落選にしている応募の数 (0 なら初期化は押せない) */
   decidedCount: number;
 }) {
+  const [reasonOpen, setReasonOpen] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const ref = useRef<HTMLDialogElement>(null);
@@ -118,35 +121,35 @@ export function AutoDrawButton({
       >
         初期化
       </button>
-      {/* 使えない理由は、ボタンにマウスを乗せたとき (キーボードで選んだとき) だけ出す。
-          押せないボタンにはマウスの出入りが伝わらないブラウザがあるため、外側の枠で拾う */}
-      <span
-        className="group relative inline-block"
-        tabIndex={disabledReason ? 0 : undefined}
-        aria-describedby={disabledReason ? 'auto-draw-reason' : undefined}
+      {/* 使えないときも押せるようにして、押したら理由を説明のポップアップで出す */}
+      <button
+        type="button"
+        className={`btn ${disabledReason ? 'opacity-50' : ''}`}
+        aria-haspopup="dialog"
+        onClick={() => {
+          if (disabledReason) {
+            setReasonOpen(true);
+            return;
+          }
+          setError(null);
+          setPlan(null);
+          setOpen(true);
+        }}
       >
-        <button
-          type="button"
-          className="btn"
-          disabled={Boolean(disabledReason)}
-          onClick={() => {
-            setError(null);
-            setPlan(null);
-            setOpen(true);
-          }}
-        >
-          自動当選
-        </button>
-        {disabledReason && (
-          <span
-            id="auto-draw-reason"
-            role="tooltip"
-            className="pointer-events-none absolute top-full right-0 z-20 mt-2 hidden w-80 rounded-lg bg-slate-800 px-3 py-2 text-left text-xs leading-relaxed font-normal text-[#fff] shadow-lg group-hover:block group-focus:block"
-          >
-            {disabledReason}
-          </span>
-        )}
-      </span>
+        自動当選
+      </button>
+      {disabledReason && (
+        <InfoDialog open={reasonOpen} onClose={() => setReasonOpen(false)} title="自動当選は使えません">
+          <p>{disabledReason.message}</p>
+          {disabledReason.items && disabledReason.items.length > 0 && (
+            <ul className="mt-3 list-disc space-y-1.5 pl-5">
+              {disabledReason.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </InfoDialog>
+      )}
       <dialog
         ref={ref}
         onClose={() => setOpen(false)}
@@ -255,5 +258,49 @@ export function AutoDrawButton({
         )}
       </dialog>
     </>
+  );
+}
+
+/** 説明のポップアップ (メニュー上部の「?」で開く画面の説明と同じ見た目) */
+function InfoDialog({
+  open,
+  onClose,
+  title,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => {
+        if (e.target === ref.current) onClose();
+      }}
+      className="m-auto w-[min(560px,92vw)] rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
+    >
+      {open && (
+        <div className="p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <icons.help className="h-5 w-5 text-brand" />
+            <h2 className="text-base font-bold text-slate-900">{title}</h2>
+          </div>
+          <div className="text-sm leading-relaxed text-slate-700">{children}</div>
+          <div className="mt-6 text-right">
+            <button type="button" className="btn-sub" onClick={onClose}>閉じる</button>
+          </div>
+        </div>
+      )}
+    </dialog>
   );
 }
