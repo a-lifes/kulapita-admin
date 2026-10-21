@@ -5,7 +5,6 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { icons } from '@/components/icons';
 import { toast } from '@/components/Toaster';
-import { formatJst } from '@/lib/format';
 import {
   applyAutoDrawAction,
   type DrawConditions,
@@ -217,8 +216,8 @@ export function AutoDrawButton({
                             <tr>
                               <th>当選</th>
                               <th>会員番号</th>
-                              <th>応募日時</th>
-                              <th className="text-right">過去の応募</th>
+                              <th className="text-right">過去応募数</th>
+                              <th className="text-right">過去当選数</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -226,8 +225,8 @@ export function AutoDrawButton({
                               <tr key={p.id}>
                                 <td>{p.name}</td>
                                 <td className="max-w-40 truncate" title={p.memberId ?? ''}>{p.memberId ?? '—'}</td>
-                                <td>{formatJst(p.appliedAt)}</td>
                                 <td className="text-right">{p.pastApplied} 回</td>
+                                <td className="text-right">{p.pastWon} 回</td>
                               </tr>
                             ))}
                           </tbody>

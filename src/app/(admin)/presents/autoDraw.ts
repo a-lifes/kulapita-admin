@@ -25,7 +25,7 @@ import { UUID_RE } from '@/lib/uuid';
  */
 export type DrawConditions = { frequent: boolean; early: boolean; excludePast: boolean };
 
-export type DrawWinner = { id: string; name: string; memberId: string | null; appliedAt: string; pastApplied: number };
+export type DrawWinner = { id: string; name: string; memberId: string | null; appliedAt: string; pastApplied: number; pastWon: number };
 export type DrawItemPlan = {
   index: number;
   name: string;
@@ -146,6 +146,7 @@ export async function previewAutoDrawAction(campaign: string, conditions: DrawCo
         memberId: a.external_id,
         appliedAt: a.created_at,
         pastApplied: a.user_id ? (pastByUser.get(a.user_id)?.applied ?? 0) : 0,
+        pastWon: a.user_id ? (pastByUser.get(a.user_id)?.won ?? 0) : 0,
       })),
       losing: open.length - picked.length,
     });
