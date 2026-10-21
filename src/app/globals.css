@@ -14,6 +14,13 @@
   --color-line: #eceef3;
   --color-line-soft: #f1f3f7;
   --color-brand-soft: #f4f2ff;
+  /* ボタン (.btn / .btn-sub) */
+  --color-btn: #5b58a6;
+  --color-btn-dark: #4a4790;
+  --color-btn-sub: #f1f0fa;
+  --color-btn-sub-hover: #e6e4f6;
+  --color-btn-sub-line: #d3d0ec;
+  --color-btn-sub-text: #3f3d6e;
 
   /* 書体: 英数字は Geist、日本語は LINE Seed JP (src/app/layout.tsx で読み込み。無い文字は Noto Sans JP) */
   --font-sans: 'Geist Variable', 'LINE Seed JP', 'Noto Sans JP Variable', sans-serif;
@@ -111,11 +118,15 @@ body {
 }
 
 @layer components {
+  /*
+   * ボタンの色。ブランドの紫そのままだと強いので、少しくすませた藍色にする。
+   * 白いボタン (btn-sub) は白いカードや画面の地色に埋もれないよう、薄い藍色の地と枠を付ける。
+   */
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-[#fff] hover:bg-brand-dark disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg bg-btn px-4 py-2 text-sm font-semibold text-[#fff] hover:bg-btn-dark disabled:opacity-50;
   }
   .btn-sub {
-    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-btn-sub-line bg-btn-sub px-4 py-2 text-sm font-semibold text-btn-sub-text hover:bg-btn-sub-hover disabled:opacity-50;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-1 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50;
