@@ -206,7 +206,7 @@ export default async function PresentsPage({
       {shownSummary.length > 0 && (
         <Collapsible
           storageKey="presents:summary"
-          title="景品ごとの状況"
+          title="景品ごとの当選状況"
           actions={
             canEdit && (
               <div className="text-right">

@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { icons } from './icons';
 
 /**
- * 開閉できるエリア (検索エリア・プレゼントの「景品ごとの状況」など)。
+ * 開閉できるエリア (検索エリア・プレゼントの「景品ごとの当選状況」など)。
  * 閉じた状態はこのブラウザに覚えておき、次に開いたときも同じ状態にする (画面ごとに別々に覚える)。
  * 覚えておけないとき (プライベートブラウズなど) は、画面を開いている間だけ覚える。
  */
@@ -78,8 +78,8 @@ export function CollapseHeader({
 }
 
 /**
- * 開閉できるカード。actions (右上のボタンなど) は閉じていても表示する。
- *   <Collapsible storageKey="presents:summary" title="景品ごとの状況" actions={…}>…</Collapsible>
+ * 開閉できるカード。actions (右上のボタンなど) は開いているときだけ表示する。
+ *   <Collapsible storageKey="presents:summary" title="景品ごとの当選状況" actions={…}>…</Collapsible>
  */
 export function Collapsible({
   storageKey,
@@ -90,6 +90,7 @@ export function Collapsible({
 }: {
   storageKey: string;
   title: string;
+  /** 見出しの右に出すボタンなど (閉じているときは出さない) */
   actions?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
@@ -100,7 +101,7 @@ export function Collapsible({
     <div className={className}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <CollapseHeader title={title} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} controls={id} />
-        {actions}
+        {!collapsed && actions}
       </div>
       <div id={id} hidden={collapsed} className="mt-3">
         {children}

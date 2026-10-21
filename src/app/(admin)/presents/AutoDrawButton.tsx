@@ -110,19 +110,10 @@ export function AutoDrawButton({
   return (
     <>
       {confirmDialog}
-      <button
-        type="button"
-        className="btn-sub mr-2"
-        disabled={decidedCount === 0 || pending}
-        title={decidedCount === 0 ? '当選・落選にしている応募はありません' : '当選・落選をすべて「応募中」に戻します'}
-        onClick={reset}
-      >
-        初期化
-      </button>
       {/* 使えないときも押せるようにして、押したら理由を説明のポップアップで出す */}
       <button
         type="button"
-        className={`btn ${disabledReason ? 'opacity-50' : ''}`}
+        className={`btn min-w-24 ${disabledReason ? 'opacity-50' : ''}`}
         aria-haspopup="dialog"
         onClick={() => {
           if (disabledReason) {
@@ -135,6 +126,15 @@ export function AutoDrawButton({
         }}
       >
         自動当選
+      </button>
+      <button
+        type="button"
+        className="btn-sub ml-2 min-w-24"
+        disabled={decidedCount === 0 || pending}
+        title={decidedCount === 0 ? '当選・落選にしている応募はありません' : '当選・落選をすべて「応募中」に戻します'}
+        onClick={reset}
+      >
+        初期化
       </button>
       {disabledReason && (
         <InfoDialog open={reasonOpen} onClose={() => setReasonOpen(false)} title="自動当選は使えません">

@@ -128,7 +128,7 @@ export function SearchButton({ label = '絞り込む' }: { label?: string }) {
 export function ClearButton({ href }: { href: string }) {
   const { pending, clear } = useContext(SearchContext);
   return (
-    <button type="button" className="btn-sub" disabled={pending} onClick={() => clear(href)}>
+    <button type="button" className="btn-sub min-w-24" disabled={pending} onClick={() => clear(href)}>
       クリア
     </button>
   );
