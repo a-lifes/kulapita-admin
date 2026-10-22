@@ -269,70 +269,107 @@ export async function loginPopupStats(site: SiteKey, from: string, to: string, s
 
 /* ── 誘導元 (どこから来た訪問か) ── */
 
-/** 誘導元で絞り込むときの条件 (sessionSourceMedium = 「google / organic」のような値) */
-function sourceExpressions(source?: string) {
-  return source ? [{ filter: { fieldName: 'sessionSourceMedium', stringFilter: { matchType: 'EXACT', value: source } } }] : [];
+type FilterExpr = Record<string, unknown>;
+const channelIs = (...values: string[]): FilterExpr =>
+  values.length === 1
+    ? { filter: { fieldName: 'sessionDefaultChannelGroup', stringFilter: { matchType: 'EXACT', value: values[0] } } }
+    : { filter: { fieldName: 'sessionDefaultChannelGroup', inListFilter: { values } } };
+const sourceMatches = (regex: string): FilterExpr => ({
+  filter: { fieldName: 'sessionSource', stringFilter: { matchType: 'FULL_REGEXP', value: regex, caseSensitive: false } },
+});
+const and = (...expressions: FilterExpr[]): FilterExpr => ({ andGroup: { expressions } });
+const not = (expr: FilterExpr): FilterExpr => ({ notExpression: expr });
+
+/** 誘導元の名前 (sessionSource) の見分け方。大文字・小文字は区別しない */
+const SOURCE_RE = {
+  line: '(line|line\\.me|liff\\.line\\.me|lin\\.ee)',
+  instagram: '(.*instagram.*)',
+  facebook: '(.*facebook.*|fb)',
+  x: '(x|x\\.com|t\\.co|twitter|.*\\.twitter\\.com|twitter\\.com)',
+  youtube: '(.*youtube.*|youtu\\.be)',
+  google: '(google|google\\..*)',
+  yahoo: '(yahoo|.*\\.yahoo\\..*|yahoo\\..*)',
+  bing: '(bing|.*\\.bing\\.com|bing\\.com)',
+};
+const NAMED_SNS = `(${[SOURCE_RE.line, SOURCE_RE.instagram, SOURCE_RE.facebook, SOURCE_RE.x, SOURCE_RE.youtube].join('|')})`;
+const NAMED_SEARCH = `(${[SOURCE_RE.google, SOURCE_RE.yahoo, SOURCE_RE.bing].join('|')})`;
+const AD_CHANNELS = ['Paid Search', 'Paid Social', 'Paid Video', 'Paid Shopping', 'Paid Other', 'Display', 'Cross-network', 'Affiliates'];
+
+/**
+ * 誘導元の分類 (画面の選択肢・内訳の行)。重ならないように分けている (どの訪問もどれか 1 つに入る)。
+ * ・LINE などの SNS は、誘導元の名前で見分ける (UTM 付きのリンクでも、付いていないリンクでも)
+ * ・それ以外は GA4 の分類 (デフォルト チャネル グループ) で分ける
+ */
+export const TRAFFIC_SOURCES: { key: string; label: string; expr: FilterExpr }[] = [
+  { key: 'direct', label: '直接（URL 入力・ブックマークなど）', expr: channelIs('Direct') },
+  { key: 'google', label: 'Google 検索', expr: and(channelIs('Organic Search'), sourceMatches(SOURCE_RE.google)) },
+  { key: 'yahoo', label: 'Yahoo! 検索', expr: and(channelIs('Organic Search'), sourceMatches(SOURCE_RE.yahoo)) },
+  { key: 'bing', label: 'Bing 検索', expr: and(channelIs('Organic Search'), sourceMatches(SOURCE_RE.bing)) },
+  { key: 'search', label: 'そのほかの検索', expr: and(channelIs('Organic Search'), not(sourceMatches(NAMED_SEARCH))) },
+  { key: 'line', label: 'LINE', expr: sourceMatches(SOURCE_RE.line) },
+  { key: 'instagram', label: 'Instagram', expr: sourceMatches(SOURCE_RE.instagram) },
+  { key: 'facebook', label: 'Facebook', expr: sourceMatches(SOURCE_RE.facebook) },
+  { key: 'x', label: 'X（Twitter）', expr: sourceMatches(SOURCE_RE.x) },
+  { key: 'youtube', label: 'YouTube', expr: sourceMatches(SOURCE_RE.youtube) },
+  { key: 'sns', label: 'そのほかの SNS', expr: and(channelIs('Organic Social'), not(sourceMatches(NAMED_SNS))) },
+  { key: 'referral', label: 'ほかのサイトのリンク', expr: and(channelIs('Referral'), not(sourceMatches(NAMED_SNS))) },
+  { key: 'email', label: 'メール', expr: and(channelIs('Email'), not(sourceMatches(NAMED_SNS))) },
+  { key: 'ads', label: '広告', expr: and(channelIs(...AD_CHANNELS), not(sourceMatches(NAMED_SNS))) },
+  {
+    key: 'other',
+    label: 'そのほか・分類なし',
+    expr: and(
+      not(channelIs('Direct', 'Organic Search', 'Organic Social', 'Referral', 'Email', ...AD_CHANNELS)),
+      not(sourceMatches(NAMED_SNS)),
+    ),
+  },
+];
+
+/** 誘導元の分類 (画面・URL の ?source=) として正しい値か */
+export function isTrafficSourceKey(value: string | undefined): value is string {
+  return Boolean(value && TRAFFIC_SOURCES.some((t) => t.key === value));
+}
+
+function sourceExpressions(source?: string): FilterExpr[] {
+  const t = TRAFFIC_SOURCES.find((x) => x.key === source);
+  return t ? [t.expr] : [];
 }
 
 /** サイト (ホスト名) と、指定があれば誘導元で絞る条件 */
 function siteFilter(site: SiteKey, source?: string) {
   const host = { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } };
-  return source ? { andGroup: { expressions: [host, ...sourceExpressions(source)] } } : host;
+  const extra = sourceExpressions(source);
+  return extra.length > 0 ? { andGroup: { expressions: [host, ...extra] } } : host;
 }
 
-/** GA4 の誘導元の分類 (デフォルト チャネル グループ) の日本語の名前 */
-const CHANNEL_LABEL: Record<string, string> = {
-  'Organic Search': '検索（自然検索）',
-  'Paid Search': '検索広告',
-  Direct: '直接（URL 入力・ブックマーク・アプリ内など）',
-  Referral: 'ほかのサイトのリンク',
-  'Organic Social': 'SNS',
-  'Paid Social': 'SNS 広告',
-  Email: 'メール',
-  Display: 'ディスプレイ広告',
-  'Organic Video': '動画サイト',
-  'Organic Shopping': 'ショッピングサイト',
-  Affiliates: 'アフィリエイト',
-  'Cross-network': '複数の広告ネットワーク',
-  'Paid Other': 'そのほかの広告',
-  Unassigned: '分類なし（UTM の値が分類に当てはまらないなど）',
-};
+/** GA4 の値から、上の分類のどれに入るかを決める (TRAFFIC_SOURCES と同じ考え方) */
+function classify(source: string, channel: string): string {
+  const is = (re: string) => new RegExp(`^${re}$`, 'i').test(source);
+  if (channel === 'Direct') return 'direct';
+  if (is(SOURCE_RE.line)) return 'line';
+  if (is(SOURCE_RE.instagram)) return 'instagram';
+  if (is(SOURCE_RE.facebook)) return 'facebook';
+  if (is(SOURCE_RE.x)) return 'x';
+  if (is(SOURCE_RE.youtube)) return 'youtube';
+  if (channel === 'Organic Search') {
+    if (is(SOURCE_RE.google)) return 'google';
+    if (is(SOURCE_RE.yahoo)) return 'yahoo';
+    if (is(SOURCE_RE.bing)) return 'bing';
+    return 'search';
+  }
+  if (channel === 'Organic Social') return 'sns';
+  if (channel === 'Referral') return 'referral';
+  if (channel === 'Email') return 'email';
+  if (AD_CHANNELS.includes(channel)) return 'ads';
+  return 'other';
+}
 
-/** 誘導元のよく出る名前を分かりやすくする (それ以外はそのまま) */
-const SOURCE_LABEL: Record<string, string> = {
-  '(direct)': '直接',
-  google: 'Google',
-  yahoo: 'Yahoo!',
-  bing: 'Bing',
-  line: 'LINE',
-  'line.me': 'LINE',
-  facebook: 'Facebook',
-  'm.facebook.com': 'Facebook',
-  'l.facebook.com': 'Facebook',
-  instagram: 'Instagram',
-  'l.instagram.com': 'Instagram',
-  't.co': 'X（Twitter）',
-  twitter: 'X（Twitter）',
-  x: 'X（Twitter）',
-};
-
-export type TrafficSourceRow = {
-  /** 絞り込みに使う値 (例: google / organic) */
-  key: string;
-  source: string;
-  medium: string;
-  /** 分類 (日本語) */
-  channel: string;
-  /** 誘導元の名前 (分かりやすくしたもの) */
-  label: string;
-  views: number;
-  users: number;
-};
+export type TrafficSourceRow = { key: string; label: string; views: number; users: number };
 const sourceCache = new Map<string, { at: number; value: TrafficSourceRow[] }>();
 
 /**
- * 誘導元ごとの表示回数・ユーザー数 (多い順)。誘導元は訪問 (セッション) の最初にどこから来たか。
- * 例: Google 検索から来た訪問 → google / organic (検索)、LINE のリンク (UTM 付き) → line / social (SNS)
+ * 誘導元の分類ごとの表示回数・ユーザー数 (多い順。0 件の分類は出さない)。
+ * 誘導元は、訪問 (セッション) の最初にどこから来たか。ユーザー数は分類ごとに足しているので目安。
  */
 export async function trafficSources(site: SiteKey, from: string, to: string): Promise<TrafficSourceRow[]> {
   const propertyId = process.env.GA4_PROPERTY_ID;
@@ -343,28 +380,26 @@ export async function trafficSources(site: SiteKey, from: string, to: string): P
 
   const res = await runReport(propertyId, {
     dateRanges: [{ startDate: from, endDate: to }],
-    dimensions: [{ name: 'sessionSourceMedium' }, { name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionDefaultChannelGroup' }],
+    dimensions: [{ name: 'sessionSource' }, { name: 'sessionDefaultChannelGroup' }],
     metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
     dimensionFilter: siteFilter(site),
-    orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-    limit: 200,
+    limit: 1000,
   });
   if (!res.ok) throw new Error(`GA4 から取得できませんでした（status ${res.status}）`);
   const data = (await res.json()) as {
     rows?: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[];
   };
-  const value = (data.rows ?? []).map((r) => {
-    const [key, source, medium, channel] = r.dimensionValues.map((d) => d.value);
-    return {
-      key,
-      source,
-      medium,
-      channel: CHANNEL_LABEL[channel] ?? channel,
-      label: SOURCE_LABEL[source.toLowerCase()] ?? source,
-      views: Number(r.metricValues[0].value),
-      users: Number(r.metricValues[1].value),
-    };
-  });
+  const totals = new Map<string, { views: number; users: number }>();
+  for (const r of data.rows ?? []) {
+    const key = classify(r.dimensionValues[0].value, r.dimensionValues[1].value);
+    const cur = totals.get(key) ?? { views: 0, users: 0 };
+    cur.views += Number(r.metricValues[0].value);
+    cur.users += Number(r.metricValues[1].value);
+    totals.set(key, cur);
+  }
+  const value = TRAFFIC_SOURCES.filter((t) => totals.has(t.key))
+    .map((t) => ({ key: t.key, label: t.label, ...totals.get(t.key)! }))
+    .sort((a, b) => b.views - a.views);
   sourceCache.set(cacheKey, { at: Date.now(), value });
   if (sourceCache.size > 100) sourceCache.delete(sourceCache.keys().next().value!);
   return value;

@@ -8,7 +8,7 @@ import { SortableTh } from '@/components/SortableTh';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
-import { canChooseSite, Ga4NotConfiguredError, resolveSite, SITES, TrafficSourceRow, trafficSources } from '@/lib/ga4';
+import { canChooseSite, Ga4NotConfiguredError, isTrafficSourceKey, resolveSite, SITES, TRAFFIC_SOURCES, TrafficSourceRow, trafficSources } from '@/lib/ga4';
 import { Collapsible } from '@/components/Collapsible';
 import { PageStatRow, PageStats, pageStats } from '@/lib/pageviewStats';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
@@ -40,8 +40,8 @@ export default async function PageViewsPage({
   const range = resolveRange(sp, 'thisMonth');
   const site = resolveSite(sp.site);
   const q = sp.q?.trim().slice(0, 100) || undefined;
-  // 誘導元 (例: google / organic)。GA4 の sessionSourceMedium の値そのもの
-  const source = sp.source?.trim().slice(0, 200) || undefined;
+  // 誘導元の分類 (例: line・google・direct。ga4.ts の TRAFFIC_SOURCES)
+  const source = isTrafficSourceKey(sp.source) ? sp.source : undefined;
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'views', dir: 'desc' });
@@ -97,30 +97,18 @@ export default async function PageViewsPage({
           <label className="label" htmlFor="to">終了日</label>
           <input className="input" type="date" id="to" name="to" defaultValue={range.to} required />
         </div>
-        {canChooseSite() && (
-          <div>
-            <label className="label" htmlFor="site">サイト</label>
-            <select className="input" id="site" name="site" defaultValue={site}>
-              {Object.entries(SITES).map(([k, v]) => (
-                <option key={k} value={k}>{v.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
         <div>
           <label className="label" htmlFor="source">誘導元</label>
-          <select className="input max-w-72" id="source" name="source" defaultValue={source ?? ''}>
+          <select className="input w-56" id="source" name="source" defaultValue={source ?? ''}>
             <option value="">すべて</option>
-            {/* 今選んでいる誘導元が期間内の一覧に無くても、選んだ状態を保つ */}
-            {source && !sources.some((s) => s.key === source) && <option value={source}>{source}</option>}
-            {sources.map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.label}（{s.key}）
+            {TRAFFIC_SOURCES.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
               </option>
             ))}
           </select>
         </div>
-        <div className="min-w-64 flex-1">
+        <div className="min-w-48 flex-1">
           <label className="label" htmlFor="q">ページの URL・タイトル</label>
           <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="例）/service、/presents、プレゼント" />
         </div>
@@ -131,7 +119,7 @@ export default async function PageViewsPage({
         basePath="/pageviews"
         params={{ ...listParams, sort: sp.sort, dir: sp.dir }}
         chips={[
-          { key: 'source', label: '誘導元', value: source ? (sources.find((s) => s.key === source)?.label ?? source) : '' },
+          { key: 'source', label: '誘導元', value: source ? (TRAFFIC_SOURCES.find((t) => t.key === source)?.label ?? '') : '' },
           { key: 'q', label: 'キーワード', value: q ?? '' },
         ]}
       />
@@ -255,15 +243,13 @@ function SourceBreakdown({
           <thead>
             <tr>
               <th>誘導元</th>
-              <th>分類</th>
-              <th>source / medium</th>
               <th className="text-right">表示回数</th>
               <th className="text-right">割合</th>
-              <th className="text-right">ユーザー数</th>
+              <th className="text-right">ユーザー数（目安）</th>
             </tr>
           </thead>
           <tbody>
-            {sources.slice(0, 20).map((s) => (
+            {sources.map((s) => (
               <tr key={s.key} className={s.key === selected ? 'bg-nav-active' : undefined}>
                 <td>
                   <a
@@ -274,8 +260,6 @@ function SourceBreakdown({
                     {s.label}
                   </a>
                 </td>
-                <td className="text-slate-600">{s.channel}</td>
-                <td className="text-slate-500">{s.key}</td>
                 <td className="text-right font-semibold tabular-nums">{s.views.toLocaleString()}</td>
                 <td className="text-right tabular-nums text-slate-600">{((s.views / totalViews) * 100).toFixed(1)}%</td>
                 <td className="text-right tabular-nums">{s.users.toLocaleString()}</td>
@@ -284,7 +268,6 @@ function SourceBreakdown({
           </tbody>
         </table>
       </div>
-      {sources.length > 20 && <p className="mt-2 text-xs text-slate-500">ほか {sources.length - 20} 件（上位 20 件を表示）</p>}
     </Collapsible>
   );
 }
