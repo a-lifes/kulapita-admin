@@ -9,7 +9,6 @@ import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
 import { canChooseSite, Ga4NotConfiguredError, isTrafficSourceKey, resolveSite, SITES, TRAFFIC_SOURCES, TrafficSourceRow, trafficSources } from '@/lib/ga4';
-import { Collapsible } from '@/components/Collapsible';
 import { PageStatRow, PageStats, pageStats } from '@/lib/pageviewStats';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
 
@@ -30,6 +29,14 @@ const SORT_COLUMNS: Record<string, SortColumn> = {
  * あわせて、ログインポップアップの表示回数・人数 (GA4 のイベント) と、ログイン数・人数 (自前の DB) も出す。
  * 開くたびに GA4 に問い合わせる (同じ条件は 10 分だけ覚えておく)。
  */
+/** 表示の切り替え (ダッシュボードの「グラフで見る」「表で見る」と同じ見た目のタブ。URL の ?tab= で覚える) */
+const TABS = [
+  { key: 'pages', label: 'ページ毎の表示回数', Icon: icons.table },
+  { key: 'sources', label: '誘導元毎の表示回数', Icon: icons.clicks },
+  { key: 'kpi', label: '主要KPI', Icon: icons.barChart },
+] as const;
+type TabKey = (typeof TABS)[number]['key'];
+
 export default async function PageViewsPage({
   searchParams,
 }: {
@@ -45,7 +52,27 @@ export default async function PageViewsPage({
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'views', dir: 'desc' });
-  const listParams = { from: range.from, to: range.to, site: canChooseSite() ? site : undefined, q, source, per: sp.per };
+  const tab: TabKey = TABS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : 'pages';
+  const listParams = {
+    from: range.from,
+    to: range.to,
+    site: canChooseSite() ? site : undefined,
+    q,
+    source,
+    per: sp.per,
+    tab: tab === 'pages' ? undefined : tab,
+  };
+  /** タブの切り替え先 (絞込みの条件・並び順は残す。ページ番号は 1 に戻す) */
+  const tabHref = (key: TabKey) => {
+    const params = new URLSearchParams(
+      Object.entries({ ...listParams, sort: sp.sort, dir: sp.dir, tab: key === 'pages' ? undefined : key }).filter(([, v]) => v) as [
+        string,
+        string,
+      ][],
+    );
+    const qs = params.toString();
+    return qs ? `/pageviews?${qs}` : '/pageviews';
+  };
 
   let rows: PageStatRow[] = [];
   let popup: PageStats['popup'] = null;
@@ -112,8 +139,10 @@ export default async function PageViewsPage({
           <label className="label" htmlFor="q">ページの URL・タイトル</label>
           <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="例）/service、/presents、プレゼント" />
         </div>
+        {/* 絞り込んでも、今見ているタブのままにする */}
+        {tab !== 'pages' && <input type="hidden" name="tab" value={tab} />}
         <SearchButton />
-        <ClearButton href="/pageviews" />
+        <ClearButton href={tab === 'pages' ? '/pageviews' : `/pageviews?tab=${tab}`} />
       </SearchForm>
       <ActiveFilters
         basePath="/pageviews"
@@ -133,7 +162,7 @@ export default async function PageViewsPage({
             「ログインポップアップ」は、ログインを求めるポップアップを表示した回数と人数です。サイト内でログインが必要なリンクを押したときはそのとき開いていたページに、
             ログインが必要なページを直接開いたときはそのページに数えます（GA4 の数値なので数時間遅れます）。
           </li>
-          <li>上部の人数は期間内の人数です。同じ人は何回表示・ログインしても 1 人と数えます（ポップアップの人数は、同じ人が複数のページで表示しても 1 人のため、一覧の合計とは一致しません）。</li>
+          <li>「主要KPI」の人数は期間内の人数です。同じ人は何回表示・ログインしても 1 人と数えます（ポップアップの人数は、同じ人が複数のページで表示しても 1 人のため、一覧の合計とは一致しません）。</li>
           <li>「ログイン数」「ログイン人数」は、期間内にサイトへログインした回数と会員の数です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
           <li>
             「誘導元」は、訪問した人がどこから来たかです（Google 検索、LINE、ほかのサイトのリンクなど）。誘導元で絞り込むと、その誘導元から来た訪問の表示回数・ポップアップだけを表示します
@@ -146,24 +175,32 @@ export default async function PageViewsPage({
         <p className="error">ページ別の表示回数を取得できませんでした：{error}</p>
       ) : (
         <>
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { title: 'ログインポップアップ表示回数', value: popup?.count ?? null, unit: '回' },
-              { title: 'ログインポップアップ表示人数', value: popup?.users ?? null, unit: '人' },
-              { title: 'ログイン数', value: login?.count ?? null, unit: '回' },
-              { title: 'ログイン人数', value: login?.users ?? null, unit: '人' },
-            ].map((card) => (
-              <div key={card.title} className="card py-4">
-                <p className="text-sm font-semibold text-slate-600">{card.title}</p>
-                <p className="mt-1 leading-tight tabular-nums">
-                  <span className="text-[26px] font-bold">{card.value === null ? '—' : card.value.toLocaleString()}</span>
-                  {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">{card.unit}</span>}
-                </p>
-              </div>
-            ))}
-          </div>
-          {sources.length > 0 && <SourceBreakdown sources={sources} listParams={listParams} selected={source} />}
-          <div className="card table-scroll">
+          <section className="mt-2">
+            <div role="tablist" aria-label="表示の切り替え" className="flex items-end gap-1.5 pl-px">
+              {TABS.map((t) => {
+                const active = tab === t.key;
+                return (
+                  <a
+                    key={t.key}
+                    href={tabHref(t.key)}
+                    role="tab"
+                    aria-selected={active}
+                    className={`relative flex w-48 items-center justify-center gap-1.5 rounded-t-lg border border-b-0 font-semibold ${
+                      active
+                        ? 'z-[2] -mb-px h-11 border-slate-200 bg-white pb-px text-brand'
+                        : 'h-9 border-slate-200 bg-slate-100 text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                    }`}
+                  >
+                    <t.Icon className="h-4 w-4" />
+                    {t.label}
+                  </a>
+                );
+              })}
+            </div>
+            <div role="tabpanel" className="card relative z-[1] rounded-tl-none">
+              {tab === 'pages' && (
+                <>
+              <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>
@@ -209,7 +246,35 @@ export default async function PageViewsPage({
               </tbody>
             </table>
           </div>
-          <Pagination basePath="/pageviews" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
+                  <Pagination basePath="/pageviews" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
+                </>
+              )}
+              {tab === 'sources' &&
+                (sources.length > 0 ? (
+                  <SourceBreakdown sources={sources} listParams={listParams} selected={source} />
+                ) : (
+                  <p className="py-8 text-center text-slate-500">この期間の誘導元のデータはありません。</p>
+                ))}
+              {tab === 'kpi' && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {[
+                    { title: 'ログインポップアップ表示回数', value: popup?.count ?? null, unit: '回' },
+                    { title: 'ログインポップアップ表示人数', value: popup?.users ?? null, unit: '人' },
+                    { title: 'ログイン数', value: login?.count ?? null, unit: '回' },
+                    { title: 'ログイン人数', value: login?.users ?? null, unit: '人' },
+                  ].map((card) => (
+                    <div key={card.title} className="rounded-lg border border-slate-200 px-4 py-4">
+                      <p className="text-sm font-semibold text-slate-600">{card.title}</p>
+                      <p className="mt-1 leading-tight tabular-nums">
+                        <span className="text-[26px] font-bold">{card.value === null ? '—' : card.value.toLocaleString()}</span>
+                        {card.value !== null && <span className="ml-0.5 text-sm text-slate-600">{card.unit}</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </>
       )}
     </div>
@@ -217,7 +282,7 @@ export default async function PageViewsPage({
 }
 
 /**
- * 誘導元の内訳 (開閉できる)。誘導元を押すと、その誘導元でページ別の表示回数を絞り込む (もう一度押すと解除)。
+ * 誘導元の内訳。誘導元を押すと、その誘導元で絞り込んだページ毎の表示回数に移る (選択中のものを押すと解除)。
  * 割合は、期間内の表示回数全体に対するもの。
  */
 function SourceBreakdown({
@@ -232,13 +297,13 @@ function SourceBreakdown({
   const totalViews = sources.reduce((n, s) => n + s.views, 0) || 1;
   const href = (key?: string) => {
     const params = new URLSearchParams(
-      Object.entries({ ...listParams, source: key }).filter(([, v]) => v) as [string, string][],
+      // 押したら、その誘導元で絞り込んだ「ページ毎の表示回数」に移る
+      Object.entries({ ...listParams, source: key, tab: key ? undefined : listParams.tab }).filter(([, v]) => v) as [string, string][],
     );
     return `/pageviews?${params.toString()}`;
   };
   return (
-    <Collapsible storageKey="pageviews:sources" title="誘導元">
-      <div className="table-scroll">
+    <div className="table-scroll">
         <table className="table">
           <thead>
             <tr>
@@ -267,7 +332,6 @@ function SourceBreakdown({
             ))}
           </tbody>
         </table>
-      </div>
-    </Collapsible>
+    </div>
   );
 }
