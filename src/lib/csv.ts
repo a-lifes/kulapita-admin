@@ -1,10 +1,16 @@
 /**
  * Excel でそのまま開ける CSV (UTF-8 BOM 付き・CRLF) を作る。
- * 「= + - @」で始まる値は Excel が数式として実行してしまうため、先頭に ' を付けて無害化する。
+ * 数式として実行されてしまう値 (CSV インジェクション) は、先頭に ' を付けて無害化する。
+ * 対象: 先頭が = + - @ | % タブ・改行 で始まる値。次のような抜け道も同じように扱う。
+ *   ・全角の ＝ ＋ － ＠ ｜ ％ (日本語の Excel は全角のまま数式として読むことがある)
+ *   ・先頭に空白 (半角・全角) を入れてから = などを書いたもの
+ * 数値 (件数など) はそのまま出す (マイナスの数を文字にしないため)。
  */
+const FORMULA_RE = /^[\s\u3000]*[=+\-@|%＝＋－＠｜％]/;
+
 function cell(value: unknown): string {
   let s = value === null || value === undefined ? '' : String(value);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  if (typeof value !== 'number' && (FORMULA_RE.test(s) || /^[\t\r\n]/.test(s))) s = `'${s}`;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
