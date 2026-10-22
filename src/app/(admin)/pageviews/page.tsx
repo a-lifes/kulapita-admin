@@ -19,8 +19,6 @@ export const metadata: Metadata = { title: 'ページ別表示回数' };
 const SORT_COLUMNS: Record<string, SortColumn> = {
   views: { sql: '', firstDir: 'desc' },
   users: { sql: '', firstDir: 'desc' },
-  popupCount: { sql: '', firstDir: 'desc' },
-  popupUsers: { sql: '', firstDir: 'desc' },
   path: { sql: '' },
   title: { sql: '' },
 };
@@ -98,7 +96,7 @@ export default async function PageViewsPage({
     ? rows.filter((r) => r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle))
     : rows;
   const sorted = sortRows(filtered, sort, (r, key) =>
-    key === 'views' ? r.views : key === 'users' ? r.users : key === 'popupCount' ? r.popupCount : key === 'popupUsers' ? r.popupUsers : key === 'path' ? r.path : r.title,
+    key === 'views' ? r.views : key === 'users' ? r.users : key === 'path' ? r.path : r.title,
   );
   const total = sorted.length;
   const shown = sorted.slice((page - 1) * perPage, page * perPage);
@@ -201,24 +199,23 @@ export default async function PageViewsPage({
             <div role="tabpanel" className="card relative z-[1] rounded-tl-none">
               {tab === 'pages' && (
                 <>
-              <div className="table-scroll">
-            <table className="table">
+              <div>
+            {/* 左右にスクロールしないよう、列の幅を固定する (URL・タイトルは長いと … で切る。マウスを乗せると全文) */}
+            <table className="table w-full table-fixed">
               <thead>
                 <tr>
                   <th className="w-16 text-right">順位</th>
-                  <SortableTh label="ページの URL" sortKey="path" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} />
+                  <SortableTh label="ページの URL" sortKey="path" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="w-[34%]" />
                   <SortableTh label="タイトル" sortKey="title" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} />
-                  <SortableTh label="表示回数" sortKey="views" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
-                  <SortableTh label="ユーザー数" sortKey="users" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
-                  <SortableTh label="ポップアップ回数" sortKey="popupCount" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
-                  <SortableTh label="ポップアップ人数" sortKey="popupUsers" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="text-right" />
+                  <SortableTh label="表示回数" sortKey="views" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="w-32 text-right" />
+                  <SortableTh label="ユーザー数" sortKey="users" sort={sort} columns={SORT_COLUMNS} basePath="/pageviews" params={listParams} className="w-32 text-right" />
                 </tr>
               </thead>
               <tbody>
                 {shown.map((r, i) => (
                   <tr key={r.path}>
                     <td className="text-right text-slate-400">{(page - 1) * perPage + i + 1}</td>
-                    <td className="max-w-80 truncate">
+                    <td className="truncate">
                       {/* その環境のサイトのページを別タブで開く */}
                       <a
                         href={`${SITES[site].origin}${r.path}`}
@@ -230,20 +227,18 @@ export default async function PageViewsPage({
                         {r.path}
                       </a>
                     </td>
-                    <td className="max-w-96 truncate text-slate-600" title={r.title}>
+                    <td className="truncate text-slate-600" title={r.title}>
                       {/* 押すと、このページの誘導元の内訳を円グラフで出す */}
                       <PageSourcesButton path={r.path} title={r.title} query={{ from: range.from, to: range.to, site: listParams.site }} />
                       {r.title || '—'}
                     </td>
                     <td className="text-right font-semibold">{r.views.toLocaleString()}</td>
                     <td className="text-right">{r.users.toLocaleString()}</td>
-                    <td className="text-right">{r.popupCount ? r.popupCount.toLocaleString() : <span className="text-slate-300">0</span>}</td>
-                    <td className="text-right">{r.popupUsers ? r.popupUsers.toLocaleString() : <span className="text-slate-300">0</span>}</td>
                   </tr>
                 ))}
                 {shown.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-500">
+                    <td colSpan={5} className="py-8 text-center text-slate-500">
                       {q ? '検索内容に一致するデータはありません。' : 'この期間のアクセスはありません。'}
                     </td>
                   </tr>
