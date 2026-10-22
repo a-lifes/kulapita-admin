@@ -370,11 +370,12 @@ const sourceCache = new Map<string, { at: number; value: TrafficSourceRow[] }>()
 /**
  * 誘導元の分類ごとの表示回数・ユーザー数 (多い順。0 件の分類は出さない)。
  * 誘導元は、訪問 (セッション) の最初にどこから来たか。ユーザー数は分類ごとに足しているので目安。
+ * path を指定すると、そのページの表示回数だけで内訳を出す。
  */
-export async function trafficSources(site: SiteKey, from: string, to: string): Promise<TrafficSourceRow[]> {
+export async function trafficSources(site: SiteKey, from: string, to: string, path?: string): Promise<TrafficSourceRow[]> {
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
-  const cacheKey = `${site}:${from}:${to}`;
+  const cacheKey = `${site}:${from}:${to}:${path ?? ''}`;
   const cached = sourceCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
@@ -382,7 +383,17 @@ export async function trafficSources(site: SiteKey, from: string, to: string): P
     dateRanges: [{ startDate: from, endDate: to }],
     dimensions: [{ name: 'sessionSource' }, { name: 'sessionDefaultChannelGroup' }],
     metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
-    dimensionFilter: siteFilter(site),
+    // path を指定したときは、そのページの表示だけ (ページ毎の誘導元の内訳)
+    dimensionFilter: path
+      ? {
+          andGroup: {
+            expressions: [
+              siteFilter(site),
+              { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'EXACT', value: path } } },
+            ],
+          },
+        }
+      : siteFilter(site),
     limit: 1000,
   });
   if (!res.ok) throw new Error(`GA4 から取得できませんでした（status ${res.status}）`);

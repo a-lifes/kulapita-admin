@@ -10,6 +10,7 @@ import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
 import { canChooseSite, Ga4NotConfiguredError, isTrafficSourceKey, resolveSite, SITES, TRAFFIC_SOURCES, TrafficSourceRow, trafficSources } from '@/lib/ga4';
 import { PageStatRow, PageStats, pageStats } from '@/lib/pageviewStats';
+import { PageSourcesButton } from './PageSourcesButton';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'ページ別表示回数' };
@@ -229,7 +230,11 @@ export default async function PageViewsPage({
                         {r.path}
                       </a>
                     </td>
-                    <td className="max-w-96 truncate text-slate-600" title={r.title}>{r.title || '—'}</td>
+                    <td className="max-w-96 truncate text-slate-600" title={r.title}>
+                      {/* 押すと、このページの誘導元の内訳を円グラフで出す */}
+                      <PageSourcesButton path={r.path} title={r.title} query={{ from: range.from, to: range.to, site: listParams.site }} />
+                      {r.title || '—'}
+                    </td>
                     <td className="text-right font-semibold">{r.views.toLocaleString()}</td>
                     <td className="text-right">{r.users.toLocaleString()}</td>
                     <td className="text-right">{r.popupCount ? r.popupCount.toLocaleString() : <span className="text-slate-300">0</span>}</td>

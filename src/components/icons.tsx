@@ -118,6 +118,13 @@ export const icons = {
       <path d="m20 20-3.5-3.5" />
     </Svg>
   ),
+  /** 内訳 (円グラフ) */
+  pie: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M12 3a9 9 0 1 0 9 9h-9z" />
+      <path d="M15 3.5A9 9 0 0 1 20.5 9H15z" />
+    </Svg>
+  ),
   /** 絞込み (じょうご) */
   filter: (p: IconProps) => (
     <Svg {...p}>
