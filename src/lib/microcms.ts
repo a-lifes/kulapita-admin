@@ -11,10 +11,11 @@ type RawCampaign = {
   id: string;
   slug?: string;
   month?: string;
-  items?: { name?: string; winners?: number | null; image?: { url?: string } | null }[];
+  items?: { name?: string; winners?: number | null; image?: { url?: string } | null; group?: number | null }[];
 };
 
-export type CampaignItems = { name: string; winners: number | null; imageUrl: string | null }[];
+/** group … プレゼントの枠 (microCMS の items[].group。まとめ枠の番号)。枠に入っていない景品は null */
+export type CampaignItems = { name: string; winners: number | null; imageUrl: string | null; group: number | null }[];
 /**
  * キャンペーン 1 件分。応募 (present_applications.campaign_key) は microCMS のコンテンツ ID で記録しているので、
  * この Map も ID で引く。画面には label (slug または開催月 yyyy-mm) を出す。
@@ -82,6 +83,7 @@ async function campaigns(): Promise<Map<string, CampaignInfo>> {
           name: (i.name ?? '').replace(/\s+/g, ' ').trim(),
           winners: typeof i.winners === 'number' && i.winners >= 0 ? i.winners : null,
           imageUrl: typeof i.image?.url === 'string' && i.image.url.startsWith('https://') ? i.image.url : null,
+          group: typeof i.group === 'number' && Number.isFinite(i.group) ? i.group : null,
         })),
       });
     }

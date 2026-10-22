@@ -15,7 +15,10 @@ import {
 
 const CONDITIONS: { key: keyof DrawConditions; label: string; note: string }[] = [
   { key: 'frequent', label: '応募回数が多い人の当選確率を上げる', note: 'これまでのプレゼントへの応募が多いほど当選する確率が上がります。' },
+  { key: 'applications', label: 'コンバージョン（申し込み）が多い人の当選確率を上げる', note: 'サービスへの申し込みが多いほど当選する確率が上がります（10 件まで）。' },
+  { key: 'clicks', label: 'コンバージョン（誘導）が多い人の当選確率を上げる', note: '外部サービスへの誘導（サービスサイトを見る）が多いほど当選する確率が上がります（10 回まで）。' },
   { key: 'excludePast', label: '過去に当選実績のある会員は除く', note: '過去にプレゼントに当選した実績がある会員は抽選対象外になります。' },
+  { key: 'sameGroup', label: '過去と同じ枠の当選はしない', note: '過去に当選した枠（groups）と同じ枠の景品は抽選対象外になります。例）過去に枠 1 で当選した会員は、枠 2・3 の景品だけが当選の対象になります。' },
 ];
 
 /**
@@ -40,7 +43,13 @@ export function AutoDrawButton({
   const router = useRouter();
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
-  const [conditions, setConditions] = useState<DrawConditions>({ frequent: false, excludePast: false });
+  const [conditions, setConditions] = useState<DrawConditions>({
+    frequent: false,
+    applications: false,
+    clicks: false,
+    excludePast: false,
+    sameGroup: false,
+  });
   const [plan, setPlan] = useState<{ items: DrawItemPlan[]; shortage: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -212,7 +221,7 @@ export function AutoDrawButton({
                       </h3>
                       <p className="mt-0.5 text-xs text-slate-500">
                         当選者数 {item.winners} 名（すでに当選 {item.alreadyWon} 名）・抽選の対象 {item.candidates} 件
-                        {item.excluded > 0 && `（過去の当選者 ${item.excluded} 件を除外）`}・落選にする {item.losing} 件
+                        {item.excluded > 0 && `（条件により ${item.excluded} 件を除外）`}・落選にする {item.losing} 件
                       </p>
                       {item.picked.length > 0 ? (
                         <table className="table mt-2 text-xs">
@@ -222,6 +231,8 @@ export function AutoDrawButton({
                               <th>会員番号</th>
                               <th className="text-right">過去応募数</th>
                               <th className="text-right">過去当選数</th>
+                              <th className="text-right">申し込み</th>
+                              <th className="text-right">誘導</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -231,6 +242,8 @@ export function AutoDrawButton({
                                 <td className="max-w-40 truncate" title={p.memberId ?? ''}>{p.memberId ?? '—'}</td>
                                 <td className="text-right">{p.pastApplied} 回</td>
                                 <td className="text-right">{p.pastWon} 回</td>
+                                <td className="text-right">{p.applications} 件</td>
+                                <td className="text-right">{p.clicks} 回</td>
                               </tr>
                             ))}
                           </tbody>
