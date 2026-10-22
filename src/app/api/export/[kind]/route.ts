@@ -82,7 +82,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const needle = sp.q?.trim().toLowerCase();
     let stats: Awaited<ReturnType<typeof pageStats>>;
     try {
-      stats = await pageStats(site, range.from, range.to);
+      stats = await pageStats(site, range.from, range.to, sp.source?.trim().slice(0, 200) || undefined);
     } catch (e) {
       // GA4 に問い合わせできないときは、理由の分かるメッセージを返す (汎用の 500 にしない)
       console.error('[export] ページ別表示回数を取得できませんでした', e instanceof Error ? e.message : e);
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     const rows = stats.rows.filter(
       (r) => !needle || r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle),
     );
-    await writeAudit({ admin: viewer, action: 'export.pageviews', diff: { from: range.from, to: range.to, site, q: needle } });
+    await writeAudit({ admin: viewer, action: 'export.pageviews', diff: { from: range.from, to: range.to, site, q: needle, source: sp.source } });
     const ymd = (s: string) => s.replaceAll('-', '');
     return csvResponse(
       `ページ別表示回数_${ymd(range.from)}-${ymd(range.to)}.csv`,

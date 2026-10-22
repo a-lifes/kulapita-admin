@@ -8,7 +8,8 @@ import { SortableTh } from '@/components/SortableTh';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { resolveRange } from '@/lib/dateRange';
-import { canChooseSite, Ga4NotConfiguredError, resolveSite, SITES } from '@/lib/ga4';
+import { canChooseSite, Ga4NotConfiguredError, resolveSite, SITES, TrafficSourceRow, trafficSources } from '@/lib/ga4';
+import { Collapsible } from '@/components/Collapsible';
 import { PageStatRow, PageStats, pageStats } from '@/lib/pageviewStats';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
 
@@ -39,17 +40,27 @@ export default async function PageViewsPage({
   const range = resolveRange(sp, 'thisMonth');
   const site = resolveSite(sp.site);
   const q = sp.q?.trim().slice(0, 100) || undefined;
+  // 誘導元 (例: google / organic)。GA4 の sessionSourceMedium の値そのもの
+  const source = sp.source?.trim().slice(0, 200) || undefined;
   const page = pageFrom(sp.page);
   const perPage = perPageFrom(sp.per);
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'views', dir: 'desc' });
-  const listParams = { from: range.from, to: range.to, site: canChooseSite() ? site : undefined, q, per: sp.per };
+  const listParams = { from: range.from, to: range.to, site: canChooseSite() ? site : undefined, q, source, per: sp.per };
 
   let rows: PageStatRow[] = [];
   let popup: PageStats['popup'] = null;
   let login: PageStats['login'] = null;
+  let sources: TrafficSourceRow[] = [];
   let error: string | null = null;
   try {
-    ({ rows, popup, login } = await pageStats(site, range.from, range.to));
+    [{ rows, popup, login }, sources] = await Promise.all([
+      pageStats(site, range.from, range.to, source),
+      // 誘導元の一覧 (取れなくてもページ別の表示回数は出す)
+      trafficSources(site, range.from, range.to).catch((e) => {
+        console.error('[ga4] 誘導元を取得できませんでした', e instanceof Error ? e.message : e);
+        return [] as TrafficSourceRow[];
+      }),
+    ]);
   } catch (e) {
     if (!(e instanceof Ga4NotConfiguredError)) console.error('[ga4]', e instanceof Error ? e.message : e);
     error = e instanceof Error ? e.message : 'GA4 から取得できませんでした';
@@ -64,7 +75,7 @@ export default async function PageViewsPage({
   const total = sorted.length;
   const shown = sorted.slice((page - 1) * perPage, page * perPage);
   const exportQuery = new URLSearchParams(
-    Object.entries({ from: range.from, to: range.to, site: listParams.site, q }).filter(([, v]) => v) as [string, string][],
+    Object.entries({ from: range.from, to: range.to, site: listParams.site, q, source }).filter(([, v]) => v) as [string, string][],
   ).toString();
 
   return (
@@ -96,6 +107,19 @@ export default async function PageViewsPage({
             </select>
           </div>
         )}
+        <div>
+          <label className="label" htmlFor="source">誘導元</label>
+          <select className="input max-w-72" id="source" name="source" defaultValue={source ?? ''}>
+            <option value="">すべて</option>
+            {/* 今選んでいる誘導元が期間内の一覧に無くても、選んだ状態を保つ */}
+            {source && !sources.some((s) => s.key === source) && <option value={source}>{source}</option>}
+            {sources.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}（{s.key}）
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="min-w-64 flex-1">
           <label className="label" htmlFor="q">ページの URL・タイトル</label>
           <input className="input" id="q" name="q" defaultValue={q ?? ''} placeholder="例）/service、/presents、プレゼント" />
@@ -106,7 +130,10 @@ export default async function PageViewsPage({
       <ActiveFilters
         basePath="/pageviews"
         params={{ ...listParams, sort: sp.sort, dir: sp.dir }}
-        chips={[{ key: 'q', label: 'キーワード', value: q ?? '' }]}
+        chips={[
+          { key: 'source', label: '誘導元', value: source ? (sources.find((s) => s.key === source)?.label ?? source) : '' },
+          { key: 'q', label: 'キーワード', value: q ?? '' },
+        ]}
       />
       {range.error && <p className="error mb-4">{range.error}</p>}
       <PageHelp title="ページ別表示回数について">
@@ -120,6 +147,11 @@ export default async function PageViewsPage({
           </li>
           <li>上部の人数は期間内の人数です。同じ人は何回表示・ログインしても 1 人と数えます（ポップアップの人数は、同じ人が複数のページで表示しても 1 人のため、一覧の合計とは一致しません）。</li>
           <li>「ログイン数」「ログイン人数」は、期間内にサイトへログインした回数と会員の数です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
+          <li>
+            「誘導元」は、訪問した人がどこから来たかです（Google 検索、LINE、ほかのサイトのリンクなど）。誘導元で絞り込むと、その誘導元から来た訪問の表示回数・ポップアップだけを表示します
+            （ログイン数・ログイン人数は誘導元が分からないため、絞り込みません）。
+          </li>
+          <li>LINE などのアプリ内から開いた訪問は、リンクに UTM パラメータが付いていないと「直接」に数えられることがあります。</li>
         </ul>
       </PageHelp>
       {error ? (
@@ -142,6 +174,7 @@ export default async function PageViewsPage({
               </div>
             ))}
           </div>
+          {sources.length > 0 && <SourceBreakdown sources={sources} listParams={listParams} selected={source} />}
           <div className="card table-scroll">
             <table className="table">
               <thead>
@@ -192,5 +225,66 @@ export default async function PageViewsPage({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * 誘導元の内訳 (開閉できる)。誘導元を押すと、その誘導元でページ別の表示回数を絞り込む (もう一度押すと解除)。
+ * 割合は、期間内の表示回数全体に対するもの。
+ */
+function SourceBreakdown({
+  sources,
+  listParams,
+  selected,
+}: {
+  sources: TrafficSourceRow[];
+  listParams: Record<string, string | undefined>;
+  selected?: string;
+}) {
+  const totalViews = sources.reduce((n, s) => n + s.views, 0) || 1;
+  const href = (key?: string) => {
+    const params = new URLSearchParams(
+      Object.entries({ ...listParams, source: key }).filter(([, v]) => v) as [string, string][],
+    );
+    return `/pageviews?${params.toString()}`;
+  };
+  return (
+    <Collapsible storageKey="pageviews:sources" title="誘導元">
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>誘導元</th>
+              <th>分類</th>
+              <th>source / medium</th>
+              <th className="text-right">表示回数</th>
+              <th className="text-right">割合</th>
+              <th className="text-right">ユーザー数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.slice(0, 20).map((s) => (
+              <tr key={s.key} className={s.key === selected ? 'bg-nav-active' : undefined}>
+                <td>
+                  <a
+                    href={s.key === selected ? href(undefined) : href(s.key)}
+                    className="font-semibold text-brand hover:underline"
+                    title={s.key === selected ? '絞り込みを解除する' : 'この誘導元で絞り込む'}
+                  >
+                    {s.label}
+                  </a>
+                </td>
+                <td className="text-slate-600">{s.channel}</td>
+                <td className="text-slate-500">{s.key}</td>
+                <td className="text-right font-semibold tabular-nums">{s.views.toLocaleString()}</td>
+                <td className="text-right tabular-nums text-slate-600">{((s.views / totalViews) * 100).toFixed(1)}%</td>
+                <td className="text-right tabular-nums">{s.users.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {sources.length > 20 && <p className="mt-2 text-xs text-slate-500">ほか {sources.length - 20} 件（上位 20 件を表示）</p>}
+    </Collapsible>
   );
 }

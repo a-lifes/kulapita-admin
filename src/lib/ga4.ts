@@ -161,10 +161,10 @@ const pageCache = new Map<string, { at: number; value: PageViewRow[] }>();
  * GA4 Data API に毎回問い合わせるが、同じ条件は 10 分だけ覚えておく (GA4 の反映も数時間遅れるため)。
  * 同じページでタイトルが途中で変わった場合は 1 行にまとめ、表示回数が多い方のタイトルを使う。
  */
-export async function pageViewsByPath(site: SiteKey, from: string, to: string): Promise<PageViewRow[]> {
+export async function pageViewsByPath(site: SiteKey, from: string, to: string, source?: string): Promise<PageViewRow[]> {
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
-  const cacheKey = `${site}:${from}:${to}`;
+  const cacheKey = `${site}:${from}:${to}:${source ?? ''}`;
   const cached = pageCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
@@ -172,7 +172,7 @@ export async function pageViewsByPath(site: SiteKey, from: string, to: string): 
     dateRanges: [{ startDate: from, endDate: to }],
     dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
     metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
-    dimensionFilter: { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
+    dimensionFilter: siteFilter(site, source),
     orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
     limit: 1000,
   });
@@ -220,10 +220,10 @@ const popupCache = new Map<string, { at: number; value: LoginPopupStats }>();
  * ・total … 期間内の合計。人数は同じ人が複数のページで表示しても 1 人と数えるため、ページ別の合計とは一致しない
  * 同じ条件は 10 分だけ覚えておく。
  */
-export async function loginPopupStats(site: SiteKey, from: string, to: string): Promise<LoginPopupStats> {
+export async function loginPopupStats(site: SiteKey, from: string, to: string, source?: string): Promise<LoginPopupStats> {
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
-  const cacheKey = `${site}:${from}:${to}`;
+  const cacheKey = `${site}:${from}:${to}:${source ?? ''}`;
   const cached = popupCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
 
@@ -237,6 +237,7 @@ export async function loginPopupStats(site: SiteKey, from: string, to: string): 
           expressions: [
             { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } },
             { filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: 'login_popup_view' } } },
+            ...sourceExpressions(source),
           ],
         },
       },
@@ -263,5 +264,108 @@ export async function loginPopupStats(site: SiteKey, from: string, to: string): 
   const value = { byPath, total: stat(totalRows[0]) };
   popupCache.set(cacheKey, { at: Date.now(), value });
   if (popupCache.size > 100) popupCache.delete(popupCache.keys().next().value!);
+  return value;
+}
+
+/* ── 誘導元 (どこから来た訪問か) ── */
+
+/** 誘導元で絞り込むときの条件 (sessionSourceMedium = 「google / organic」のような値) */
+function sourceExpressions(source?: string) {
+  return source ? [{ filter: { fieldName: 'sessionSourceMedium', stringFilter: { matchType: 'EXACT', value: source } } }] : [];
+}
+
+/** サイト (ホスト名) と、指定があれば誘導元で絞る条件 */
+function siteFilter(site: SiteKey, source?: string) {
+  const host = { filter: { fieldName: 'hostName', inListFilter: { values: [...SITES[site].hosts] } } };
+  return source ? { andGroup: { expressions: [host, ...sourceExpressions(source)] } } : host;
+}
+
+/** GA4 の誘導元の分類 (デフォルト チャネル グループ) の日本語の名前 */
+const CHANNEL_LABEL: Record<string, string> = {
+  'Organic Search': '検索（自然検索）',
+  'Paid Search': '検索広告',
+  Direct: '直接（URL 入力・ブックマーク・アプリ内など）',
+  Referral: 'ほかのサイトのリンク',
+  'Organic Social': 'SNS',
+  'Paid Social': 'SNS 広告',
+  Email: 'メール',
+  Display: 'ディスプレイ広告',
+  'Organic Video': '動画サイト',
+  'Organic Shopping': 'ショッピングサイト',
+  Affiliates: 'アフィリエイト',
+  'Cross-network': '複数の広告ネットワーク',
+  'Paid Other': 'そのほかの広告',
+  Unassigned: '分類なし（UTM の値が分類に当てはまらないなど）',
+};
+
+/** 誘導元のよく出る名前を分かりやすくする (それ以外はそのまま) */
+const SOURCE_LABEL: Record<string, string> = {
+  '(direct)': '直接',
+  google: 'Google',
+  yahoo: 'Yahoo!',
+  bing: 'Bing',
+  line: 'LINE',
+  'line.me': 'LINE',
+  facebook: 'Facebook',
+  'm.facebook.com': 'Facebook',
+  'l.facebook.com': 'Facebook',
+  instagram: 'Instagram',
+  'l.instagram.com': 'Instagram',
+  't.co': 'X（Twitter）',
+  twitter: 'X（Twitter）',
+  x: 'X（Twitter）',
+};
+
+export type TrafficSourceRow = {
+  /** 絞り込みに使う値 (例: google / organic) */
+  key: string;
+  source: string;
+  medium: string;
+  /** 分類 (日本語) */
+  channel: string;
+  /** 誘導元の名前 (分かりやすくしたもの) */
+  label: string;
+  views: number;
+  users: number;
+};
+const sourceCache = new Map<string, { at: number; value: TrafficSourceRow[] }>();
+
+/**
+ * 誘導元ごとの表示回数・ユーザー数 (多い順)。誘導元は訪問 (セッション) の最初にどこから来たか。
+ * 例: Google 検索から来た訪問 → google / organic (検索)、LINE のリンク (UTM 付き) → line / social (SNS)
+ */
+export async function trafficSources(site: SiteKey, from: string, to: string): Promise<TrafficSourceRow[]> {
+  const propertyId = process.env.GA4_PROPERTY_ID;
+  if (!propertyId) throw new Ga4NotConfiguredError('GA4 のプロパティ ID が設定されていません');
+  const cacheKey = `${site}:${from}:${to}`;
+  const cached = sourceCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 10 * 60_000) return cached.value;
+
+  const res = await runReport(propertyId, {
+    dateRanges: [{ startDate: from, endDate: to }],
+    dimensions: [{ name: 'sessionSourceMedium' }, { name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionDefaultChannelGroup' }],
+    metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
+    dimensionFilter: siteFilter(site),
+    orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+    limit: 200,
+  });
+  if (!res.ok) throw new Error(`GA4 から取得できませんでした（status ${res.status}）`);
+  const data = (await res.json()) as {
+    rows?: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[];
+  };
+  const value = (data.rows ?? []).map((r) => {
+    const [key, source, medium, channel] = r.dimensionValues.map((d) => d.value);
+    return {
+      key,
+      source,
+      medium,
+      channel: CHANNEL_LABEL[channel] ?? channel,
+      label: SOURCE_LABEL[source.toLowerCase()] ?? source,
+      views: Number(r.metricValues[0].value),
+      users: Number(r.metricValues[1].value),
+    };
+  });
+  sourceCache.set(cacheKey, { at: Date.now(), value });
+  if (sourceCache.size > 100) sourceCache.delete(sourceCache.keys().next().value!);
   return value;
 }

@@ -29,11 +29,12 @@ export type PageStats = {
  * ・表示回数・ユーザー数 … GA4 (取れなければ例外。画面にエラーを出す)
  * ・ログインポップアップの表示回数・人数 … GA4 のイベント。取れなくても表示回数は出す (列は 0 / 合計は「—」)
  * ・ログイン数・ログイン人数 … member_logins (サイトのホスト名で絞る)。ページ別には持っていないので合計だけ
+ *   (誘導元 source で絞り込んでも、ログイン数は誘導元が分からないので絞らない)
  */
-export async function pageStats(site: SiteKey, from: string, to: string): Promise<PageStats> {
+export async function pageStats(site: SiteKey, from: string, to: string, source?: string): Promise<PageStats> {
   const [views, popups, logins] = await Promise.all([
-    pageViewsByPath(site, from, to),
-    loginPopupStats(site, from, to).catch((e) => {
+    pageViewsByPath(site, from, to, source),
+    loginPopupStats(site, from, to, source).catch((e) => {
       console.error('[ga4] ログインポップアップの回数・人数を取得できませんでした', e instanceof Error ? e.message : e);
       return null;
     }),
