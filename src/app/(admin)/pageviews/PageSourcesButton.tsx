@@ -97,7 +97,7 @@ export function PageSourcesButton({
         onClick={(e) => {
           if (e.target === ref.current) setOpen(false);
         }}
-        className="m-auto w-[min(640px,94vw)] rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
+        className="m-auto w-[min(640px,94vw)] overflow-x-hidden rounded-xl p-0 text-left font-normal whitespace-normal break-words shadow-2xl backdrop:bg-slate-900/50"
       >
         {open && (
           <div className="p-6">
@@ -182,7 +182,14 @@ function SourcesPie({ segments }: { segments: Segment[] }) {
           {total.toLocaleString()}
         </text>
       </svg>
-      <table className="w-full text-sm">
+      {/* 円グラフの横の残りの幅に収める (はみ出して左右にスクロールしないよう、列の幅を固定し、長い文字は折り返す) */}
+      <div className="w-full min-w-0 flex-1">
+      <table className="w-full table-fixed text-sm">
+        <colgroup>
+          <col />
+          <col className="w-20" />
+          <col className="w-16" />
+        </colgroup>
         <thead>
           <tr className="border-b border-slate-200 text-xs text-slate-500">
             <th className="py-1.5 text-left font-semibold">誘導元</th>
@@ -198,7 +205,7 @@ function SourcesPie({ segments }: { segments: Segment[] }) {
               onMouseEnter={() => setHover(s.key)}
               onMouseLeave={() => setHover(null)}
             >
-              <td className="py-1.5">
+              <td className="py-1.5 break-words">
                 <span className="mr-2 inline-block h-2.5 w-2.5 rounded-sm align-middle" style={{ background: s.color }} aria-hidden="true" />
                 {s.label}
                 {s.detail && (
@@ -213,6 +220,7 @@ function SourcesPie({ segments }: { segments: Segment[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
