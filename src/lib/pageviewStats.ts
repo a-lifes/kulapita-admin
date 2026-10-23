@@ -22,6 +22,8 @@ export type PageStats = {
   popup: PopupStat | null;
   /** 期間内にサイトへログインした回数・人数 (自前の DB。人数は同じ会員が何度ログインしても 1 人。取得できなければ null) */
   login: { count: number; users: number } | null;
+  /** 期間内の新規会員数・申し込み件数・誘導クリック数 (自前の DB。誘導元では絞らない。取得できなければ null) */
+  activity: { newMembers: number; applications: number; clicks: number } | null;
 };
 
 /**
@@ -32,13 +34,14 @@ export type PageStats = {
  *   (誘導元 source で絞り込んでも、ログイン数は誘導元が分からないので絞らない)
  */
 export async function pageStats(site: SiteKey, from: string, to: string, source?: string): Promise<PageStats> {
-  const [views, popups, logins] = await Promise.all([
+  const [views, popups, logins, activity] = await Promise.all([
     pageViewsByPath(site, from, to, source),
     loginPopupStats(site, from, to, source).catch((e) => {
       console.error('[ga4] ログインポップアップの回数・人数を取得できませんでした', e instanceof Error ? e.message : e);
       return null;
     }),
     loginStats(site, from, to),
+    activityStats(from, to),
   ]);
 
   const rows: PageStatRow[] = views.map((r) => {
@@ -54,7 +57,36 @@ export async function pageStats(site: SiteKey, from: string, to: string, source?
       if (!known.has(path) && PROTECTED_PATH_RE.test(path)) rows.push({ path, title: '', views: 0, users: 0, popupCount: p.count, popupUsers: p.users });
     }
   }
-  return { rows, popup: popups?.total ?? null, login: logins };
+  return { rows, popup: popups?.total ?? null, login: logins, activity };
+}
+
+/**
+ * 主要KPI の「新規会員数」「申し込み件数」「誘導クリック数」(自前の DB。すぐに反映される)。
+ * ・新規会員数 … 期間内に初めてログインした会員 (users.first_authenticated_at)
+ * ・申し込み件数 … コンバージョン（申し込み）の件数 (削除したものは除く)
+ * ・誘導クリック数 … コンバージョン（誘導）の件数
+ */
+async function activityStats(from: string, to: string): Promise<PageStats['activity']> {
+  const range = { start: jstStartAsUtc(from), end: jstStartAsUtc(addDays(to, 1)) };
+  try {
+    const [{ rows: m }, { rows: a }, { rows: c }] = await Promise.all([
+      query<{ total: number }>(
+        `SELECT COUNT(*) AS total FROM users
+         WHERE first_authenticated_at >= :start AND first_authenticated_at < :end AND deleted_at IS NULL`,
+        range,
+      ),
+      query<{ total: number }>(
+        `SELECT COUNT(*) AS total FROM service_applications
+         WHERE created_at >= :start AND created_at < :end AND deleted_at IS NULL`,
+        range,
+      ),
+      query<{ total: number }>('SELECT COUNT(*) AS total FROM outbound_clicks WHERE created_at >= :start AND created_at < :end', range),
+    ]);
+    return { newMembers: Number(m[0]?.total ?? 0), applications: Number(a[0]?.total ?? 0), clicks: Number(c[0]?.total ?? 0) };
+  } catch (e) {
+    console.error('[pageviews] 新規会員数・申し込み件数・誘導クリック数を取得できませんでした', e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 async function loginStats(site: SiteKey, from: string, to: string): Promise<{ count: number; users: number } | null> {

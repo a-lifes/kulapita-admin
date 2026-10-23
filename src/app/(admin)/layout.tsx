@@ -21,7 +21,7 @@ const NAV: { title: string; items: (NavItem & { min: Role })[] }[] = [
       { href: '/clicks', text: 'コンバージョン（誘導）', icon: 'clicks', min: 'readonly' },
       { href: '/newsletter', text: 'メルマガ', icon: 'newsletter', min: 'readonly' },
       { href: '/presents', text: 'プレゼント', icon: 'presents', min: 'readonly' },
-      { href: '/pageviews', text: 'ページ別表示回数', icon: 'barChart', min: 'readonly' },
+      { href: '/pageviews', text: '集計・分析', icon: 'barChart', min: 'readonly' },
     ],
   },
   {

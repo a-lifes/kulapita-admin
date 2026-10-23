@@ -13,7 +13,7 @@ import { PageStatRow, PageStats, pageStats } from '@/lib/pageviewStats';
 import { PageSourcesButton } from './PageSourcesButton';
 import { resolveSort, SortColumn, sortRows } from '@/lib/sort';
 
-export const metadata: Metadata = { title: 'ページ別表示回数' };
+export const metadata: Metadata = { title: '集計・分析' };
 
 /** 並べ替えできる列 (画面側で並べ替える) */
 const SORT_COLUMNS: Record<string, SortColumn> = {
@@ -76,10 +76,11 @@ export default async function PageViewsPage({
   let rows: PageStatRow[] = [];
   let popup: PageStats['popup'] = null;
   let login: PageStats['login'] = null;
+  let activity: PageStats['activity'] = null;
   let sources: TrafficSourceRow[] = [];
   let error: string | null = null;
   try {
-    [{ rows, popup, login }, sources] = await Promise.all([
+    [{ rows, popup, login, activity }, sources] = await Promise.all([
       pageStats(site, range.from, range.to, source),
       // 誘導元の一覧 (取れなくてもページ別の表示回数は出す)
       trafficSources(site, range.from, range.to).catch((e) => {
@@ -91,6 +92,9 @@ export default async function PageViewsPage({
     if (!(e instanceof Ga4NotConfiguredError)) console.error('[ga4]', e instanceof Error ? e.message : e);
     error = e instanceof Error ? e.message : 'GA4 から取得できませんでした';
   }
+  // ログイン率 = ログイン人数 ÷ ポップアップ表示人数 (ポップアップなしでログインした人も含むので目安。100% で止める)
+  const loginRate =
+    login && popup && popup.users > 0 ? Math.min(100, Math.round((login.users / popup.users) * 1000) / 10) : null;
   const needle = q?.toLowerCase();
   const filtered = needle
     ? rows.filter((r) => r.path.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle))
@@ -107,7 +111,7 @@ export default async function PageViewsPage({
   return (
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
-        <h1 className="page-title mb-0">ページ別表示回数</h1>
+        <h1 className="page-title mb-0">集計・分析</h1>
         {hasRole(admin.role, 'admin') && !error && (
           <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/pageviews?${exportQuery}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
@@ -152,7 +156,7 @@ export default async function PageViewsPage({
         ]}
       />
       {range.error && <p className="error mb-4">{range.error}</p>}
-      <PageHelp title="ページ別表示回数について">
+      <PageHelp title="集計・分析について">
         <ul className="list-disc space-y-1.5 pl-5">
           <li>GA4 の数値は数時間遅れて反映されます。</li>
           <li>期間内にアクセスがあったページだけを、表示回数の多い順に表示します。</li>
@@ -164,8 +168,12 @@ export default async function PageViewsPage({
           <li>「主要KPI」の人数は期間内の人数です。同じ人は何回表示・ログインしても 1 人と数えます（ポップアップの人数は、同じ人が複数のページで表示しても 1 人のため、一覧の合計とは一致しません）。</li>
           <li>「ログイン数」「ログイン人数」は、期間内にサイトへログインした回数と会員の数です（ページ別ではなく合計のみ。すぐに反映されます）。</li>
           <li>
+            「ログイン率」は、ログイン人数 ÷ ログインポップアップ表示人数です。ポップアップを出さずにログインした人も数えるため目安です（100% を超えるときは 100% と表示します）。
+          </li>
+          <li>「新規会員数」は期間内に初めてログインした会員の数、「申し込み件数」「誘導クリック数」はコンバージョン（申し込み・誘導）の件数です（すぐに反映されます）。</li>
+          <li>
             「誘導元」は、訪問した人がどこから来たかです（Google 検索、LINE、ほかのサイトのリンクなど）。誘導元で絞り込むと、その誘導元から来た訪問の表示回数・ポップアップだけを表示します
-            （ログイン数・ログイン人数は誘導元が分からないため、絞り込みません）。
+            （ログイン数・ログイン人数・新規会員数・申し込み件数・誘導クリック数は誘導元が分からないため、絞り込みません）。
           </li>
           <li>LINE などのアプリ内から開いた訪問は、リンクに UTM パラメータが付いていないと「直接」に数えられることがあります。</li>
         </ul>
@@ -199,7 +207,7 @@ export default async function PageViewsPage({
             <div role="tabpanel" className="card relative z-[1] rounded-tl-none">
               {tab === 'pages' && (
                 <>
-              <div>
+              <div className="overflow-hidden rounded-lg border border-line">
             {/* 左右にスクロールしないよう、列の幅を固定する (URL・タイトルは長いと … で切る。マウスを乗せると全文) */}
             <table className="table w-full table-fixed">
               <thead>
@@ -258,10 +266,14 @@ export default async function PageViewsPage({
               {tab === 'kpi' && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {[
-                    { title: 'ログインポップアップ表示回数', value: popup?.count ?? null, unit: '回' },
-                    { title: 'ログインポップアップ表示人数', value: popup?.users ?? null, unit: '人' },
+                    { title: '新規会員数', value: activity?.newMembers ?? null, unit: '人' },
                     { title: 'ログイン数', value: login?.count ?? null, unit: '回' },
                     { title: 'ログイン人数', value: login?.users ?? null, unit: '人' },
+                    { title: 'ログイン率（目安）', value: loginRate, unit: '%' },
+                    { title: 'ログインポップアップ表示回数', value: popup?.count ?? null, unit: '回' },
+                    { title: 'ログインポップアップ表示人数', value: popup?.users ?? null, unit: '人' },
+                    { title: '申し込み件数', value: activity?.applications ?? null, unit: '件' },
+                    { title: '誘導クリック数', value: activity?.clicks ?? null, unit: '回' },
                   ].map((card) => (
                     <div key={card.title} className="rounded-lg border border-slate-200 px-4 py-4">
                       <p className="text-sm font-semibold text-slate-600">{card.title}</p>
@@ -303,7 +315,7 @@ function SourceBreakdown({
     return `/pageviews?${params.toString()}`;
   };
   return (
-    <div className="table-scroll">
+    <div className="overflow-hidden rounded-lg border border-line">
         <table className="table">
           <thead>
             <tr>
