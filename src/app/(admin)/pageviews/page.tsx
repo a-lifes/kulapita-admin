@@ -112,7 +112,7 @@ export default async function PageViewsPage({
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">集計・分析</h1>
-        {hasRole(admin.role, 'admin') && !error && (
+        {hasRole(admin.role, 'support') && !error && (
           <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/pageviews?${exportQuery}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
       </div>

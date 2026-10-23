@@ -82,7 +82,7 @@ export default async function ContactsPage({
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">お問い合わせ</h1>
-        {hasRole(admin.role, 'admin') && (
+        {hasRole(admin.role, 'support') && (
           <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/contacts${exportQuery ? `?${exportQuery}` : ''}`}>
             <icons.fileDownload className="h-4 w-4" />ダウンロード
           </a>

@@ -105,8 +105,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ kind
     );
   }
 
-  // それ以外の CSV には個人情報がまとめて入るため「管理者」以上に限る
-  const admin = await requireAdmin('admin');
+  // それ以外の CSV には個人情報がまとめて入るため「一般」以上に限る (「閲覧のみ」は出力できない。出力は操作ログに残す)
+  const admin = await requireAdmin('support');
 
   if (kind === 'contacts') {
     const filter = normalizeContactFilter(sp);

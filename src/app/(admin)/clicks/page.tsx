@@ -96,7 +96,7 @@ export default async function ClicksPage({
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">コンバージョン（誘導）</h1>
-        {hasRole(admin.role, 'admin') && (
+        {hasRole(admin.role, 'support') && (
           <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/clicks?${exportQuery}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
       </div>

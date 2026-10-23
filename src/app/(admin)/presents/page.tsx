@@ -183,7 +183,7 @@ export default async function PresentsPage({
     <div className="list-page">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="page-title mb-0">プレゼント</h1>
-        {hasRole(admin.role, 'admin') && (campaign || filter.member) && (
+        {hasRole(admin.role, 'support') && (campaign || filter.member) && (
           <a className="btn-sub" title="CSV ファイルをダウンロード" href={`/api/export/presents?${exportQuery}`}><icons.fileDownload className="h-4 w-4" />ダウンロード</a>
         )}
       </div>
