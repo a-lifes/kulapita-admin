@@ -62,6 +62,13 @@ export const NEWSLETTER_STATUS_LABEL: Record<string, string> = {
 };
 
 /** 一覧の行で状態を切り替えるプルダウンの、左の点の色 */
+/** お問い合わせの対応状況の点の色 (StatusBadge と同じ) */
+export const CONTACT_STATUS_STYLE: Record<string, string> = {
+  pending: 'bg-rose-500',
+  in_progress: 'bg-amber-500',
+  completed: 'bg-emerald-500',
+  archived: 'bg-slate-400',
+};
 export const NEWSLETTER_STATUS_STYLE: Record<string, string> = {
   pending: 'bg-slate-400',
   registered: 'bg-emerald-500',

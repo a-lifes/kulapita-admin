@@ -3,12 +3,15 @@ import { icons } from '@/components/icons';
 import { MemberButton } from '@/components/MemberButton';
 import { Pagination, pageFrom, perPageFrom } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
+import { StatusSelect } from '@/components/StatusSelect';
+import { BulkProvider, BulkStatusBar, RowCheckbox, SelectAllCheckbox } from '@/components/BulkStatus';
+import { setContactStatusAction, setContactStatusBulkAction } from './actions';
 import { hasRole } from '@/lib/adminUsers';
 import { requireAdmin } from '@/lib/auth/guard';
 import { CASE_COLUMN_WIDTH } from '@/lib/caseStatus';
 import { query } from '@/lib/db';
 import { MEMBER_COLUMNS, memberFromRow } from '@/lib/members';
-import { CONTACT_STATUS_LABEL, formatJst, label } from '@/lib/format';
+import { CONTACT_STATUS_LABEL, CONTACT_STATUS_STYLE, formatJst, label } from '@/lib/format';
 import { CONTACT_CATEGORIES, CONTACT_STATUSES, contactWhere, normalizeContactFilter } from '@/lib/queries/contacts';
 import { ClearButton, SearchButton, SearchForm } from '@/components/SearchForm';
 import { SortableTh } from '@/components/SortableTh';
@@ -55,6 +58,7 @@ export default async function ContactsPage({
   const where = contactWhere(filter);
   const sort = resolveSort(sp, SORT_COLUMNS, { key: 'created', dir: 'desc' });
   const listParams = { ...filter, per: sp.per };
+  const canEdit = hasRole(admin.role, 'support');
 
   const [{ rows }, { rows: count }] = await Promise.all([
     query<Row>(
@@ -113,10 +117,25 @@ export default async function ContactsPage({
       </SearchForm>
       <ActiveFilters basePath="/contacts" params={{ ...listParams, sort: sp.sort, dir: sp.dir }} chips={[{ key: 'status', label: '対応状況', value: filter.status ? CONTACT_STATUS_LABEL[filter.status] : '' }, { key: 'category', label: 'お問い合わせの種類', value: filter.category ?? '' }, { key: 'q', label: 'キーワード', value: filter.q ?? '' }]} />
 
+      <BulkProvider ids={rows.map((r) => r.id)}>
+        {canEdit && (
+          <BulkStatusBar
+            labels={CONTACT_STATUS_LABEL}
+            action={setContactStatusBulkAction}
+            field="対応状況"
+            noun="お問い合わせ"
+            defaultStatus="in_progress"
+          />
+        )}
       <div className="card table-scroll">
         <table className="table">
           <thead>
             <tr>
+              {canEdit && (
+                <th className="w-10">
+                  <SelectAllCheckbox />
+                </th>
+              )}
               <SortableTh label="受付日時" sortKey="created" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.created} />
               <SortableTh label="受付番号" sortKey="number" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.number} />
               <SortableTh label="対応状況" sortKey="status" sort={sort} columns={SORT_COLUMNS} basePath="/contacts" params={listParams} className={CASE_COLUMN_WIDTH.status} />
@@ -131,13 +150,33 @@ export default async function ContactsPage({
               const member = memberFromRow(r);
               return (
               <ClickableRow key={r.id} detail={{ kind: 'contact', id: r.id }}>
+                {canEdit && (
+                  <td className="w-10">
+                    <RowCheckbox id={r.id} />
+                  </td>
+                )}
                 <td><RelTime value={r.created_at} /></td>
                 <td>
                   <a className="text-brand hover:underline" data-detail href={`/contacts/${r.id}`}>
                     {r.reception_number}
                   </a>
                 </td>
-                <td><StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} /></td>
+                <td>
+                  {canEdit ? (
+                    <StatusSelect
+                      key={r.status}
+                      id={r.id}
+                      status={r.status}
+                      readOnly={false}
+                      labels={CONTACT_STATUS_LABEL}
+                      styles={CONTACT_STATUS_STYLE}
+                      action={setContactStatusAction}
+                      ariaLabel="対応状況（変えると担当者が自分になります）"
+                    />
+                  ) : (
+                    <StatusBadge value={r.status} text={label(CONTACT_STATUS_LABEL, r.status)} />
+                  )}
+                </td>
                 <td>{r.category}</td>
                 <td>{r.name}</td>
                 <td>
@@ -161,12 +200,13 @@ export default async function ContactsPage({
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-500">{filter.status || filter.category || filter.q ? '検索内容に一致するデータはありません。' : 'お問い合わせはまだありません。'}</td>
+                <td colSpan={canEdit ? 8 : 7} className="py-8 text-center text-slate-500">{filter.status || filter.category || filter.q ? '検索内容に一致するデータはありません。' : 'お問い合わせはまだありません。'}</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      </BulkProvider>
       <Pagination basePath="/contacts" params={{ ...listParams, sort: sort.key, dir: sort.dir }} page={page} perPage={perPage} total={total} />
     </div>
   );

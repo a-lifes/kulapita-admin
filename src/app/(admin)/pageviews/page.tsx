@@ -319,7 +319,7 @@ function SourceBreakdown({
                 <td>
                   <a
                     href={s.key === selected ? href(undefined) : href(s.key)}
-                    className="font-semibold text-brand hover:underline"
+                    className="text-brand hover:underline"
                     title={s.key === selected ? '絞り込みを解除する' : 'この誘導元で絞り込む'}
                   >
                     {s.label}

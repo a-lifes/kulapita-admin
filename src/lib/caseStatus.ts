@@ -18,12 +18,13 @@ const DONE_STATUSES = ['completed', 'contracted', 'lost'];
 
 /**
  * お問い合わせ・申し込みの一覧で、左の 3 列 (受付日時・受付番号・対応状況) を同じ固定幅にする。
+ * 対応状況はお問い合わせの一覧でプルダウンになるので、その幅に合わせる。
  * 両方の画面で列の位置がそろう (残りの幅は右側の列に回る)。
  */
 export const CASE_COLUMN_WIDTH = {
   created: 'w-40 min-w-40 max-w-40',
   number: 'w-28 min-w-28 max-w-28',
-  status: 'w-28 min-w-28 max-w-28',
+  status: 'w-44 min-w-44 max-w-44',
 } as const;
 
 export async function updateCaseStatus(input: {
